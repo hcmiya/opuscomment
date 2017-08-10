@@ -1,20 +1,3 @@
-
-enum edit_ {
-	EDIT_NONE,
-	EDIT_LIST,
-	EDIT_WRITE,
-	EDIT_APPEND,
-};
-
-enum opst_ {
-	OPUS_HEADER,
-	OPUS_HEADER_BORDER,
-	OPUS_COMMENT,
-	OPUS_COMMENT_BORDER,
-	OPUS_SOUND,
-    OPUS_REMNANT,
-};
-
 #include <ogg/ogg.h>
 
 void parse_tags(void);

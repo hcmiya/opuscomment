@@ -67,7 +67,7 @@ static void parse_args(int argc, char **argv) {
 				char *endp;
 				f = strtod(optarg, &endp);
 				if (optarg == endp) {
-                    mainerror("ゲイン値のパース失敗");
+					mainerror("ゲイン値のパース失敗");
 				}
 				if (!isfinite(f)) {
 					mainerror("ゲイン値の範囲外");
@@ -240,13 +240,7 @@ void fileerror(void) {
 
 
 int main(int argc, char **argv) {
-	setlocale(LC_ALL,
-#if defined NDEBUG
-	""
-#else
-	"C.UTF-8"
-#endif
-	);
+	setlocale(LC_ALL, "");
 	if (argc == 1) usage();
 	
 	parse_args(argc, argv);

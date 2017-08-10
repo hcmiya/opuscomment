@@ -8,8 +8,13 @@
 
 #include <ogg/ogg.h>
 
-typedef struct {
-	enum edit_ edit;
+GLOBAL struct {
+	enum {
+		EDIT_NONE,
+		EDIT_LIST,
+		EDIT_WRITE,
+		EDIT_APPEND,
+	} edit;
 	
 	bool gain_fix;
 	bool gain_relative;
@@ -24,10 +29,17 @@ typedef struct {
 	char *tag_filename;
 	
 	char *in, *out;
-} ocopt_;
-GLOBAL ocopt_ O;
+} O;
 
-GLOBAL enum opst_ opst;
+GLOBAL enum {
+	OPUS_HEADER,
+	OPUS_HEADER_BORDER,
+	OPUS_COMMENT,
+	OPUS_COMMENT_BORDER,
+	OPUS_SOUND,
+	OPUS_REMNANT,
+} opst;
+
 
 GLOBAL char *vendor;
 GLOBAL char **tag_file, **tag_edit;
