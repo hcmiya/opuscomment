@@ -240,8 +240,13 @@ void fileerror(void) {
 
 
 int main(int argc, char **argv) {
-	setlocale(LC_ALL, "");
-	
+	setlocale(LC_ALL,
+#if defined NDEBUG
+	""
+#else
+	"C.UTF-8"
+#endif
+	);
 	if (argc == 1) usage();
 	
 	parse_args(argc, argv);
@@ -306,7 +311,7 @@ int main(int argc, char **argv) {
 		read_page(&oy);
 	}
 	
-	if (opst < OPUS_LEFT) {
+	if (opst < OPUS_SOUND) {
 		opuserror("Opusヘッダが途切れている");
 	}
 	

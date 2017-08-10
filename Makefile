@@ -6,7 +6,7 @@ LIBS=-logg -lm
 all: opuscomment
 
 opuscomment: $(HEADER) $(SRC)
-	c99 -o opuscomment -O2 $(CFLAGS) $(LIBS) $(SRC)
+	c99 -o opuscomment -O2 $(CFLAGS) -DNDEBUG $(LIBS) $(SRC)
 
 debug: opuscomment.debug
 

@@ -42,7 +42,12 @@ static inline uint64_t oi64(uint64_t i) {
 #undef M
 #endif
 
-bool closed = false;
+static size_t seeked_len;
+static ogg_stream_state ios, oos;
+static char *outtmp;
+static bool remove_tmp;
+static uint32_t opus_pidx, opus_sno;
+static FILE *fpout;
 
 void move_file(void) {
 	if (O.out) {
@@ -56,7 +61,7 @@ void move_file(void) {
 		size_t readlen, ret;
 		uint8_t *buf = malloc(buflen);
 		rewind(fpout);
-		remove(outtmp); // sigpipe対策
+		remove(outtmp); // sigpipe対策で先に一時ファイルをunlinkする
 		remove_tmp = false;
 		while ((readlen = fread(buf, 1, buflen, fpout))) {
 			ret = fwrite(buf, 1, readlen, stdout);
@@ -73,6 +78,7 @@ void move_file(void) {
 		struct stat st;
 		fstat(fd, &st);
 		if (!rename(outtmp, O.in)) {
+			// rename(2)は移動先が存在していてもunlink(2)の必要はない
 			remove_tmp = false;
 			if (!chmod(O.in, st.st_mode)) {
 				return;
@@ -88,7 +94,7 @@ static void put_left(void) {
 	uint8_t *buf = malloc(buflen);
 	
 	clearerr(fpopus);
-	if (fseek(fpopus, h_t_len, SEEK_SET)) {
+	if (fseek(fpopus, seeked_len, SEEK_SET)) {
 		fileerror();
 	}
 	
@@ -132,7 +138,7 @@ static void append_tag(FILE *fp, char *tag) {
 }
 
 
-static void store_tags(void) {
+static void store_tags(size_t lastpagelen) {
 	FILE *fptag = tmpfile();
 	fwrite(OpusTags, 1, 8, fptag);
 	size_t len = strlen(vendor);
@@ -180,6 +186,8 @@ static void store_tags(void) {
 	}
 	
 	if (oos.pageno + 1 < ios.pageno) {
+		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
+		// 無を含むページを生成して開始ページ番号を合わせる
 		ogg_stream_flush(&oos, &og);
 		uint8_t segnum = og.header[26];
 		uint8_t lastseglen = og.header[og.header_len - 1];
@@ -222,6 +230,7 @@ static void store_tags(void) {
 		ogg_page_checksum_set(&og);
 		write_page(&og);
 		
+		seeked_len -= lastpagelen;
 		put_left();
 	}
 	else {
@@ -229,6 +238,7 @@ static void store_tags(void) {
 		write_page(&og);
 		
 		if (oos.pageno == ios.pageno) {
+			seeked_len -= lastpagelen;
 			put_left();
 		}
 	}
@@ -237,13 +247,13 @@ static void store_tags(void) {
 	ogg_stream_clear(&oos);
 }
 
-static void parse_page_left(ogg_page *og) {
-	if (!closed && ogg_page_serialno(og) == opus_sno) {
-		*(uint32_t*)&og->header[18] = oi32(opus_pidx++);
-		ogg_page_checksum_set(og);
-		closed = ogg_page_eos(og);
-	}
+static void parse_page_sound(ogg_page *og) {
+	*(uint32_t*)&og->header[18] = oi32(opus_pidx++);
+	ogg_page_checksum_set(og);
 	write_page(og);
+	if (ogg_page_eos(og)) {
+		put_left();
+	}
 }
 
 static void comment_aborted(void) {
@@ -363,7 +373,7 @@ static void parse_header_border(ogg_page *og) {
 	}
 	if (O.gain_fix && O.edit == EDIT_NONE) {
 		if (O.out) {
-			h_t_len -= og->header_len + og->body_len;
+			seeked_len -= og->header_len + og->body_len;
 			put_left();
 		}
 		else {
@@ -371,12 +381,12 @@ static void parse_header_border(ogg_page *og) {
 			rewind(fpout);
 			uint8_t *b = malloc(headpagelen);
 			
-			h_t_len -= og->header_len + og->body_len + headpagelen;
+			seeked_len -= og->header_len + og->body_len + headpagelen;
 			fpopus = freopen(NULL, "r+", fpopus);
 			if (!fpopus) {
 				fileerror();
 			}
-			if (fseek(fpopus, h_t_len, SEEK_SET)) {
+			if (fseek(fpopus, seeked_len, SEEK_SET)) {
 				fileerror();
 			}
 			size_t ret = fread(b, 1, headpagelen, fpout);
@@ -523,14 +533,13 @@ static void parse_page(ogg_page *og) {
 			put_tags();
 		}
 		else {
-			h_t_len -= og->header_len + og->body_len;
-			store_tags();
+			store_tags(og->header_len + og->body_len);
 		}
-		opst = OPUS_LEFT;
+		opst = OPUS_SOUND;
 		/* FALLTHROUGH */
 		
-	case OPUS_LEFT:
-		parse_page_left(og);
+	case OPUS_SOUND:
+		parse_page_sound(og);
 		break;
 	}
 }
@@ -538,14 +547,11 @@ static void parse_page(ogg_page *og) {
 void read_page(ogg_sync_state *oy) {
 	int seeklen;
 	ogg_page og;
-	while (opst < OPUS_LEFT && (seeklen = ogg_sync_pageseek(oy, &og)) != 0) {
+	while ((seeklen = ogg_sync_pageseek(oy, &og)) != 0) {
 		if (seeklen > 0) {
-			h_t_len += seeklen;
+			seeked_len += seeklen;
 			parse_page(&og);
 		}
-		else h_t_len += -seeklen;
-	}
-	while (ogg_sync_pageout(oy, &og) == 1) {
-		parse_page_left(&og);
+		else seeked_len += -seeklen;
 	}
 }

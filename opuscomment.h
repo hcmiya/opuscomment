@@ -11,7 +11,8 @@ enum opst_ {
 	OPUS_HEADER_BORDER,
 	OPUS_COMMENT,
 	OPUS_COMMENT_BORDER,
-	OPUS_LEFT
+	OPUS_SOUND,
+    OPUS_REMNANT,
 };
 
 #include <ogg/ogg.h>
