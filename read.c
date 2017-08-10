@@ -49,6 +49,11 @@ static bool remove_tmp;
 static uint32_t opus_pidx, opus_sno;
 static FILE *fpout;
 
+static char const *OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
+	*OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73",
+	*mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d"; // "METADATA_BLOCK_PICTURE="
+staic size_t const mbplen = 23;
+
 void move_file(void) {
 	if (O.out) {
 		if (strcmp(O.out, "-") != 0) {
