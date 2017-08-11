@@ -19,13 +19,13 @@
 static void usage(void) {
 	fprintf(stderr,
 "使い方:\n"
-"    %1$s -w|-a [-g gain|-s gain|-n] [-c file|-t NAME=VALUE ...] [-eGprRvV] opusfile [output]\n"
 "    %1$s [-l] [-epRvV] opusfile\n"
+"    %1$s -a|-w [-g gain|-s gain|-n] [-c file|-t NAME=VALUE ...] [-eGprRvV] opusfile [output]\n"
 "\n"
 "オプション:\n"
 "    -l            タグ出力モード\n"
-"    -w            タグ書き込みモード\n"
 "    -a            タグ追記モード\n"
+"    -w            タグ書き込みモード\n"
 "    -R            タグ入出力にUTF-8を使う。このオプションがない場合はロケールによる文字符号化との変換が行われる\n"
 "                  (vorbiscomment(1)互換)\n"
 "    -e            バックスラッシュ、改行、復帰、ヌルにそれぞれ\\\\, \\n, \\r, \\0のエスケープを使用する\n"
