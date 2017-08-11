@@ -52,7 +52,7 @@ static FILE *fpout;
 static char const *OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
 	*OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73",
 	*mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d"; // "METADATA_BLOCK_PICTURE="
-staic size_t const mbplen = 23;
+static size_t const mbplen = 23;
 
 void move_file(void) {
 	if (O.out) {
@@ -436,6 +436,7 @@ static void parse_comment(ogg_page *og) {
 	left -= len;
 	
 	if (O.edit == EDIT_WRITE && !O.tag_ignore_picture) {
+		//上書きモードでMETADATA_BLOCK_PICTUREを残さない場合はタグを読まなくて良い
 		tag_file = malloc(sizeof(*tag_file));
 		tagnum_file = 0;
 		*tag_file = NULL;

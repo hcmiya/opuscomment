@@ -55,7 +55,6 @@ void validate_tag(wchar_t *tag) {
 }
 
 static void w_add(wchar_t *tag) {
-	
 	if (wcslen(tag) == wcsspn(tag, L"\t\n\r ")) {
 		free(tag);
 		return;
@@ -63,7 +62,7 @@ static void w_add(wchar_t *tag) {
 	validate_tag(tag);
 	
 	size_t lslen = wcstombs(NULL, tag, 0);
-// fgetwc()が全て成功しているので失敗しない
+// fgetws()が全て成功しているので失敗しない
 // 	if (lslen == (size_t)-1) {
 // 		perror(NULL);
 // 		exit(1);
@@ -95,6 +94,21 @@ static void w_add(wchar_t *tag) {
 	add_tag(u8buf);
 }
 
+static size_t fgetws2(wchar_t *buf, size_t len, FILE *fp) {
+	if (len <= 1) {
+		wchar_t c = fgetwc(fp);
+		if (c == WEOF) {
+			return (size_t)-1;
+		}
+		ungetwc(c, fp);
+		return 0;
+	}
+	memset(buf, 1, len * sizeof(*buf));
+	if (!fgetws(buf, len, fp)) return (size_t)-1;
+	while (buf[--len]) {}
+	return len;
+}
+
 static void w_main(void) {
 	size_t tagbuflen = 65536;
 	wchar_t *tag, *tp;
@@ -102,104 +116,130 @@ static void w_main(void) {
 	
 	tag = malloc(tagbuflen * sizeof(*tag));
 	tp = tag;
-	while ((c = fgetwc(stdin)) != WEOF) {
+	size_t left = tagbuflen, readlen;
+	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
+		if (readlen != wcslen(tp)) {
+			tagerror("タグ入力にバイナリがある");
+		}
+		wchar_t c = fgetwc(stdin);
+		bool cont = false;
 		switch (c) {
+		case WEOF:
+			if (ferror(stdin)) fileerror();
+			break;
 		case L'\0':
 			tagerror("タグ入力にバイナリがある");
 			break;
 			
-		case L'\n':
-			if ((c = fgetwc(stdin)) == L'\t') {
-				*tp++ = L'\n';
-			}
-			else {
-				ungetwc(c, stdin);
-				*tp = L'\0';
-				if (tp != tag && tp[-1] == L'\r') {
-					tp[-1] = L'\0';
-				}
-				w_add(tag);
-				tp = tag;
-			}
+		case L'\t':
+			cont = true;
 			break;
 			
 		default:
-			*tp++ = c;
+			cont = tp[readlen - 1] != L'\n';
+			ungetwc(c, stdin);
 			break;
 		}
-		if ((tp - tag) + 1 == tagbuflen) {
-			tagbuflen += 65536;
-			wchar_t *tmp = realloc(tag, tagbuflen * sizeof(*tag));
-			tp = tmp + (tp - tag);
-			tag = tmp;
+		left -= readlen;
+		tp += readlen;
+		if (!cont) {
+			if (readlen && tp[-1] == L'\n') {
+				*(--tp) = L'\0';
+				if (tp > tag && tp[-1] == L'\r') {
+					tp[-1] = L'\0';
+				}
+			}
+			w_add(tag);
+			tp = tag;
+			left = tagbuflen;
+		}
+		else {
+			if (tp - tag >= 2 && tp[-1] == L'\n' && tp[-2] == L'\r') {
+				tp--;
+				tp[-1] = L'\n'; tp[0] = L'\0';
+				left++;
+			}
+			if (left < 20) {
+				tagbuflen += 65536;
+				wchar_t *tmp = realloc(tag, tagbuflen * sizeof(*tag));
+				if (!tmp) fileerror();
+				tp = tmp + (tp - tag);
+				tag = tmp;
+				left += 65536;
+			}
 		}
 	}
 	if (ferror(stdin)) {
-		perror(NULL);
-		exit(1);
+		fileerror();
 	}
 	if (tp != tag) {
-		*tp = L'\0';
 		w_add(tag);
 	}
 	free(tag);
 }
 
-static void w_main_e(void) {
-	size_t tagbuflen = 65536;
-	wchar_t *tag, *tp;
-	wint_t c;
-	
-	tag = malloc(tagbuflen * sizeof(*tag));
-	tp = tag;
-	while ((c = fgetwc(stdin)) != WEOF) {
-		switch (c) {
-		case L'\0':
-			tagerror("タグ入力にバイナリがある");
-			break;
-			
-		case L'\n':
-			*tp = L'\0';
-			if (tp != tag && tp[-1] == L'\r') {
-				tp[-1] = L'\0';
-			}
-			w_add(tag);
-			tp = tag;
-			break;
-			
-		case L'\\':
-			switch (fgetwc(stdin)) {
+static wchar_t *w_unesc(wchar_t *str) {
+	wchar_t *wp = wcschr(str, L'\\');
+	if (wp) {
+		wchar_t *ep = wp;
+		while (*ep) {
+			if (*ep == L'\\') {
+				switch (*(++ep)) {
 				case L'0':
-					c = L'\0';
+					*ep = L'\0';
 					break;
 					
 				case L'n':
-					c = '\n';
+					*ep = '\n';
 					break;
 					
 				case L'r':
-					c = '\r';
+					*ep = '\r';
 					break;
 					
 				case L'\\':
-					c = '\\';
+					*ep = '\\';
 					break;
 					
 				default:
 					tagerror("不正なエスケープシーケンス");
 					break;
+				}
 			}
-			*tp++ = c;
-			break;
-			
-		default:
-			*tp++ = c;
-			break;
+			*wp++ = *ep++;
 		}
-		if ((tp - tag) + 1 == tagbuflen) {
+		*wp = L'\0';
+	}
+	return str;
+}
+static void w_main_e(void) {
+	size_t tagbuflen = 65536;
+	wchar_t *tag, *tp;
+	
+	tag = malloc(tagbuflen * sizeof(*tag));
+	tp = tag;
+	size_t left = tagbuflen, readlen;
+	bool cont = false;
+	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
+		if (readlen != wcslen(tp)) {
+			tagerror("タグ入力にバイナリがある");
+		}
+		
+		if (readlen && tp[readlen - 1] == L'\n') {
+			cont = false;
+			tp += readlen - 1;
+			*tp = L'\0';
+			if (tp > tag && tp[-1] == L'\r') {
+				tp[-1] = L'\0';
+			}
+			w_add(w_unesc(tag));
+		}
+		else {
+			cont = true;
 			tagbuflen += 65536;
 			wchar_t *tmp = realloc(tag, tagbuflen * sizeof(*tag));
-			tp = tmp + (tp - tag);
+			tp = tmp + ((tp + readlen) - tag);
+			left = left - readlen + 65536;
 			tag = tmp;
 		}
 	}
@@ -207,9 +247,8 @@ static void w_main_e(void) {
 		perror(NULL);
 		exit(1);
 	}
-	if (tp != tag) {
-		*tp = L'\0';
-		w_add(tag);
+	if (cont) {
+		w_add(w_unesc(tag));
 	}
 	free(tag);
 }
@@ -316,6 +355,7 @@ static bool trimcr(char *tag) {
 	}
 	return eol;
 }
+
 static void r_line(uint8_t *line, size_t n) {
 	static uint8_t *tag = NULL;
 	static bool tagcont = false;
