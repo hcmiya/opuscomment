@@ -13,34 +13,7 @@
 #include "opuscomment.h"
 #include "global.h"
 
-#include "endianness-check.h"
-#ifdef LITTLE_ENDIAN
-
-static inline uint16_t oi16(uint16_t i) {
-	return i;
-}
-static inline uint32_t oi32(uint32_t i) {
-	return i;
-}
-static inline uint64_t oi64(uint64_t i) {
-	return i;
-}
-#else
-
-#define M 255ULL
-
-static inline uint16_t oi16(uint16_t i) {
-	return i << 8 | i >> 8;
-}
-static inline uint32_t oi32(uint32_t i) {
-	return i << 24 | (i & (M << 8)) << 8 | (i & (M << 16)) >> 8 | i >> 24;
-}
-static inline uint64_t oi64(uint64_t i) {
-	return i << 56 | (i & (M << 8)) << 40 | (i & (M << 16)) >> 24 | (i & (M << 24)) >> 8
-		|(i & (M << 32)) >> 8 | (i & (M << 40)) >> 24 | (i & (M << 48)) >> 40 | i >> 56;
-}
-#undef M
-#endif
+#include "endianness.h"
 
 static size_t seeked_len;
 static ogg_stream_state ios, oos;
@@ -49,7 +22,8 @@ static bool remove_tmp;
 static uint32_t opus_pidx, opus_sno;
 static FILE *fpout;
 
-static char const *OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
+static char const
+	*OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
 	*OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73",
 	*mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d"; // "METADATA_BLOCK_PICTURE="
 static size_t const mbplen = 23;
@@ -265,11 +239,11 @@ static void parse_page_sound(ogg_page *og) {
 }
 
 static void comment_aborted(void) {
-	opuserror("Opusヘッダが途切れている");
+	opuserror("ヘッダが途切れている");
 }
 
 static void invalid_border(void) {
-	opuserror("Opusヘッダのページとパケットの境界が変");
+	opuserror("ヘッダのページとパケットの境界が変");
 }
 
 static void not_an_opus(void) {
@@ -305,7 +279,7 @@ static void parse_header(ogg_page *og) {
 		not_an_opus();
 	}
 	if (op.packet[8] != 1) {
-		opuserror("未対応のOpusバージョン");
+		opuserror("未対応のバージョン");
 	}
 	switch (O.info_gain) {
 		case 1:

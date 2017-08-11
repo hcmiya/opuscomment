@@ -6,7 +6,10 @@
 #define GLOBAL_VAL(X)
 #endif
 
+#include <stdio.h>
 #include <ogg/ogg.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 GLOBAL struct {
 	enum {
@@ -40,6 +43,8 @@ GLOBAL enum {
 	OPUS_REMNANT,
 } opst;
 
+GLOBAL char const *program_name;
+GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
 GLOBAL char *vendor;
 GLOBAL char **tag_file, **tag_edit;

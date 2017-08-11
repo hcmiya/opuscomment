@@ -7,6 +7,7 @@
 #include <langinfo.h>
 #include <iconv.h>
 #include <wchar.h>
+#include <errno.h>
 
 #include "opuscomment.h"
 #include "global.h"
@@ -14,8 +15,7 @@
 static void put_bin(char const *buf, size_t len) {
 	size_t ret = fwrite(buf, 1, len, stdout);
 	if (ret != len) {
-		perror(NULL);
-		exit(1);
+		oserror();
 	}
 }
 
@@ -81,7 +81,7 @@ static void put_tags_w(void) {
 #endif
 	cd = iconv_open(charsetname, "UTF-8");
 	if (cd == (iconv_t)-1) {
-		mainerror("iconvがUTF-8→%sの変換に対応していない", nl_langinfo(CODESET));
+		oserror_fmt("iconvがUTF-8→%sの変換に対応していない", nl_langinfo(CODESET));
 	}
 	size_t buflen = 1 << 18;
 	uint8_t *buf = malloc(buflen);
@@ -142,8 +142,7 @@ static void put_tags_w(void) {
 		iconv(cd, &u8, &tagleft, &n2, &bufleft);
 		if (tagleft == 0) {
 			if (puts(ls) == EOF) {
-				perror(NULL);
-				exit(1);
+				oserror();
 			}
 		}
 		else {
@@ -157,8 +156,7 @@ void put_tags(void) {
 	if (O.tag_filename) {
 		FILE *tmp = freopen(O.tag_filename, "w", stdout);
 		if (!tmp) {
-			perror(O.tag_filename);
-			exit(1);
+			fileerror(O.tag_filename);
 		}
 	}
 	if (O.tag_raw) {

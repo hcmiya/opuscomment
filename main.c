@@ -17,10 +17,10 @@
 #include "global.h"
 
 static void usage(void) {
-	fputs(
+	fprintf(stderr,
 "使い方:\n"
-"    opuscomment -w|-a [-g gain|-s gain|-n] [-c file|-t NAME=VALUE] [-pRevVrG] opusfile [output]\n"
-"    opuscomment [-l] [-pRevV] opusfile\n"
+"    %1$s -w|-a [-g gain|-s gain|-n] [-c file|-t NAME=VALUE ...] [-eGprRvV] opusfile [output]\n"
+"    %1$s [-l] [-epRvV] opusfile\n"
 "\n"
 "オプション:\n"
 "    -l            タグ出力モード\n"
@@ -37,12 +37,12 @@ static void usage(void) {
 "    -G            出力ゲインが内部形式にした時に0になる場合は[-+]1/256 dBを設定する\n"
 "    -p            METADATA_BLOCK_PICTUREの出力または削除をしない\n"
 "    -v            出力ゲインの編集_前_の値を以下の形式で標準エラー出力に出力する\n"
-"                  \"%.8g\\n\", <output gain in dB, floating point>\n"
+"                  \"%%.8g\\n\", <output gain in dB, floating point>\n"
 "    -V            出力ゲインの編集_前_の値を以下の形式で標準エラー出力に出力する\n"
-"                  \"%d\\n\", <output gain in Q7.8, integer>\n"
+"                  \"%%d\\n\", <output gain in Q7.8, integer>\n"
 "    -c file       出力モード時、タグをfileに書き出す。書き込み・追記モード時、fileからタグを読み出す\n"
 "    -t NAME=VALUE 引数をタグとして追加する\n"
-	, stderr);
+	, program_name);
 	exit(1);
 }
 
@@ -160,8 +160,7 @@ static void parse_args(int argc, char **argv) {
 				{
 					size_t l = mbstowcs(NULL, optarg, 0);
 					if (l == (size_t)-1) {
-						perror(NULL);
-						exit(1);
+						oserror();
 					}
 					wchar_t *str = malloc((l + 1) * sizeof(*str));
 					mbstowcs(str, optarg, l + 1);
@@ -183,7 +182,7 @@ static void parse_args(int argc, char **argv) {
 						cd = iconv_open("UTF-8", nl_langinfo(CODESET));
 #endif
 						if (cd == (iconv_t)-1) {
-							mainerror("iconvが%s→UTF-8の変換に対応していない", nl_langinfo(CODESET));
+							oserror_fmt("iconvが%s→UTF-8の変換に対応していない", nl_langinfo(CODESET));
 						}
 					}
 					iconv(cd, &ls, &l, &u8, &u8left);
@@ -196,7 +195,7 @@ static void parse_args(int argc, char **argv) {
 		}
 	}
 	if (tag_edit && !O.edit) {
-		mainerror("-w|-aの指定がない");
+		mainerror("タグ編集時は-w|-aの指定が必要");
 	}
 	if (!O.gain_fix && !O.edit) {
 		O.edit = EDIT_LIST;
@@ -207,7 +206,7 @@ static void parse_args(int argc, char **argv) {
 		}
 		else if (!O.edit) {
 			if (O.tag_filename || tag_edit) {
-				mainerror("-w|-aの指定がない");
+				mainerror("タグ編集時は-w|-aの指定が必要");
 			}
 		}
 	}
@@ -219,28 +218,15 @@ static void parse_args(int argc, char **argv) {
 	}
 }
 
-void mainerror(char *e, ...) {
-	va_list ap;
-	va_start(ap, e);
-	vfprintf(stderr, e, ap);
-	fputc('\n', stderr);
-	exit(1);
-}
-void opuserror(char *e, ...) {
-	va_list ap;
-	va_start(ap, e);
-	vfprintf(stderr, e, ap);
-	fputc('\n', stderr);
-	exit(2);
-}
-void oserror(void) {
-	perror(NULL);
-	exit(3);
-}
-
-
 int main(int argc, char **argv) {
 	setlocale(LC_ALL, "");
+	if (*argv[0]) {
+		char *p = strrchr(argv[0], '/');
+		program_name = p ? p + 1 : argv[0];
+	}
+	else {
+		program_name = program_name_default;
+	}
 	if (argc == 1) usage();
 	
 	parse_args(argc, argv);
@@ -260,8 +246,7 @@ int main(int argc, char **argv) {
 	O.in = argv[optind];
 	fpopus = fopen(O.in, "r");
 	if (!fpopus) {
-		perror(O.in);
-		exit(1);
+		fileerror(O.in);
 	}
 	switch (O.edit) {
 		case EDIT_APPEND:
@@ -286,6 +271,7 @@ int main(int argc, char **argv) {
 	size_t buflen = 1 << 17;
 	uint8_t *buf = ogg_sync_buffer(&oy, buflen);
 	size_t len = fread(buf, 1, buflen, fpopus);
+	if (len == (size_t)-1) oserror();
 	if (len < 4) {
 		opuserror("Oggではない");
 	}
@@ -306,7 +292,7 @@ int main(int argc, char **argv) {
 	}
 	
 	if (opst < OPUS_SOUND) {
-		opuserror("Opusヘッダが途切れている");
+		opuserror("ヘッダが途切れている");
 	}
 	
 	move_file();

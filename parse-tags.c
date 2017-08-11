@@ -8,6 +8,7 @@
 #include <iconv.h>
 #include <wchar.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #include "opuscomment.h"
 #include "global.h"
@@ -15,6 +16,7 @@
 void add_tag(char *tag) {
 	if (tagnum_edit % 32 == 0) {
 		char **tmp = realloc(tag_edit, sizeof(*tag_edit) * (33 + tagnum_edit));
+		if (!tmp) oserror();
 		tag_edit = tmp;
 	}
 	tag_edit[tagnum_edit++] = tag;
@@ -23,7 +25,7 @@ void add_tag(char *tag) {
 static void tagerror(char *e, ...) {
 	va_list ap;
 	va_start(ap, e);
-	fprintf(stderr, "タグ入力%zu項目目: ", tagnum_edit + 1);
+	fprintf(stderr, "タグ入力%zu番目: ", tagnum_edit + 1);
 	vfprintf(stderr, e, ap);
 	fputc('\n', stderr);
 	exit(1);
@@ -65,6 +67,7 @@ static void w_add(wchar_t *tag) {
 	}
 	if (!ls) {
 		ls = malloc(lsalloced);
+		if (!ls) oserror();
 	}
 	
 	if (wcslen(tag) == wcsspn(tag, L"\t\n\r ")) {
@@ -508,8 +511,7 @@ void parse_tags(void) {
 	if (O.tag_filename) {
 		FILE *tmp = freopen(O.tag_filename, "r", stdin);
 		if (!tmp) {
-			perror(O.tag_filename);
-			exit(1);
+			fileerror(O.tag_filename);
 		}
 	}
 	if (O.tag_raw) {
