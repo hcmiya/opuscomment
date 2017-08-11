@@ -354,12 +354,14 @@ static void parse_header_border(ogg_page *og) {
 		invalid_border();
 	}
 	if (O.gain_fix && O.edit == EDIT_NONE) {
+		// 出力ゲイン編集のみの場合
 		if (O.out) {
+			// 出力指定が別にあれば残りをコピー
 			seeked_len -= og->header_len + og->body_len;
 			put_left();
-			/* NOTREACHED */
 		}
 		else {
+			// 上書きするなら最初のページのみを直接書き換えようとする
 			size_t headpagelen = ftell(fpout);
 			rewind(fpout);
 			uint8_t *b = malloc(headpagelen);
@@ -382,6 +384,7 @@ static void parse_header_border(ogg_page *og) {
 			}
 			exit(0);
 		}
+		/* NOTREACHED */
 	}
 	opst = OPUS_COMMENT;
 }

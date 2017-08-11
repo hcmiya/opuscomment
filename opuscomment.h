@@ -1,4 +1,5 @@
 #include <ogg/ogg.h>
+#include <wchar.h>
 
 void parse_tags(void);
 void validate_tag(wchar_t*);
