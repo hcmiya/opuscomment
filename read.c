@@ -59,7 +59,7 @@ void move_file(void) {
 		if (strcmp(O.out, "-") != 0) {
 			FILE *tmp = freopen(O.out, "w", stdout);
 			if (!tmp) {
-				fileerror();
+				oserror();
 			}
 		}
 		size_t buflen = 1 << 18;
@@ -71,7 +71,7 @@ void move_file(void) {
 		while ((readlen = fread(buf, 1, buflen, fpout))) {
 			ret = fwrite(buf, 1, readlen, stdout);
 			if (ret != readlen) {
-				fileerror();
+				oserror();
 			}
 		}
 		if (!ferror(fpout)) {
@@ -90,7 +90,7 @@ void move_file(void) {
 			}
 		}
 	}
-	fileerror();
+	oserror();
 }
 
 static void put_left(void) {
@@ -100,17 +100,17 @@ static void put_left(void) {
 	
 	clearerr(fpopus);
 	if (fseek(fpopus, seeked_len, SEEK_SET)) {
-		fileerror();
+		oserror();
 	}
 	
 	while (l = fread(buf, 1, buflen, fpopus)) {
 		size_t ret = fwrite(buf, 1, l, fpout);
 		if (ret != l) {
-			fileerror();
+			oserror();
 		}
 	}
 	if (ferror(fpopus)) {
-		fileerror();
+		oserror();
 	}
 	free(buf);
 	move_file();
@@ -121,11 +121,11 @@ static void write_page(ogg_page *og) {
 	size_t ret;
 	ret = fwrite(og->header, 1, og->header_len, fpout);
 	if (ret != og->header_len) {
-		fileerror();
+		oserror();
 	}
 	ret = fwrite(og->body, 1, og->body_len, fpout);
 	if (ret != og->body_len) {
-		fileerror();
+		oserror();
 	}
 }
 
@@ -134,11 +134,11 @@ static void append_tag(FILE *fp, char *tag) {
 	uint32_t tmp32 = oi32(len);
 	size_t ret = fwrite(&tmp32, 1, 4, fp);
 	if (ret != 4) {
-		fileerror();
+		oserror();
 	}
 	ret = fwrite(tag, 1, len, fp);
 	if (ret != len) {
-		fileerror();
+		oserror();
 	}
 }
 
@@ -237,6 +237,7 @@ static void store_tags(size_t lastpagelen) {
 		
 		seeked_len -= lastpagelen;
 		put_left();
+		/* NOTREACHED */
 	}
 	else {
 		ogg_stream_flush(&oos, &og);
@@ -245,6 +246,7 @@ static void store_tags(size_t lastpagelen) {
 		if (oos.pageno == ios.pageno) {
 			seeked_len -= lastpagelen;
 			put_left();
+			/* NOTREACHED */
 		}
 	}
 	
@@ -258,6 +260,7 @@ static void parse_page_sound(ogg_page *og) {
 	write_page(og);
 	if (ogg_page_eos(og)) {
 		put_left();
+		/* NOTREACHED */
 	}
 }
 
@@ -354,7 +357,7 @@ static void parse_header(ogg_page *og) {
 		}
 		int fd = mkstemp(outtmp);
 		if (fd == -1) {
-			fileerror();
+			oserror();
 		}
 		remove_tmp = true;
 		atexit(cleanup);
@@ -380,6 +383,7 @@ static void parse_header_border(ogg_page *og) {
 		if (O.out) {
 			seeked_len -= og->header_len + og->body_len;
 			put_left();
+			/* NOTREACHED */
 		}
 		else {
 			size_t headpagelen = ftell(fpout);
@@ -389,18 +393,18 @@ static void parse_header_border(ogg_page *og) {
 			seeked_len -= og->header_len + og->body_len + headpagelen;
 			fpopus = freopen(NULL, "r+", fpopus);
 			if (!fpopus) {
-				fileerror();
+				oserror();
 			}
 			if (fseek(fpopus, seeked_len, SEEK_SET)) {
-				fileerror();
+				oserror();
 			}
 			size_t ret = fread(b, 1, headpagelen, fpout);
 			if (ret != headpagelen) {
-				fileerror();
+				oserror();
 			}
 			ret = fwrite(b, 1, headpagelen, fpopus);
 			if (ret != headpagelen) {
-				fileerror();
+				oserror();
 			}
 			exit(0);
 		}
@@ -537,6 +541,7 @@ static void parse_page(ogg_page *og) {
 		else if (O.edit == EDIT_LIST) {
 			fclose(fpopus);
 			put_tags();
+			/* NOTREACHED */
 		}
 		else {
 			store_tags(og->header_len + og->body_len);

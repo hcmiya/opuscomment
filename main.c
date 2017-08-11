@@ -233,7 +233,7 @@ void opuserror(char *e, ...) {
 	fputc('\n', stderr);
 	exit(2);
 }
-void fileerror(void) {
+void oserror(void) {
 	perror(NULL);
 	exit(3);
 }

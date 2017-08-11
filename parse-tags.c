@@ -23,17 +23,17 @@ void add_tag(char *tag) {
 static void tagerror(char *e, ...) {
 	va_list ap;
 	va_start(ap, e);
+	fprintf(stderr, "タグ入力%zu項目目: ", tagnum_edit + 1);
 	vfprintf(stderr, e, ap);
 	fputc('\n', stderr);
 	exit(1);
 }
 
-static iconv_t cd = (iconv_t)-1;
-static wchar_t const *accept = L" !\"#$%&\'()*+,-./01234565789:;<>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}";
-static wchar_t const *upper = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-static wchar_t const *lower = L"abcdefghijklmnopqrstuvwxyz";
-
 void validate_tag(wchar_t *tag) {
+	static wchar_t const *accept = L" !\"#$%&\'()*+,-./01234565789:;<>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}";
+	static wchar_t const *upper = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	static wchar_t const *lower = L"abcdefghijklmnopqrstuvwxyz";
+
 	if (!wcschr(tag, L'=')) {
 		tagerror("フィールドの区切りが存在しない");
 	}
@@ -54,7 +54,19 @@ void validate_tag(wchar_t *tag) {
 	}
 }
 
+static iconv_t cd = (iconv_t)-1;
 static void w_add(wchar_t *tag) {
+	static char *ls = NULL;
+	static size_t lsalloced = 4096;
+	if (!tag) {
+		free(ls);
+		ls = NULL;
+		return;
+	}
+	if (!ls) {
+		ls = malloc(lsalloced);
+	}
+	
 	if (wcslen(tag) == wcsspn(tag, L"\t\n\r ")) {
 		free(tag);
 		return;
@@ -67,7 +79,11 @@ static void w_add(wchar_t *tag) {
 // 		perror(NULL);
 // 		exit(1);
 // 	}
-	char *ls = malloc(lslen + 1);
+	if (lslen + 1 > lsalloced) {
+		char *tmp = realloc(ls, lslen + 4096);
+		ls = tmp;
+		lsalloced = lslen + 4096;
+	}
 	wcstombs(ls, tag, lslen + 1);
 	
 	if (cd == (iconv_t)-1) {
@@ -89,7 +105,6 @@ static void w_add(wchar_t *tag) {
 	lsp = ls;
 	lsleft = lslen + 1;
 	rtn = iconv(cd, &lsp, &lsleft, &u8p, &u8left);
-	free(ls);
 	
 	add_tag(u8buf);
 }
@@ -119,16 +134,16 @@ static void w_main(void) {
 	size_t left = tagbuflen, readlen;
 	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
 		if (readlen != wcslen(tp)) {
-			tagerror("タグ入力にバイナリがある");
+			tagerror("バイナリファイル");
 		}
 		wchar_t c = fgetwc(stdin);
 		bool cont = false;
 		switch (c) {
 		case WEOF:
-			if (ferror(stdin)) fileerror();
+			if (ferror(stdin)) oserror();
 			break;
 		case L'\0':
-			tagerror("タグ入力にバイナリがある");
+			tagerror("バイナリファイル");
 			break;
 			
 		case L'\t':
@@ -162,7 +177,7 @@ static void w_main(void) {
 			if (left < 20) {
 				tagbuflen += 65536;
 				wchar_t *tmp = realloc(tag, tagbuflen * sizeof(*tag));
-				if (!tmp) fileerror();
+				if (!tmp) oserror();
 				tp = tmp + (tp - tag);
 				tag = tmp;
 				left += 65536;
@@ -170,12 +185,13 @@ static void w_main(void) {
 		}
 	}
 	if (ferror(stdin)) {
-		fileerror();
+		oserror();
 	}
 	if (tp != tag) {
 		w_add(tag);
 	}
 	free(tag);
+	w_add(NULL);
 }
 
 static wchar_t *w_unesc(wchar_t *str) {
@@ -222,7 +238,7 @@ static void w_main_e(void) {
 	bool cont = false;
 	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
 		if (readlen != wcslen(tp)) {
-			tagerror("タグ入力にバイナリがある");
+			tagerror("バイナリファイル");
 		}
 		
 		if (readlen && tp[readlen - 1] == L'\n') {
@@ -233,6 +249,7 @@ static void w_main_e(void) {
 				tp[-1] = L'\0';
 			}
 			w_add(w_unesc(tag));
+			tp = tag;
 		}
 		else {
 			cont = true;
@@ -244,13 +261,13 @@ static void w_main_e(void) {
 		}
 	}
 	if (ferror(stdin)) {
-		perror(NULL);
-		exit(1);
+		oserror();
 	}
 	if (cont) {
 		w_add(w_unesc(tag));
 	}
 	free(tag);
+	w_add(NULL);
 }
 
 static void invalid_utf8(void) {
@@ -469,7 +486,7 @@ static void r_main(void) {
 	
 	while ((readlen = fread(tagbuf, 1, tagbuflen, stdin)) != 0) {
 		if (memchr(tagbuf, 0, readlen) != NULL) {
-			tagerror("タグ入力にバイナリがある");
+			tagerror("バイナリファイル");
 		}
 		p1 = tagbuf;
 		while ((p2 = memchr(p1, 0x0a, readlen - (p1 - tagbuf))) != NULL) {

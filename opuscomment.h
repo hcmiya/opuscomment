@@ -7,5 +7,5 @@ void put_tags(void);
 void read_page(ogg_sync_state*);
 void mainerror(char*, ...);
 void opuserror(char*, ...);
-void fileerror(void);
+void oserror(void);
 void move_file(void);
