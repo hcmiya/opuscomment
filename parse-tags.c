@@ -294,7 +294,7 @@ static void r_add(uint8_t *tag) {
 		if (*p < 0x20 || *p > 0x7d) {
 			tagerror("フィールド名が不正");
 		}
-		if (*p == '\x3d') {
+		if (*p == 0x3d) {
 			if (p == tag) {
 				tagerror("空のフィールド名");
 			}
@@ -508,7 +508,7 @@ static void r_main(void) {
 }
 
 void parse_tags(void) {
-	if (tag_edit) {
+	if (tag_edit && !O.tag_filename) {
 		return;
 	}
 	if (O.tag_filename) {

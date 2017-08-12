@@ -41,6 +41,7 @@ static void usage(void) {
 "    -V            出力ゲインの編集_前_の値を以下の形式で標準エラー出力に出力する\n"
 "                  \"%%d\\n\", <output gain in Q7.8, integer>\n"
 "    -c file       出力モード時、タグをfileに書き出す。書き込み・追記モード時、fileからタグを読み出す\n"
+"                  複数回指定された時は最後の指定のみが有効\n"
 "    -t NAME=VALUE 引数をタグとして追加する\n"
 	, program_name);
 	exit(1);
@@ -51,14 +52,6 @@ static void parse_args(int argc, char **argv) {
 	iconv_t cd = (iconv_t)-1;
 	while ((c = getopt(argc, argv, "lwag:s:nrGpRevVc:t:")) != -1) {
 		switch (c) {
-			case 'l':
-			case 'w':
-			case 'a':
-				if (O.edit != EDIT_NONE) {
-					mainerror("タグ編集のオプションが複数指定されている");
-				}
-				break;
-				
 			case 'g':
 			case 's':
 				O.gain_fix = true;
@@ -106,9 +99,6 @@ static void parse_args(int argc, char **argv) {
 				break;
 				
 			case 'l':
-				if (tag_edit) {
-					mainerror("タグ出力時は-tを使用できない");
-				}
 				O.edit = EDIT_LIST;
 				break;
 				
@@ -141,38 +131,24 @@ static void parse_args(int argc, char **argv) {
 				break;
 				
 			case 'c':
-				if (O.tag_filename) {
-					mainerror("-cは複数回指定できない");
-				}
-				if (tag_edit) {
-					mainerror("-tと-cは同時使用できない");
-				}
 				O.tag_filename = optarg;
 				break;
 			
 			case 't':
-				if (O.edit == EDIT_LIST) {
-					mainerror("タグ出力時は-tを使用できない");
-				}
-				if (O.tag_filename) {
-					mainerror("-tと-cは同時使用できない");
-				}
 				{
-					size_t l = mbstowcs(NULL, optarg, 0);
+					char *ls = optarg;
+					size_t l = mbstowcs(NULL, ls, 0);
 					if (l == (size_t)-1) {
 						oserror();
 					}
 					wchar_t *str = malloc((l + 1) * sizeof(*str));
-					mbstowcs(str, optarg, l + 1);
+					mbstowcs(str, ls, l + 1);
 					
 					validate_tag(str);
+					free(str);
 					
-					l = wcstombs(NULL, str, 0);
-					l++;
-					char *ls, *lsbuf;
-					lsbuf = ls = malloc(l);
-					wcstombs(ls, str, l);
 					size_t u8left = l * 8;
+					l = strlen(ls) + 1;
 					char *u8, *u8buf;
 					u8buf = u8 = malloc(u8left);
 					if (cd == (iconv_t)-1) {
@@ -186,16 +162,22 @@ static void parse_args(int argc, char **argv) {
 						}
 					}
 					iconv(cd, &ls, &l, &u8, &u8left);
+					for (u8 = u8buf; *u8 != 0x3d; u8++) {
+						if (*u8 >= 0x61 && *u8 <= 0x7a) {
+							*u8 -= 32;
+						}
+					}
 					add_tag(u8buf);
-					free(str);
-					free(lsbuf);
 				}
 				
 				break;
 		}
 	}
+	if (tag_edit && O.edit == EDIT_LIST) {
+		mainerror("タグ出力時は-tを使用できない");
+	}
 	if (tag_edit && !O.edit) {
-		mainerror("タグ編集時は-w|-aの指定が必要");
+		mainerror("タグ編集時は-a|-wの指定が必要");
 	}
 	if (!O.gain_fix && !O.edit) {
 		O.edit = EDIT_LIST;
@@ -205,8 +187,8 @@ static void parse_args(int argc, char **argv) {
 			mainerror("ゲイン調整のオプションは-lと同時に使用できない");
 		}
 		else if (!O.edit) {
-			if (O.tag_filename || tag_edit) {
-				mainerror("タグ編集時は-w|-aの指定が必要");
+			if (O.tag_filename/* || tag_edit*/) {
+				mainerror("タグ編集時は-a|-wの指定が必要");
 			}
 		}
 	}
