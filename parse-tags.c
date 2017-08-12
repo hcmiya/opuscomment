@@ -96,7 +96,7 @@ static void w_add(wchar_t *tag) {
 		cd = iconv_open("UTF-8", nl_langinfo(CODESET));
 #endif
 		if (cd == (iconv_t)-1) {
-			tagerror("iconvが%s→UTF-8 の変換に対応していない", nl_langinfo(CODESET));
+			oserror_fmt("iconvが%s→UTF-8の変換に対応していない", nl_langinfo(CODESET));
 		}
 	}
 	
@@ -139,6 +139,8 @@ static void w_main(void) {
 		if (readlen != wcslen(tp)) {
 			tagerror("バイナリファイル");
 		}
+		tp += readlen;
+		left -= readlen;
 		wchar_t c = fgetwc(stdin);
 		bool cont = false;
 		switch (c) {
@@ -151,17 +153,18 @@ static void w_main(void) {
 			
 		case L'\t':
 			cont = true;
+			if (tp[-1] != L'\n') {
+				ungetwc(c, stdin);
+			}
 			break;
 			
 		default:
-			cont = tp[readlen - 1] != L'\n';
+			cont = tp[-1] != L'\n';
 			ungetwc(c, stdin);
 			break;
 		}
-		left -= readlen;
-		tp += readlen;
 		if (!cont) {
-			if (readlen && tp[-1] == L'\n') {
+			if (tp[-1] == L'\n') {
 				*(--tp) = L'\0';
 				if (tp > tag && tp[-1] == L'\r') {
 					tp[-1] = L'\0';
@@ -244,7 +247,7 @@ static void w_main_e(void) {
 			tagerror("バイナリファイル");
 		}
 		
-		if (readlen && tp[readlen - 1] == L'\n') {
+		if (tp[readlen - 1] == L'\n') {
 			cont = false;
 			tp += readlen - 1;
 			*tp = L'\0';
