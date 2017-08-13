@@ -51,3 +51,8 @@ GLOBAL char **tag_file, **tag_edit;
 GLOBAL size_t tagnum_file, tagnum_edit;
 
 GLOBAL FILE *fpopus;
+
+#ifdef NLS
+#include <nl_types.h>
+GLOBAL nl_catd catd;
+#endif

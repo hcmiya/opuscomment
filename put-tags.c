@@ -81,7 +81,7 @@ static void put_tags_w(void) {
 #endif
 	cd = iconv_open(charsetname, "UTF-8");
 	if (cd == (iconv_t)-1) {
-		oserror_fmt("iconvがUTF-8→%sの変換に対応していない", nl_langinfo(CODESET));
+		oserror_fmt(catgets(catd, 4, 2, "iconvがUTF-8→%sの変換に対応していない"), nl_langinfo(CODESET));
 	}
 	size_t buflen = 1 << 18;
 	uint8_t *buf = malloc(buflen);
@@ -147,7 +147,7 @@ static void put_tags_w(void) {
 		}
 		else {
 			iconv(cd, NULL, NULL, NULL, NULL);
-			mainerror("%d個目のタグのUTF-8シーケンスが不正", cp - tag_file + 1);
+			opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), cp - tag_file + 1);
 		}
 	}
 }

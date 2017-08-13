@@ -239,19 +239,19 @@ static void parse_page_sound(ogg_page *og) {
 }
 
 static void comment_aborted(void) {
-	opuserror("ヘッダが途切れている");
+	opuserror(catgets(catd, 3, 2, "ヘッダが途切れている"));
 }
 
 static void invalid_border(void) {
-	opuserror("ヘッダのページとパケットの境界が変");
+	opuserror(catgets(catd, 3, 3, "ヘッダのページとパケットの境界が変"));
 }
 
 static void not_an_opus(void) {
-	opuserror("Opusではない");
+	opuserror(catgets(catd, 3, 4, "Opusではない"));
 }
 
 static void invalid_stream(void) {
-	opuserror("異常なOpusストリーム");
+	opuserror(catgets(catd, 3, 5, "異常なOpusストリーム"));
 }
 
 static void cleanup(void) {
@@ -279,7 +279,7 @@ static void parse_header(ogg_page *og) {
 		not_an_opus();
 	}
 	if (op.packet[8] != 1) {
-		opuserror("未対応のバージョン");
+		opuserror(catgets(catd, 3, 6, "未対応のバージョン"));
 	}
 	switch (O.info_gain) {
 		case 1:
@@ -392,7 +392,7 @@ static void parse_header_border(ogg_page *og) {
 static void parse_comment(ogg_page *og) {
 	ogg_packet op;
 	if (ogg_page_serialno(og) != opus_sno) {
-		opuserror("複数論理ストリームを持つOggには対応していない");
+		opuserror(catgets(catd, 3, 7, "複数論理ストリームを持つOggには対応していない"));
 	}
 	ogg_stream_pagein(&ios, og);
 	if (ogg_stream_packetout(&ios, &op) != 1) return;

@@ -22,13 +22,30 @@ void add_tag(char *tag) {
 	tag_edit[tagnum_edit++] = tag;
 }
 
-static void tagerror(char *e, ...) {
-	va_list ap;
-	va_start(ap, e);
-	fprintf(stderr, "%s: タグ入力%zu番目: ", program_name, tagnum_edit + 1);
-	vfprintf(stderr, e, ap);
+static void tagerror(char *e) {
+	fprintf(stderr, catgets(catd, 1, 6, "%s: タグ入力%zu番目: "), program_name, tagnum_edit + 1);
+	fputs(e, stderr);
 	fputc('\n', stderr);
 	exit(1);
+}
+
+static void err_nosep(void) {
+	tagerror(catgets(catd, 5, 1, "フィールドの区切りが存在しない"));
+}
+static void err_name(void) {
+	tagerror(catgets(catd, 5, 2, "フィールド名が不正"));
+}
+static void err_empty(void) {
+	tagerror(catgets(catd, 5, 3, "空のフィールド名"));
+}
+static void err_bin(void) {
+	tagerror(catgets(catd, 5, 4, "バイナリファイル"));
+}
+static void err_esc(void) {
+	tagerror(catgets(catd, 5, 5, "不正なエスケープシーケンス"));
+}
+static void err_utf8(void) {
+	tagerror(catgets(catd, 5, 6, "不正なUTF-8シーケンス"));
 }
 
 void validate_tag(wchar_t *tag) {
@@ -37,14 +54,14 @@ void validate_tag(wchar_t *tag) {
 	static wchar_t const *lower = L"abcdefghijklmnopqrstuvwxyz";
 
 	if (!wcschr(tag, L'=')) {
-		tagerror("フィールドの区切りが存在しない");
+		err_nosep();
 	}
 	size_t fieldlen = wcsspn(tag, accept);
 	if (tag[fieldlen] != L'=') {
-		tagerror("フィールド名が不正");
+		err_name();
 	}
 	if (fieldlen == 0) {
-		tagerror("空のフィールド名");
+		err_empty();
 	}
 	
 	wchar_t *p;
@@ -96,7 +113,7 @@ static void w_add(wchar_t *tag) {
 		cd = iconv_open("UTF-8", nl_langinfo(CODESET));
 #endif
 		if (cd == (iconv_t)-1) {
-			oserror_fmt("iconvが%s→UTF-8の変換に対応していない", nl_langinfo(CODESET));
+			oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), nl_langinfo(CODESET));
 		}
 	}
 	
@@ -137,7 +154,7 @@ static void w_main(void) {
 	size_t left = tagbuflen, readlen;
 	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
 		if (readlen != wcslen(tp)) {
-			tagerror("バイナリファイル");
+			err_bin();
 		}
 		tp += readlen;
 		left -= readlen;
@@ -148,7 +165,7 @@ static void w_main(void) {
 			if (ferror(stdin)) oserror();
 			break;
 		case L'\0':
-			tagerror("バイナリファイル");
+			err_bin();
 			break;
 			
 		case L'\t':
@@ -224,7 +241,7 @@ static wchar_t *w_unesc(wchar_t *str) {
 					break;
 					
 				default:
-					tagerror("不正なエスケープシーケンス");
+					err_esc();
 					break;
 				}
 			}
@@ -244,7 +261,7 @@ static void w_main_e(void) {
 	bool cont = false;
 	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
 		if (readlen != wcslen(tp)) {
-			tagerror("バイナリファイル");
+			err_bin();
 		}
 		
 		if (tp[readlen - 1] == L'\n') {
@@ -276,9 +293,6 @@ static void w_main_e(void) {
 	w_add(NULL);
 }
 
-static void invalid_utf8(void) {
-	tagerror("不正なUTF-8シーケンス");
-}
 
 static void r_add(uint8_t *tag) {
 	size_t taglen = strlen(tag);
@@ -292,11 +306,11 @@ static void r_add(uint8_t *tag) {
 	uint8_t *p, *endp;
 	for (p = tag; *p != '\0'; p++) {
 		if (*p < 0x20 || *p > 0x7d) {
-			tagerror("フィールド名が不正");
+			err_name();
 		}
 		if (*p == 0x3d) {
 			if (p == tag) {
-				tagerror("空のフィールド名");
+				err_empty();
 			}
 			break;
 		}
@@ -305,7 +319,7 @@ static void r_add(uint8_t *tag) {
 		}
 	}
 	if (*p == '\0') {
-		tagerror("フィールドの区切りが存在しない");
+		err_nosep();
 	}
 	endp = tag + taglen;
 	while (p < endp) {
@@ -316,7 +330,7 @@ static void r_add(uint8_t *tag) {
 			continue;
 		}
 		else if (*p < 0xc2) {
-			invalid_utf8();
+			err_utf8();
 		}
 		else if (*p < 0xe0) {
 			left = 1;
@@ -328,17 +342,17 @@ static void r_add(uint8_t *tag) {
 			left = 3;
 		}
 		else {
-			invalid_utf8();
+			err_utf8();
 		}
 		
 		if (endp - p < left) {
-			invalid_utf8();
+			err_utf8();
 		}
 		
 		u32 = *p & (0x3f >> left);
 		for (size_t i = 1; i <= left; i++) {
 			if (p[i] < 0x80 || p[i] > 0xbf) {
-				invalid_utf8();
+				err_utf8();
 			}
 			u32 <<= 6;
 			u32 |= p[i] & 0x3f;
@@ -346,17 +360,17 @@ static void r_add(uint8_t *tag) {
 		switch (left) {
 			case 1:
 				if (u32 < 0x80 || u32 > 0x7ff) {
-					invalid_utf8();
+					err_utf8();
 				}
 				break;
 			case 2:
 				if (u32 < 0x800 || u32 > 0xffff) {
-					invalid_utf8();
+					err_utf8();
 				}
 				break;
 			case 3:
 				if (u32 < 0x10000 || u32 > 0x10ffff) {
-					invalid_utf8();
+					err_utf8();
 				}
 				break;
 		}
@@ -465,7 +479,7 @@ static void r_line_e(uint8_t *line, size_t n) {
 						c = 0x0d;
 						break;
 					default:
-						tagerror("不正なエスケープシーケンス");
+						err_esc();
 						break;
 				}
 				*p = c;
@@ -492,7 +506,7 @@ static void r_main(void) {
 	
 	while ((readlen = fread(tagbuf, 1, tagbuflen, stdin)) != 0) {
 		if (memchr(tagbuf, 0, readlen) != NULL) {
-			tagerror("バイナリファイル");
+			err_bin();
 		}
 		p1 = tagbuf;
 		while ((p2 = memchr(p1, 0x0a, readlen - (p1 - tagbuf))) != NULL) {

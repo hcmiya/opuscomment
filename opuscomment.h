@@ -12,3 +12,9 @@ void oserror(void);
 void oserror_fmt(char const*, ...);
 void fileerror(char const*);
 void move_file(void);
+
+#ifdef NLS
+#include <nl_types.h>
+#else
+#define catgets(catd, set_id, msg_id, s) (s)
+#endif

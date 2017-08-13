@@ -17,12 +17,13 @@
 #include "global.h"
 
 static void usage(void) {
-	fprintf(stderr,
+	fprintf(stderr, catgets(catd, 1, 1,
 "使い方:\n"
 "    %1$s [-l] [-epRvV] opusfile\n"
 "    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRvV] opusfile [output]\n"
-"\n", program_name);
-	fputs(
+	), program_name);
+	fputc('\n', stderr);
+	fputs(catgets(catd, 1, 2,
 "オプション:\n"
 "    -l            タグ出力モード\n"
 "    -a            タグ追記モード\n"
@@ -41,7 +42,7 @@ static void usage(void) {
 "                  \"%d\\n\", <output gain in Q7.8, integer>\n"
 "    -c tagfile    出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す\n"
 "    -t NAME=VALUE 引数をタグとして追加する\n"
-	, stderr);
+	), stderr);
 	exit(1);
 }
 
@@ -58,19 +59,19 @@ static void parse_args(int argc, char **argv) {
 				char *endp;
 				f = strtod(optarg, &endp);
 				if (optarg == endp) {
-					mainerror("ゲイン値のパース失敗");
+					mainerror(catgets(catd, 2, 3, "ゲイン値のパース失敗"));
 				}
 				if (!isfinite(f)) {
-					mainerror("ゲイン値の範囲外");
+					mainerror(catgets(catd, 2, 4, "ゲイン値の範囲外"));
 				}
 				if (c == 's') {
 					if (f <= 0) {
-						mainerror("ゲイン値の範囲外");
+						mainerror(catgets(catd, 2, 4, "ゲイン値の範囲外"));
 					}
 					f = 20 * log10(f);
 				}
 				if (f > 128 || f < -128) {
-					mainerror("ゲイン値の範囲外");
+					mainerror(catgets(catd, 2, 4, "ゲイン値の範囲外"));
 				}
 				O.gain_val = f;
 			}
@@ -156,7 +157,7 @@ static void parse_args(int argc, char **argv) {
 						cd = iconv_open("UTF-8", nl_langinfo(CODESET));
 #endif
 						if (cd == (iconv_t)-1) {
-							oserror_fmt("iconvが%s→UTF-8の変換に対応していない", nl_langinfo(CODESET));
+							oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), nl_langinfo(CODESET));
 						}
 					}
 					iconv(cd, &ls, &l, &u8, &u8left);
@@ -172,21 +173,21 @@ static void parse_args(int argc, char **argv) {
 		}
 	}
 	if (tag_edit && O.edit == EDIT_LIST) {
-		mainerror("タグ出力時は-tを使用できない");
+		mainerror(catgets(catd, 2, 5, "タグ出力時は-tを使用できない"));
 	}
 	if (tag_edit && !O.edit) {
-		mainerror("タグ編集時は-a|-wの指定が必要");
+		mainerror(catgets(catd, 2, 6, "タグ編集時は-a|-wの指定が必要"));
 	}
 	if (!O.gain_fix && !O.edit) {
 		O.edit = EDIT_LIST;
 	}
 	else if (O.gain_fix) {
 		if (O.edit == EDIT_LIST) {
-			mainerror("ゲイン調整のオプションは-lと同時に使用できない");
+			mainerror(catgets(catd, 2, 7, "ゲイン調整のオプションは-lと同時に使用できない"));
 		}
 		else if (!O.edit) {
 			if (O.tag_filename/* || tag_edit*/) {
-				mainerror("タグ編集時は-a|-wの指定が必要");
+				mainerror(catgets(catd, 2, 6, "タグ編集時は-a|-wの指定が必要"));
 			}
 		}
 	}
@@ -200,6 +201,9 @@ static void parse_args(int argc, char **argv) {
 
 int main(int argc, char **argv) {
 	setlocale(LC_ALL, "");
+#ifdef NLS
+	catd = catopen("opuscomment", NL_CAT_LOCALE);
+#endif
 	if (*argv[0]) {
 		char *p = strrchr(argv[0], '/');
 		program_name = p ? p + 1 : argv[0];
@@ -211,14 +215,14 @@ int main(int argc, char **argv) {
 	
 	parse_args(argc, argv);
 	if (!argv[optind]) {
-		mainerror("ファイル指定がない");
+		mainerror(catgets(catd, 2, 8, "ファイル指定がない"));
 	}
 	if (argv[optind + 1]) {
 		if (O.edit == EDIT_LIST) {
-			mainerror("ファイル指定が多い");
+			mainerror(catgets(catd, 2, 9, "ファイル指定が多い"));
 		}
 		if (argv[optind + 2]) {
-			mainerror("ファイル指定が多い");
+			mainerror(catgets(catd, 2, 9, "ファイル指定が多い"));
 		}
 		O.out = argv[optind + 1];
 	}
