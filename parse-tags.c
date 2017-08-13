@@ -25,7 +25,7 @@ void add_tag(char *tag) {
 static void tagerror(char *e, ...) {
 	va_list ap;
 	va_start(ap, e);
-	fprintf(stderr, "タグ入力%zu番目: ", tagnum_edit + 1);
+	fprintf(stderr, "%s: タグ入力%zu番目: ", program_name, tagnum_edit + 1);
 	vfprintf(stderr, e, ap);
 	fputc('\n', stderr);
 	exit(1);

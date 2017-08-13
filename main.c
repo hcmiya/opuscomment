@@ -20,30 +20,28 @@ static void usage(void) {
 	fprintf(stderr,
 "使い方:\n"
 "    %1$s [-l] [-epRvV] opusfile\n"
-"    %1$s -a|-w [-g gain|-s gain|-n] [-c file|-t NAME=VALUE ...] [-eGprRvV] opusfile [output]\n"
-"\n"
+"    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRvV] opusfile [output]\n"
+"\n", program_name);
+	fputs(
 "オプション:\n"
 "    -l            タグ出力モード\n"
 "    -a            タグ追記モード\n"
 "    -w            タグ書き込みモード\n"
-"    -R            タグ入出力にUTF-8を使う。このオプションがない場合はロケールによる文字符号化との変換が行われる\n"
-"                  (vorbiscomment(1)互換)\n"
+"    -R            タグ入出力の文字符号化方式をUTF-8として扱う\n"
 "    -e            バックスラッシュ、改行、復帰、ヌルにそれぞれ\\\\, \\n, \\r, \\0のエスケープを使用する\n"
-"                  (vorbiscomment(1)互換)\n"
 "    -g gain       出力ゲインをdBで指定する\n"
-"    -s gain       出力ゲインをPCMサンプルの倍率で指定する。1で等倍。0.5で半分(コマンド内でdBに変換)\n"
+"    -s gain       出力ゲインをPCMサンプルの倍率で指定する。1で等倍。0.5で半分\n"
 "    -n            出力ゲインを0にする\n"
 "    -r            出力ゲインの指定を内部の設定に対する相対値とする\n"
 "    -G            出力ゲインが内部形式にした時に0になる場合は[-+]1/256 dBを設定する\n"
 "    -p            METADATA_BLOCK_PICTUREの出力または削除をしない\n"
 "    -v            出力ゲインの編集_前_の値を以下の形式で標準エラー出力に出力する\n"
-"                  \"%%.8g\\n\", <output gain in dB, floating point>\n"
+"                  \"%.8g\\n\", <output gain in dB, floating point>\n"
 "    -V            出力ゲインの編集_前_の値を以下の形式で標準エラー出力に出力する\n"
-"                  \"%%d\\n\", <output gain in Q7.8, integer>\n"
-"    -c file       出力モード時、タグをfileに書き出す。書き込み・追記モード時、fileからタグを読み出す\n"
-"                  複数回指定された時は最後の指定のみが有効\n"
+"                  \"%d\\n\", <output gain in Q7.8, integer>\n"
+"    -c tagfile    出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す\n"
 "    -t NAME=VALUE 引数をタグとして追加する\n"
-	, program_name);
+	, stderr);
 	exit(1);
 }
 

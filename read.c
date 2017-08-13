@@ -33,7 +33,7 @@ void move_file(void) {
 		if (strcmp(O.out, "-") != 0) {
 			FILE *tmp = freopen(O.out, "w", stdout);
 			if (!tmp) {
-				oserror();
+				fileerror(O.out);
 			}
 		}
 		size_t buflen = 1 << 18;
@@ -45,7 +45,7 @@ void move_file(void) {
 		while ((readlen = fread(buf, 1, buflen, fpout))) {
 			ret = fwrite(buf, 1, readlen, stdout);
 			if (ret != readlen) {
-				oserror();
+				fileerror(O.out);
 			}
 		}
 		if (!ferror(fpout)) {
@@ -266,7 +266,7 @@ static void parse_header(ogg_page *og) {
 	ogg_stream_init(&ios, opus_sno);
 	ogg_stream_pagein(&ios, og);
 	if (ogg_stream_packetout(&ios, &op) != 1) {
-		opuserror("Opusではないっぽい");
+		invalid_stream();
 	}
 	
 	if (!op.b_o_s || op.e_o_s) {
