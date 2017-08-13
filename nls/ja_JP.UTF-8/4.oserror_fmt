@@ -1,0 +1,5 @@
+$set 4
+
+$ %s = charset
+1 iconvが%s→UTF-8の変換に対応していない
+2 iconvがUTF-8→%sの変換に対応していない
