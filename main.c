@@ -19,8 +19,8 @@
 static void usage(void) {
 	fprintf(stderr, catgets(catd, 1, 1,
 "使い方:\n"
-"    %1$s [-l] [-epRvV] opusfile\n"
-"    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRvV] opusfile [output]\n"
+"    %1$s [-l] [-epRUvV] opusfile\n"
+"    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n"
 	), program_name);
 	fputc('\n', stderr);
 	fputs(catgets(catd, 1, 2,
@@ -36,6 +36,7 @@ static void usage(void) {
 "    -r            出力ゲインの指定を内部の設定に対する相対値とする\n"
 "    -G            出力ゲインが内部形式にした時に0になる場合は[-+]1/256 dBを設定する\n"
 "    -p            METADATA_BLOCK_PICTUREの出力または削除をしない\n"
+"    -U            Opusファイル内のタグのフィールド名を大文字に変換する\n"
 "    -v            出力ゲインの編集_前_の値を以下の形式で標準エラー出力に出力する\n"
 "                  \"%.8g\\n\", <output gain in dB, floating point>\n"
 "    -V            出力ゲインの編集_前_の値を以下の形式で標準エラー出力に出力する\n"
@@ -49,7 +50,7 @@ static void usage(void) {
 static void parse_args(int argc, char **argv) {
 	int c;
 	iconv_t cd = (iconv_t)-1;
-	while ((c = getopt(argc, argv, "lwag:s:nrGpRevVc:t:")) != -1) {
+	while ((c = getopt(argc, argv, "lwag:s:nrGpReUvVc:t:")) != -1) {
 		switch (c) {
 			case 'g':
 			case 's':
@@ -119,6 +120,10 @@ static void parse_args(int argc, char **argv) {
 				
 			case 'e':
 				O.tag_escape = true;
+				break;
+				
+			case 'U':
+				O.tag_toupper = true;
 				break;
 				
 			case 'v':

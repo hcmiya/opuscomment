@@ -12,10 +12,20 @@
 #include "opuscomment.h"
 #include "global.h"
 
+static bool to_file;
+static void puterror(void) {
+	if (to_file) {
+		fileerror(O.tag_filename);
+	}
+	else {
+		oserror();
+	}
+}
+
 static void put_bin(char const *buf, size_t len) {
 	size_t ret = fwrite(buf, 1, len, stdout);
 	if (ret != len) {
-		oserror();
+		puterror();
 	}
 }
 
@@ -142,7 +152,7 @@ static void put_tags_w(void) {
 		iconv(cd, &u8, &tagleft, &n2, &bufleft);
 		if (tagleft == 0) {
 			if (puts(ls) == EOF) {
-				oserror();
+				puterror();
 			}
 		}
 		else {
@@ -153,7 +163,8 @@ static void put_tags_w(void) {
 }
 
 void put_tags(void) {
-	if (O.tag_filename) {
+	bool to_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
+	if (to_file) {
 		FILE *tmp = freopen(O.tag_filename, "w", stdout);
 		if (!tmp) {
 			fileerror(O.tag_filename);
@@ -169,6 +180,9 @@ void put_tags(void) {
 	}
 	else {
 		put_tags_w();
+	}
+	if (fclose(stdout) == EOF) {
+		puterror();
 	}
 	exit(0);
 }

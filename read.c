@@ -18,39 +18,21 @@
 static size_t seeked_len;
 static ogg_stream_state ios, oos;
 static char *outtmp;
-static bool remove_tmp;
+static bool remove_tmp, toupper_applied;
 static uint32_t opus_pidx, opus_sno;
 static FILE *fpout;
 
 static char const
 	*OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
 	*OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73",
-	*mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d"; // "METADATA_BLOCK_PICTURE="
+	*mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d"; // "METADATA_BLOCK_PICTURE=" in ASCII
 static size_t const mbplen = 23;
 
 void move_file(void) {
+	if (fclose(fpout) == EOF) {
+		fileerror(O.out ? O.out : outtmp);
+	}
 	if (O.out) {
-		if (strcmp(O.out, "-") != 0) {
-			FILE *tmp = freopen(O.out, "w", stdout);
-			if (!tmp) {
-				fileerror(O.out);
-			}
-		}
-		size_t buflen = 1 << 18;
-		size_t readlen, ret;
-		uint8_t *buf = malloc(buflen);
-		rewind(fpout);
-		remove(outtmp); // sigpipe対策で先に一時ファイルをunlinkする
-		remove_tmp = false;
-		while ((readlen = fread(buf, 1, buflen, fpout))) {
-			ret = fwrite(buf, 1, readlen, stdout);
-			if (ret != readlen) {
-				fileerror(O.out);
-			}
-		}
-		if (!ferror(fpout)) {
-			return;
-		}
 	}
 	else {
 		int fd = fileno(fpopus);
@@ -63,8 +45,8 @@ void move_file(void) {
 				return;
 			}
 		}
+		oserror();
 	}
-	oserror();
 }
 
 static void put_left(void) {
@@ -317,25 +299,38 @@ static void parse_header(ogg_page *og) {
 	ogg_page out;
 	if (O.edit != EDIT_LIST) {
 		ogg_stream_init(&oos, opus_sno);
-		char const *tmpl = "opuscomment.XXXXXX";
-		char *outdir = O.out ? O.out : O.in;
-		outtmp = calloc(strlen(outdir) + strlen(tmpl) + 1, 1);
-		char *p = strrchr(outdir, '/');
-		if (p) {
-			p++;
-			strncpy(outtmp, outdir, p - outdir);
-			strcpy(outtmp + (p - outdir), tmpl);
+		if (O.out) {
+			if (strcmp(O.out, "-") == 0) {
+				fpout = stdout;
+			}
+			else {
+				fpout = fopen(O.out, "w");
+				if (!fpout) {
+					fileerror(O.out);
+				}
+			}
+			remove_tmp = false;
 		}
 		else {
-			strcpy(outtmp, tmpl);
+			char const *tmpl = "opuscomment.XXXXXX";
+			outtmp = calloc(strlen(O.in) + strlen(tmpl) + 1, 1);
+			char *p = strrchr(O.in, '/');
+			if (p) {
+				p++;
+				strncpy(outtmp, O.in, p - O.in);
+				strcpy(outtmp + (p - O.in), tmpl);
+			}
+			else {
+				strcpy(outtmp, tmpl);
+			}
+			int fd = mkstemp(outtmp);
+			if (fd == -1) {
+				oserror();
+			}
+			remove_tmp = true;
+			atexit(cleanup);
+			fpout = fdopen(fd, "w+");
 		}
-		int fd = mkstemp(outtmp);
-		if (fd == -1) {
-			oserror();
-		}
-		remove_tmp = true;
-		atexit(cleanup);
-		fpout = fdopen(fd, "w+");
 		ogg_stream_packetin(&oos, &op);
 		ogg_stream_flush(&oos, &out);
 		write_page(&out);
@@ -475,6 +470,17 @@ static void parse_comment(ogg_page *og) {
 				*cp = malloc(len + 1);
 				memcpy(*cp, ptr, len);
 				(*cp)[len] = '\0';
+				if (O.tag_toupper) {
+					char *eq = memchr(*cp, 0x3d, len);
+					if (eq) {
+						for (char *p = *cp; p < eq; p++) {
+							if (*p >= 0x61 && *p <= 0x7a) {
+								*p -= 32;
+								toupper_applied = true;
+							}
+						}
+					}
+				}
 				cp++;
 			}
 			ptr += len;
@@ -511,8 +517,9 @@ static void parse_page(ogg_page *og) {
 		if (ogg_page_continued(og)) {
 			invalid_border();
 		}
-		if (O.edit == EDIT_APPEND && !tagnum_edit && !O.out && !O.gain_fix) {
-			// タグ追記モードでタグ入力が無く、出力が上書きでゲイン調整も無い時、すぐ終わる
+		if (O.edit == EDIT_APPEND && !tagnum_edit && !O.out && !O.gain_fix && !toupper_applied) {
+			// タグ追記モードで出力が上書き且つ
+			// タグ入力、ゲイン調整、大文字化適用が全て無い場合はすぐ終了する
 			exit(0);
 		}
 		else if (O.edit == EDIT_LIST) {

@@ -13,6 +13,16 @@
 #include "opuscomment.h"
 #include "global.h"
 
+static bool from_file;
+static void readerror(void) {
+	if (from_file) {
+		fileerror(O.tag_filename);
+	}
+	else {
+		oserror();
+	}
+}
+
 void add_tag(char *tag) {
 	if (tagnum_edit % 32 == 0) {
 		char **tmp = realloc(tag_edit, sizeof(*tag_edit) * (33 + tagnum_edit));
@@ -207,7 +217,7 @@ static void w_main(void) {
 		}
 	}
 	if (ferror(stdin)) {
-		oserror();
+		readerror();
 	}
 	if (tp != tag) {
 		w_add(tag);
@@ -283,7 +293,7 @@ static void w_main_e(void) {
 		}
 	}
 	if (ferror(stdin)) {
-		oserror();
+		readerror();
 	}
 	if (cont) {
 		w_add(w_unesc(tag));
@@ -516,6 +526,9 @@ static void r_main(void) {
 		size_t left = readlen - (p1 - tagbuf);
 		if (left) line(p1, left);
 	}
+	if (ferror(stdin)) {
+		readerror();
+	}
 	line(NULL, 0);
 	free(tagbuf);
 }
@@ -524,7 +537,8 @@ void parse_tags(void) {
 	if (tag_edit && !O.tag_filename) {
 		return;
 	}
-	if (O.tag_filename) {
+	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
+	if (from_file) {
 		FILE *tmp = freopen(O.tag_filename, "r", stdin);
 		if (!tmp) {
 			fileerror(O.tag_filename);
@@ -544,5 +558,8 @@ void parse_tags(void) {
 		if (cd != (iconv_t)-1) {
 			iconv_close(cd);
 		}
+	}
+	if (fclose(stdin) == EOF) {
+		readerror();
 	}
 }

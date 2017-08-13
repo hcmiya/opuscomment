@@ -29,6 +29,7 @@ GLOBAL struct {
 	bool tag_ignore_picture;
 	bool tag_escape;
 	bool tag_raw;
+	bool tag_toupper;
 	char *tag_filename;
 	
 	char *in, *out;
