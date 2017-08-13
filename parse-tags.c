@@ -88,7 +88,6 @@ static void w_add(wchar_t *tag) {
 	}
 	
 	if (wcslen(tag) == wcsspn(tag, L"\t\n\r ")) {
-		free(tag);
 		return;
 	}
 	validate_tag(tag);
