@@ -93,16 +93,16 @@ static void put_tags_w(void) {
 	if (cd == (iconv_t)-1) {
 		oserror_fmt(catgets(catd, 4, 2, "iconvがUTF-8→%sの変換に対応していない"), nl_langinfo(CODESET));
 	}
-	size_t buflen = 1 << 18;
+	size_t buflen = 1 << 16;
 	uint8_t *buf = malloc(buflen);
 	
 	for (cp = tag_file; *cp; cp++) {
 		char *n1, *n2, *u8, *ls;
-		size_t taglen = strlen(*cp), bufleft, tagleft;
-		if (taglen * 16 > buflen) {
-			uint8_t *tmp = realloc(buf, taglen * 16);
+		size_t taglen = strlen(*cp) + 1, bufleft, tagleft;
+		if (taglen * 3 > buflen) {
+			uint8_t *tmp = realloc(buf, taglen * 3);
 			buf = tmp;
-			buflen = taglen * 16;
+			buflen = taglen * 3;
 		}
 		if (O.tag_escape) {
 			for (n1 = *cp, n2 = buf; *n1; n1++) {
@@ -127,10 +127,6 @@ static void put_tags_w(void) {
 				}
 			}
 			*n2++ = '\0';
-			u8 = buf;
-			tagleft = strlen(u8) + 1;
-			ls = n2;
-			bufleft = buflen - tagleft;
 		}
 		else {
 			n1 = *cp;
@@ -143,21 +139,46 @@ static void put_tags_w(void) {
 				*u8++ = 0x09;
 			}
 			strcpy(u8, n1);
-			u8 = buf;
-			tagleft = strlen(u8) + 1;
-			ls = n2 = u8 + tagleft;
-			bufleft = buflen - tagleft;
 		}
-		
-		iconv(cd, &u8, &tagleft, &n2, &bufleft);
-		if (tagleft == 0) {
-			if (puts(ls) == EOF) {
+		u8 = buf;
+		tagleft = strlen(u8);
+		buf[tagleft++] = 0x0a;
+		buf[tagleft++] = 0x00;
+		ls = buf + tagleft;
+		for (;;) {
+			n2 = ls;
+			bufleft = buflen - (ls - (char*)buf);
+			size_t iconvret = iconv(cd, &u8, &tagleft, &n2, &bufleft);
+			int c;
+			if (bufleft) {
+				*n2 = '\0';
+			}
+			else {
+				c = n2[-1];
+				n2[-1] = '\0';
+			}
+			if (fputs(ls, stdout) == EOF) {
 				puterror();
 			}
-		}
-		else {
-			iconv(cd, NULL, NULL, NULL, NULL);
-			opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), cp - tag_file + 1);
+			if (!bufleft && c) {
+				if (putchar(c) == EOF) {
+					puterror();
+				}
+			}
+			if (iconvret == (size_t)-1) {
+				switch (errno) {
+				case EILSEQ:
+				case EINVAL:
+					opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), cp - tag_file + 1);
+					break;
+				case E2BIG:
+					break;
+				}
+			}
+			else {
+				errno = 0;
+				break;
+			}
 		}
 	}
 }

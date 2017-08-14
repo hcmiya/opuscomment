@@ -9,7 +9,7 @@ Ogg Opusのタグとゲインを編集するユーティリティ
 ## コンパイル・動作要件
 
 * C99
-* POSIX.1-2008に対応したAPI (`rename(2)`)
+* POSIX.1-2008に対応したAPI (`rename(2)`, `iconv(3)`)
 * libogg
 
 尚、libopus、libopusfileは必要ありません。configureスクリプトを使用していないので、Debianならば`libogg-dev`などといった対応するヘッダファイルがインストールされていることをコンパイル前にご確認下さい。
@@ -82,6 +82,21 @@ opuscommentはX/Open仕様に基く地域化を実装しています。`nls/`に
 <dd>引数をタグとして追加する</dd>
 </dl>
 
+### 環境変数
+
+<dl>
+<dt>LANG</dt>
+<dd>vorbis commentのUTF-8とロケールの文字符号化方式との変換に影響を受ける</dd>
+<dt>LC_NUMERIC</dt>
+<dd>出力ゲイン編集に使う浮動小数点数の書式に影響を受ける</dd>
+<dt>LC_MESSAGES, NLSPATH</dt>
+<dd>メッセージカタログの処理に関わる</dd>
+</dl>
+
+### 返り値
+
+Opusファイルの編集に成功した場合は`0`、オプションや編集タグ入力の文法に誤りがあった場合は`1`、Opusファイルのフォーマットに誤りがあった場合は`2`、ファイル入出力などシステム起因のエラーが発生した場合は`3`を返す。
+
 ### 文法
 
 opuscommentで扱うタグ入出力の文法について、個々のレコードはvorbis commentの内部形式と同じで`NAME=VALUE`のようにキー名と値を`=`で繋いだだけの簡単なものである。但し、`VALUE`は改行を含む可能性があり、opuscommentは2つの方法で改行をエスケープする。
@@ -109,7 +124,7 @@ opuscommentではこのいずれかの改行のエスケープが**常に**適�
 
 となる。
 
-### 注意
+### 例
 
 #### opuscomment方式のエスケープを編集する場合
 
@@ -146,6 +161,8 @@ opuscommentではこのいずれかの改行のエスケープが**常に**適�
     # 一時ファイルを作らなくてもsome.opusからDISCTOTALとDISCNUMBERタグを消す編集が意図通り適用される。
     opuscomment -e some.opus |grep -vE '^DISC(TOTAL|NUMBER)=' |opuscomment -we some.opus
 
+### 注意
+
 #### NULの扱い
 
 opuscommentは文字「NUL」が入力された場合は一切エラーとする。また`vorbiscomment(1)`との互換として`\0`のエスケープを解釈するが、その後ろに続く文字列が切り捨てられたような動作をする。これはvorbis commentがUTF-8テキストを格納するものでバイナリを受け入れるべきではないという設計に基いており、初版作者はその設計思想を受け継いでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。この動作は初版作者によって修正されない。
@@ -153,15 +170,6 @@ opuscommentは文字「NUL」が入力された場合は一切エラーとする
 #### 出力ゲインとR128_TRACK_GAIN、R128_ALBUM_GAINの編集
 
 Opus仕様を定めた[RFC 7845](https://tools.ietf.org/html/rfc7845)によれば、出力ゲインを編集した場合、併せて`R128_TRACK_GAIN`、`R128_ALBUM_GAIN`の更新ないし削除をしなければならない(MUST)、とある。しかし、opuscommentは今の所その規定に基く処理は未実装である。opuscommentの利用者はこの規定を念頭に置いてゲイン調整の編集をスクリプトに組み込む必要がある。
-
-### 環境変数
-
-<dl>
-<dt>LANG</dt>
-<dd>vorbis commentのUTF-8とロケールの文字符号化方式との変換に影響を受ける</dd>
-<dt>LC_MESSAGES, NLSPATH</dt>
-<dd>メッセージカタログの処理に関わる</dd>
-</dl>
 
 ### 関連項目
 
