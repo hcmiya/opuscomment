@@ -177,4 +177,10 @@ Opus仕様を定めた[RFC 7845](https://tools.ietf.org/html/rfc7845)によれ�
 
 ## ライセンス
 
+### opuscomment
+
 MITライセンス
+
+### libogg
+
+LICENSE.liboggを参照
