@@ -15,12 +15,12 @@
 
 #include "endianness.h"
 
-static size_t seeked_len;
+static size_t seeked_len, preserved_padding_len;
 static ogg_stream_state ios, oos;
 static char *outtmp;
 static bool remove_tmp, toupper_applied;
 static uint32_t opus_pidx, opus_sno;
-static FILE *fpout;
+static FILE *fpout, *preserved_padding;
 
 static char const
 	*OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
@@ -123,14 +123,20 @@ static void store_tags(size_t lastpagelen) {
 	}
 	free(tag_edit);
 	
-	size_t tplen = ftell(fptag);
+	size_t commentlen = ftell(fptag);
+	size_t tplen = commentlen + preserved_padding_len;
 	size_t tpnum = tplen / (255*255) + 1;
 	
 	char *tagbuf = malloc(tplen);
 	
 	rewind(fptag);
-	fread(tagbuf, 1, tplen, fptag);
+	fread(tagbuf, 1, commentlen, fptag);
 	fclose(fptag);
+	if (preserved_padding) {
+		rewind(preserved_padding);
+		fread(tagbuf + commentlen, 1, preserved_padding_len, preserved_padding);
+		fclose(preserved_padding);
+	}
 	
 	ogg_packet op;
 	op.packet = tagbuf;
@@ -146,7 +152,7 @@ static void store_tags(size_t lastpagelen) {
 		write_page(&og);
 	}
 	
-	if (oos.pageno + 1 < ios.pageno) {
+	if (!preserved_padding && oos.pageno + 1 < ios.pageno) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 		// 無を含むページを生成して開始ページ番号を合わせる
 		ogg_stream_flush(&oos, &og);
@@ -413,13 +419,7 @@ static void parse_comment(ogg_page *og) {
 	ptr += len;
 	left -= len;
 	
-	if (O.edit == EDIT_WRITE && !O.tag_ignore_picture) {
-		//上書きモードでMETADATA_BLOCK_PICTUREを残さない場合はタグを読まなくて良い
-		tag_file = malloc(sizeof(*tag_file));
-		tagnum_file = 0;
-		*tag_file = NULL;
-	}
-	else {
+	{
 		if (left < 4) comment_aborted();
 		len = oi32(*(uint32_t*)ptr);
 		ptr += 4;
@@ -492,6 +492,12 @@ static void parse_comment(ogg_page *og) {
 			tagnum_file = mbpnum;
 		}
 		*cp = NULL;
+		
+		if (left && (*ptr & 1)) {
+			preserved_padding = tmpfile();
+			fwrite(ptr, 1, left, preserved_padding);
+			left = preserved_padding_len;
+		}
 	}
 	
 	if (ogg_stream_packetpeek(&ios, NULL) == 1) {
