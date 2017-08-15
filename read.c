@@ -157,6 +157,7 @@ static void store_tags(size_t lastpagelen) {
 		if (segnum == 1) {
 			og.header[27] = 255;
 			memcpy(lastseg, og.body, lastseglen);
+			lastseg[lastseglen] = 0;
 			og.body = lastseg;
 			og.body_len = 255;
 			ogg_page_checksum_set(&og);
@@ -171,6 +172,7 @@ static void store_tags(size_t lastpagelen) {
 			ogg_page_checksum_set(&og);
 			write_page(&og);
 			memcpy(og.body, &og.body[og.body_len], lastseglen);
+			og.body[lastseglen] = 0;
 		}
 		
 		og.header[5] = 1;
