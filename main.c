@@ -206,9 +206,6 @@ static void parse_args(int argc, char **argv) {
 
 int main(int argc, char **argv) {
 	setlocale(LC_ALL, "");
-#ifdef NLS
-	catd = catopen("opuscomment", NL_CAT_LOCALE);
-#endif
 	if (*argv[0]) {
 		char *p = strrchr(argv[0], '/');
 		program_name = p ? p + 1 : argv[0];
@@ -216,6 +213,13 @@ int main(int argc, char **argv) {
 	else {
 		program_name = program_name_default;
 	}
+#ifdef NLS
+	{
+		size_t l = strlen(program_name) + 5;
+		char catname[l];
+		catd = catopen(strcat(strcpy(catname, program_name), ".cat"), NL_CAT_LOCALE);
+	}
+#endif
 	if (argc == 1) usage();
 	
 	parse_args(argc, argv);
