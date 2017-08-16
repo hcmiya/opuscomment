@@ -1,6 +1,8 @@
-SRC=main.c put-tags.c parse-tags.c read.c error.c
-HEADER=endianness.h global.h
-CFLAGS+=-D_POSIX_C_SOURCE=200809L -DNLS
+SRC=main.c put-tags.c parse-tags.c read.c error.c ocutil.c
+HEADER=endianness.h global.h ocutil.h
+CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
+#CFLAGS=-D_XOPEN_SOURCE=600 -DNLS
+LDFLAGS=
 LIBS=-logg -lm
 CC=c99
 

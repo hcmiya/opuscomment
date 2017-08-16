@@ -18,3 +18,5 @@ void move_file(void);
 #else
 #define catgets(catd, set_id, msg_id, s) (s)
 #endif
+
+#include "ocutil.h"

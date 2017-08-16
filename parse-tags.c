@@ -138,21 +138,6 @@ static void w_add(wchar_t *tag) {
 	add_tag(u8buf);
 }
 
-static size_t fgetws2(wchar_t *buf, size_t len, FILE *fp) {
-	if (len <= 1) {
-		wchar_t c = fgetwc(fp);
-		if (c == WEOF) {
-			return (size_t)-1;
-		}
-		ungetwc(c, fp);
-		return 0;
-	}
-	memset(buf, 1, len * sizeof(*buf));
-	if (!fgetws(buf, len, fp)) return (size_t)-1;
-	while (buf[--len]) {}
-	return len;
-}
-
 static void w_main(void) {
 	size_t tagbuflen = 65536;
 	wchar_t *tag, *tp;
