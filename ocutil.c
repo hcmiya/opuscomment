@@ -27,4 +27,9 @@ char *strndup(char const *src, size_t n) {
 	}
 	return rtn;
 }
+size_t strnlen(char const *src, size_t n) {
+	char const *endp = src + n, *p = src;
+	while (p < endp && *p) p++;
+	return p - src;
+}
 #endif

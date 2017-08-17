@@ -2,8 +2,7 @@
 #include <wchar.h>
 
 void parse_tags(void);
-void validate_tag(wchar_t*);
-void add_tag(char*);
+void add_tag_from_opt(char const *);
 void put_tags(void);
 void read_page(ogg_sync_state*);
 void mainerror(char const*, ...);

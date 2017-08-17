@@ -139,48 +139,14 @@ static void parse_args(int argc, char **argv) {
 				break;
 			
 			case 't':
-				{
-					char *ls = optarg;
-					size_t l = mbstowcs(NULL, ls, 0);
-					if (l == (size_t)-1) {
-						oserror();
-					}
-					wchar_t *str = malloc((l + 1) * sizeof(*str));
-					mbstowcs(str, ls, l + 1);
-					
-					validate_tag(str);
-					free(str);
-					
-					size_t u8left = l * 8;
-					l = strlen(ls) + 1;
-					char *u8, *u8buf;
-					u8buf = u8 = malloc(u8left);
-					if (cd == (iconv_t)-1) {
-#if defined __GLIBC__ || defined _LIBICONV_VERSION
-						cd = iconv_open("UTF-8//TRANSLIT", nl_langinfo(CODESET));
-#else
-						cd = iconv_open("UTF-8", nl_langinfo(CODESET));
-#endif
-						if (cd == (iconv_t)-1) {
-							oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), nl_langinfo(CODESET));
-						}
-					}
-					iconv(cd, &ls, &l, &u8, &u8left);
-					for (u8 = u8buf; *u8 != 0x3d; u8++) {
-						if (*u8 >= 0x61 && *u8 <= 0x7a) {
-							*u8 -= 32;
-						}
-					}
-					add_tag(u8buf);
-				}
-				
+				add_tag_from_opt(optarg);
 				break;
 		}
 	}
-	if (tag_edit && O.edit == EDIT_LIST) {
+	if (fpedit && O.edit == EDIT_LIST) {
 		mainerror(catgets(catd, 2, 5, "タグ出力時は-tを使用できない"));
 	}
-	if (tag_edit && !O.edit) {
+	if (fpedit && !O.edit) {
 		mainerror(catgets(catd, 2, 6, "タグ編集時は-a|-wの指定が必要"));
 	}
 	if (!O.gain_fix && !O.edit) {
@@ -191,7 +157,7 @@ static void parse_args(int argc, char **argv) {
 			mainerror(catgets(catd, 2, 7, "ゲイン調整のオプションは-lと同時に使用できない"));
 		}
 		else if (!O.edit) {
-			if (O.tag_filename/* || tag_edit*/) {
+			if (O.tag_filename/* || fpedit*/) {
 				mainerror(catgets(catd, 2, 6, "タグ編集時は-a|-wの指定が必要"));
 			}
 		}
@@ -217,7 +183,7 @@ int main(int argc, char **argv) {
 	{
 		size_t l = strlen(program_name) + 5;
 		char catname[l];
-		catd = catopen(strcat(strcpy(catname, program_name), ".cat"), NL_CAT_LOCALE);
+		catd = catopen("opuscomment.cat", NL_CAT_LOCALE);
 	}
 #endif
 	if (argc == 1) usage();
@@ -240,21 +206,6 @@ int main(int argc, char **argv) {
 	fpopus = fopen(O.in, "r");
 	if (!fpopus) {
 		fileerror(O.in);
-	}
-	switch (O.edit) {
-		case EDIT_APPEND:
-		case EDIT_WRITE:
-			parse_tags();
-			if (!tag_edit) {
-				tag_edit = malloc(sizeof(*tag_edit));
-			}
-			tag_edit[tagnum_edit] = NULL;
-			/* FALLTHROUGH */
-			
-		case EDIT_LIST:
-		case EDIT_NONE:
-			fclose(stdin);
-			break;
 	}
 	
 	uint8_t *fbp;

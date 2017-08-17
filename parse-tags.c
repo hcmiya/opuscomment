@@ -9,6 +9,7 @@
 #include <wchar.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "opuscomment.h"
 #include "global.h"
@@ -21,15 +22,6 @@ static void readerror(void) {
 	else {
 		oserror();
 	}
-}
-
-void add_tag(char *tag) {
-	if (tagnum_edit % 32 == 0) {
-		char **tmp = realloc(tag_edit, sizeof(*tag_edit) * (33 + tagnum_edit));
-		if (!tmp) oserror();
-		tag_edit = tmp;
-	}
-	tag_edit[tagnum_edit++] = tag;
 }
 
 static void tagerror(char *e) {
@@ -83,422 +75,245 @@ void validate_tag(wchar_t *tag) {
 	}
 }
 
-static iconv_t cd = (iconv_t)-1;
-static void w_add(wchar_t *tag) {
-	static char *ls = NULL;
-	static size_t lsalloced = 4096;
-	if (!tag) {
-		free(ls);
-		ls = NULL;
-		return;
-	}
-	if (!ls) {
-		ls = malloc(lsalloced);
-		if (!ls) oserror();
-	}
+static FILE *fpu8;
+static FILE *record, *splitted;
+static int recordfd;
+static void toutf8(void) {
+	fpu8 = tmpfile();
+	size_t const buflen = 512;
+	char ubuf[buflen];
+	char lbuf[buflen];
 	
-	if (wcslen(tag) == wcsspn(tag, L"\t\n\r ")) {
-		return;
-	}
-	validate_tag(tag);
-	
-	size_t lslen = wcstombs(NULL, tag, 0);
-// fgetws()が全て成功しているので失敗しない
-// 	if (lslen == (size_t)-1) {
-// 		perror(NULL);
-// 		exit(1);
-// 	}
-	if (lslen + 1 > lsalloced) {
-		char *tmp = realloc(ls, lslen + 4096);
-		ls = tmp;
-		lsalloced = lslen + 4096;
-	}
-	wcstombs(ls, tag, lslen + 1);
-	
-	if (cd == (iconv_t)-1) {
+	iconv_t cd;
+	char *fromcode = O.tag_raw ? "UTF-8" : nl_langinfo(CODESET);
 #if defined __GLIBC__ || defined _LIBICONV_VERSION
-		cd = iconv_open("UTF-8//TRANSLIT", nl_langinfo(CODESET));
+	cd = iconv_open("UTF-8//TRANSLIT", fromcode);
 #else
-		cd = iconv_open("UTF-8", nl_langinfo(CODESET));
+	cd = iconv_open("UTF-8", fromcode);
 #endif
-		if (cd == (iconv_t)-1) {
-			oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), nl_langinfo(CODESET));
-		}
-	}
-	
-	char *u8buf, *u8p, *lsp;
-	size_t u8left, lsleft, rtn;
-	u8left = wcslen(tag) * 6 + 1;
-	u8buf = malloc(u8left);
-	u8p = u8buf;
-	lsp = ls;
-	lsleft = lslen + 1;
-	rtn = iconv(cd, &lsp, &lsleft, &u8p, &u8left);
-	
-	add_tag(u8buf);
-}
-
-static void w_main(void) {
-	size_t tagbuflen = 65536;
-	wchar_t *tag, *tp;
-	wint_t c;
-	
-	tag = malloc(tagbuflen * sizeof(*tag));
-	tp = tag;
-	size_t left = tagbuflen, readlen;
-	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
-		if (readlen != wcslen(tp)) {
-			err_bin();
-		}
-		tp += readlen;
-		left -= readlen;
-		wchar_t c = fgetwc(stdin);
-		bool cont = false;
-		switch (c) {
-		case WEOF:
-			if (ferror(stdin)) oserror();
-			break;
-		case L'\0':
-			err_bin();
-			break;
-			
-		case L'\t':
-			cont = true;
-			if (tp[-1] != L'\n') {
-				ungetwc(c, stdin);
-			}
-			break;
-			
-		default:
-			cont = tp[-1] != L'\n';
-			ungetwc(c, stdin);
-			break;
-		}
-		if (!cont) {
-			if (tp[-1] == L'\n') {
-				*(--tp) = L'\0';
-				if (tp > tag && tp[-1] == L'\r') {
-					tp[-1] = L'\0';
-				}
-			}
-			w_add(tag);
-			tp = tag;
-			left = tagbuflen;
+	if (cd == (iconv_t)-1) {
+		if (errno == EINVAL) {
+			oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), fromcode);
 		}
 		else {
-			if (tp - tag >= 2 && tp[-1] == L'\n' && tp[-2] == L'\r') {
-				tp--;
-				tp[-1] = L'\n'; tp[0] = L'\0';
-				left++;
-			}
-			if (left < 20) {
-				tagbuflen += 65536;
-				wchar_t *tmp = realloc(tag, tagbuflen * sizeof(*tag));
-				if (!tmp) oserror();
-				tp = tmp + (tp - tag);
-				tag = tmp;
-				left += 65536;
-			}
+			oserror();
 		}
 	}
-	if (ferror(stdin)) {
-		readerror();
-	}
-	if (tp != tag) {
-		w_add(tag);
-	}
-	free(tag);
-	w_add(NULL);
-}
-
-static wchar_t *w_unesc(wchar_t *str) {
-	wchar_t *wp = wcschr(str, L'\\');
-	if (wp) {
-		wchar_t *ep = wp;
-		while (*ep) {
-			if (*ep == L'\\') {
-				switch (*(++ep)) {
-				case L'0':
-					*ep = L'\0';
-					break;
-					
-				case L'n':
-					*ep = '\n';
-					break;
-					
-				case L'r':
-					*ep = '\r';
-					break;
-					
-				case L'\\':
-					*ep = '\\';
-					break;
-					
-				default:
-					err_esc();
-					break;
-				}
-			}
-			*wp++ = *ep++;
-		}
-		*wp = L'\0';
-	}
-	return str;
-}
-static void w_main_e(void) {
-	size_t tagbuflen = 65536;
-	wchar_t *tag, *tp;
-	
-	tag = malloc(tagbuflen * sizeof(*tag));
-	tp = tag;
-	size_t left = tagbuflen, readlen;
-	bool cont = false;
-	while ((readlen = fgetws2(tp, left, stdin)) != (size_t)-1) {
-		if (readlen != wcslen(tp)) {
+	size_t readlen, remain;
+	remain = 0;
+	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
+		if (strnlen(&lbuf[remain], readlen) != readlen) {
 			err_bin();
 		}
-		
-		if (tp[readlen - 1] == L'\n') {
-			cont = false;
-			tp += readlen - 1;
-			*tp = L'\0';
-			if (tp > tag && tp[-1] == L'\r') {
-				tp[-1] = L'\0';
+		size_t llen = readlen + remain;
+		remain = llen;
+		for (;;) {
+			size_t ulen = buflen;
+			char *lp = lbuf, *up = ubuf;
+			size_t iconvret = iconv(cd, &lp, &remain, &up, &ulen);
+			int ie = errno;
+			if (iconvret == (size_t)-1) {
+				switch (ie) {
+				case EILSEQ:
+					oserror();
+					break;
+				case EINVAL:
+					break;
+				case E2BIG:
+					break;
+				}
+				memmove(lbuf, lp, remain);
 			}
-			w_add(w_unesc(tag));
-			tp = tag;
-		}
-		else {
-			cont = true;
-			tagbuflen += 65536;
-			wchar_t *tmp = realloc(tag, tagbuflen * sizeof(*tag));
-			tp = tmp + ((tp + readlen) - tag);
-			left = left - readlen + 65536;
-			tag = tmp;
+			fwrite(ubuf, 1, up - ubuf, fpu8);
+			if (iconvret != (size_t)-1 || ie == EINVAL) break;
 		}
 	}
-	if (ferror(stdin)) {
+	if (fclose(stdin) == EOF) {
 		readerror();
 	}
-	if (cont) {
-		w_add(w_unesc(tag));
+	if (remain) {
+		errno = EILSEQ;
+		readerror();
 	}
-	free(tag);
-	w_add(NULL);
+	char *up = ubuf; readlen = buflen;
+	remain = iconv(cd, NULL, NULL, &up, &readlen);
+	if (remain == (size_t)-1) oserror();
+	iconv_close(cd);
+	fwrite(ubuf, 1, up - ubuf, fpu8);
+	rewind(fpu8);
 }
 
-
-static void r_add(uint8_t *tag) {
-	size_t taglen = strlen(tag);
-	if (taglen == strspn(tag, "\x09\x0a\x0d\x20")) {
-		free(tag);
+static void blank_record() {
+	rewind(record);
+	ftruncate(recordfd, 0);
+}
+static void write_record(void) {
+	uint32_t end = oi32(ftell(record));
+	rewind(record);
+	uint8_t buf[512];
+	size_t n;
+	
+	// 全部空白かどうか
+	bool blank = true;
+	while ((n = fread(buf, 1, 512, record))) {
+		for (size_t i = 0; i < n; i++) {
+			if (!strchr("\x9\xa\xd\x20", buf[i])) {
+				blank = false;
+				goto END_BLANK_TEST;
+			}
+		}
+	}
+END_BLANK_TEST:
+	if (blank) {
+		blank_record();
 		return;
 	}
-	if (tag[taglen - 1] == 0x0a) {
-		tag[--taglen] = '\0';
-	}
-	uint8_t *p, *endp;
-	for (p = tag; *p != '\0'; p++) {
-		if (*p < 0x20 || *p > 0x7d) {
-			err_name();
-		}
-		if (*p == 0x3d) {
-			if (p == tag) {
-				err_empty();
+	// 空白じゃなかったら編集に採用
+	fwrite(&end, 4, 1, fpedit);
+	rewind(record);
+	
+	// 最初が = か
+	fread(buf, 1, 1, record);
+	if (*buf == 0x3d) err_empty();
+	rewind(record);
+	
+	// 項目名がPCS印字文字範囲内か
+	while ((n = fread(buf, 1, 512, record))) {
+		size_t i;
+		for (i = 0; i < n && buf[i] != 0x3d; i++) {
+			if (!(buf[i] >= 0x20 && buf[i] <= 0x7e)) {
+				err_name();
 			}
-			break;
-		}
-		if (*p >= 0x61 && *p <= 0x7a) {
-			*p -= 32;
-		}
-	}
-	if (*p == '\0') {
-		err_nosep();
-	}
-	endp = tag + taglen;
-	while (p < endp) {
-		uint32_t u32 = 0;
-		size_t left;
-		if (*p < 0x80) {
-			p++;
-			continue;
-		}
-		else if (*p < 0xc2) {
-			err_utf8();
-		}
-		else if (*p < 0xe0) {
-			left = 1;
-		}
-		else if (*p < 0xf0) {
-			left = 2;
-		}
-		else if (*p < 0xf8) {
-			left = 3;
-		}
-		else {
-			err_utf8();
-		}
-		
-		if (endp - p < left) {
-			err_utf8();
-		}
-		
-		u32 = *p & (0x3f >> left);
-		for (size_t i = 1; i <= left; i++) {
-			if (p[i] < 0x80 || p[i] > 0xbf) {
-				err_utf8();
+			if (buf[i] >= 0x61 && buf[i] <= 0x7a) {
+				buf[i] -= 32;
 			}
-			u32 <<= 6;
-			u32 |= p[i] & 0x3f;
 		}
-		switch (left) {
-			case 1:
-				if (u32 < 0x80 || u32 > 0x7ff) {
-					err_utf8();
-				}
-				break;
-			case 2:
-				if (u32 < 0x800 || u32 > 0xffff) {
-					err_utf8();
-				}
-				break;
-			case 3:
-				if (u32 < 0x10000 || u32 > 0x10ffff) {
-					err_utf8();
-				}
-				break;
-		}
-		p += left + 1;
+		fwrite(buf, 1, n, fpedit);
+		if (i < n) break;
 	}
-	add_tag(tag);
-}
-
-static bool trimcr(char *tag) {
-	bool eol = false;
-	size_t l = strlen(tag);
-	if (l > 1 && tag[l - 1] == 0x0a) {
-		eol = true;
-		l--;
-		if (l > 1 && tag[l - 1] == 0x0d) {
-			tag[l - 1] = 0x0a;
-			tag[l] = '\0';
-		}
+	while ((n = fread(buf, 1, 512, record))) {
+		fwrite(buf, 1, n, fpedit);
 	}
-	return eol;
+	blank_record();
+	tagnum_edit++;
 }
 
 static void r_line(uint8_t *line, size_t n) {
-	static uint8_t *tag = NULL;
 	static bool tagcont = false;
+	static bool afterlf = false;
 	
 	if (!line) {
-		if (tag) {
-			r_add(tag);
-		}
+		if (tagcont) write_record();
+		tagcont = false;
+		afterlf = false;
 		return;
 	}
 	
-	if (!tag) {
-		tag = strndup(line, n);
-		tagcont = !trimcr(tag);
-		return;
-	}
-	
-	if (tagcont) {
-		size_t l = strlen(tag);
-		char *tmp = realloc(tag, l + n + 1);
-		tag = tmp;
-		strncat(tag, line, n);
-		tagcont = !trimcr(tag);
-	}
-	else if (*line == 0x09) {
-		size_t l = strlen(tag);
-		char *tmp = realloc(tag, l + n);
-		tag = tmp;
-		strncat(tag, ++line, --n);
-		if (n) {
-			tagcont = !trimcr(tag);
+	bool lf = line[n - 1] == 0xa;
+	if (afterlf) {
+		if (*line == 0x9) {
+			*line = 0xa;
 		}
 		else {
-			tagcont = true;
+			write_record();
+			tagcont = false;
 		}
 	}
+	fwrite(line, 1, n - lf, record);
+	if (lf) {
+		afterlf = true;
+	}
 	else {
-		r_add(tag);
-		tag = strndup(line, n);
-		tagcont = !trimcr(tag);
+		afterlf = false;
+		tagcont = true;
 	}
 }
 
+static int esctab(int c) {
+	switch (c) {
+	case 0x30: // '0'
+		c = '\0';
+		break;
+	case 0x5c: // '\'
+		c = 0x5c;
+		break;
+	case 0x6e: // 'n'
+		c = 0x0a;
+		break;
+	case 0x72: // 'r'
+		c = 0x0d;
+		break;
+	default:
+		err_esc();
+		break;
+	}
+	return c;
+}
 static void r_line_e(uint8_t *line, size_t n) {
-	static uint8_t *tag = NULL;
 	static bool tagcont = false;
+	static bool escape = false;
 	
 	if (!line) {
-		if (tag) {
-			r_add(tag);
-		}
+		if (escape) err_esc();
+		if (tagcont) write_record();
 		return;
 	}
 	
-	if (!tag) {
-		tag = strndup(line, n);
-		tagcont = !trimcr(tag);
-		return;
+	if (escape) {
+		*line = esctab(*line);
+		fwrite(line, 1, 1, record);
+		escape = false;
+		line++;
+		n--;
 	}
 	
-	if (tagcont) {
-		size_t l = strlen(tag);
-		char *tmp = realloc(tag, l + n + 1);
-		tag = tmp;
-		strncat(tag, line, n);
-		tagcont = !trimcr(tag);
-	}
-	else {
-		uint8_t *p, *endp;
-		for (p = tag, endp = p + strlen(tag); p != endp; p++) {
-			if (*p == 0x5c) {
-				uint8_t c;
-				switch (p[1]) {
-					case 0x30: // '0'
-						c = '\0';
-						break;
-					case 0x5c: // '\'
-						c = 0x5c;
-						break;
-					case 0x6e: // 'n'
-						c = 0x0a;
-						break;
-					case 0x72: // 'r'
-						c = 0x0d;
-						break;
-					default:
-						err_esc();
-						break;
+	uint8_t *p = line;
+	bool lf = n && line[n - 1] == 0x0a;
+	uint8_t *endp = line + n - lf;
+	for (; p < endp && *p != 0x5c; p++) {}
+	fwrite(line, 1, p - line, record);
+	if (p < endp) {
+		// '\\'があった時
+		uint8_t *escbegin = p;
+		uint8_t *advp = p;
+		for (; advp < endp; p++, advp++) {
+			char c;
+			if ((c = *advp) == 0x5c) {
+				if (++advp == endp) {
+					escape = true;
+					tagcont = true;
+					break;
 				}
-				*p = c;
-				memmove(p + 1, p + 2, endp - p);
-				endp--;
-				p++;
+				c = esctab(*advp);
 			}
+			*p = c;
 		}
-		r_add(tag);
-		tag = strndup(line, n);
-		tagcont = !trimcr(tag);
+		fwrite(escbegin, 1, p - escbegin, record);
 	}
+	if (lf) {
+		write_record();
+	}
+	tagcont = !lf;
 }
 
-static void r_main(void) {
-	uint8_t *tagbuf, *p1, *p2;
-	size_t tagbuflen, taglen, readlen;
+void prepare_record(void) {
+	if (record) {
+		return;
+	}
+	record = tmpfile();
+	recordfd = fileno(record);
+}
+
+static void split(void) {
+	uint8_t tagbuf[512], *p1, *p2;
+	size_t tagbuflen, readlen;
 	void (*line)(uint8_t *, size_t);
 	
-	tagbuflen = 65536;
-	taglen = 0;
-	tagbuf = malloc(tagbuflen);
+	tagbuflen = 512;
 	line = O.tag_escape ? r_line_e : r_line;
+	prepare_record();
 	
-	while ((readlen = fread(tagbuf, 1, tagbuflen, stdin)) != 0) {
+	while ((readlen = fread(tagbuf, 1, tagbuflen, fpu8)) != 0) {
 		if (memchr(tagbuf, 0, readlen) != NULL) {
 			err_bin();
 		}
@@ -511,17 +326,11 @@ static void r_main(void) {
 		size_t left = readlen - (p1 - tagbuf);
 		if (left) line(p1, left);
 	}
-	if (ferror(stdin)) {
-		readerror();
-	}
 	line(NULL, 0);
-	free(tagbuf);
+	fclose(record);
 }
 
 void parse_tags(void) {
-	if (tag_edit && !O.tag_filename) {
-		return;
-	}
 	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
 	if (from_file) {
 		FILE *tmp = freopen(O.tag_filename, "r", stdin);
@@ -529,22 +338,56 @@ void parse_tags(void) {
 			fileerror(O.tag_filename);
 		}
 	}
-	if (O.tag_raw) {
-		r_main();
+	toutf8();
+	split();
+}
+
+void add_tag_from_opt(char const *arg) {
+	static iconv_t cd = (iconv_t)-1;
+	
+	if (!arg) {
+		if (cd == (iconv_t)-1) return;
+		iconv_close(cd);
+		cd = (iconv_t)-1;
+		return;
 	}
-	else {
-		if (O.tag_escape) {
-			w_main_e();
+	
+	char *ls = (char*)arg;
+	size_t l = strlen(ls);
+	
+	if (cd == (iconv_t)-1) {
+#if defined __GLIBC__ || defined _LIBICONV_VERSION
+		cd = iconv_open("UTF-8//TRANSLIT", nl_langinfo(CODESET));
+#else
+		cd = iconv_open("UTF-8", nl_langinfo(CODESET));
+#endif
+		if (cd == (iconv_t)-1) {
+			oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), nl_langinfo(CODESET));
 		}
-		else {
-			w_main();
-		}
+	}
+	fpedit = fpedit ? fpedit : tmpfile();
+	prepare_record();
+	char u8buf[512];
+	size_t u8left;
+	char *u8;
+	while (l) {
+		u8left = 512;
+		u8 = u8buf;
+		size_t ret = iconv(cd, &ls, &l, &u8, &u8left);
 		
-		if (cd != (iconv_t)-1) {
-			iconv_close(cd);
+		if (ret == (size_t)-1) {
+			if (errno != E2BIG) {
+				oserror();
+			}
 		}
+		r_line(u8buf, u8 - u8buf);
 	}
-	if (fclose(stdin) == EOF) {
-		readerror();
+	u8 = u8buf;
+	u8left = 512;
+	if (iconv(cd, NULL, NULL, &u8, &u8left) == (size_t)-1) {
+		oserror();
 	}
+	u8[0] = 0xa;
+	r_line(u8buf, u8 - u8buf + 1);
+	r_line(NULL, 0);
 }

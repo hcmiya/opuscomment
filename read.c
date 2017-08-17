@@ -13,8 +13,6 @@
 #include "opuscomment.h"
 #include "global.h"
 
-#include "endianness.h"
-
 static size_t seeked_len, preserved_padding_len;
 static ogg_stream_state ios, oos;
 static char *outtmp;
@@ -98,40 +96,27 @@ static void append_tag(FILE *fp, char *tag) {
 	}
 }
 
-
+FILE *fptag;
 static void store_tags(size_t lastpagelen) {
-	FILE *fptag = tmpfile();
-	fwrite(OpusTags, 1, 8, fptag);
-	size_t len = strlen(vendor);
-	uint32_t tmp32 = oi32(len);
-	fwrite(&tmp32, 1, 4, fptag);
-	fwrite(vendor, 1, len, fptag);
-	
-	char **cp;
+	size_t len;
+	uint32_t tmp32;
 	len = tagnum_edit + tagnum_file;
 	tmp32 = oi32(len);
 	fwrite(&tmp32, 1, 4, fptag);
-	for (cp = tag_file; *cp; cp++) {
-		append_tag(fptag, *cp);
-		free(*cp);
-	}
-	free(tag_file);
 	
-	for (cp = tag_edit; *cp; cp++) {
-		append_tag(fptag, *cp);
-		free(*cp);
-	}
-	free(tag_edit);
-	
-	size_t commentlen = ftell(fptag);
+	size_t headlen = ftell(fptag);
+	size_t bodylen = ftell(fpedit);
+	size_t commentlen = headlen + bodylen;
 	size_t tplen = commentlen + preserved_padding_len;
 	size_t tpnum = tplen / (255*255) + 1;
 	
 	char *tagbuf = malloc(tplen);
 	
-	rewind(fptag);
-	fread(tagbuf, 1, commentlen, fptag);
+	rewind(fptag); rewind(fpedit);
+	fread(tagbuf, 1, headlen, fptag);
 	fclose(fptag);
+	fread(tagbuf + headlen, 1, bodylen, fpedit);
+	fclose(fpedit);
 	if (preserved_padding) {
 		rewind(preserved_padding);
 		fread(tagbuf + commentlen, 1, preserved_padding_len, preserved_padding);
@@ -406,104 +391,135 @@ static void parse_comment(ogg_page *og) {
 	if (op.bytes < 16 || memcmp(op.packet, OpusTags, 8) != 0) {
 		not_an_opus();
 	}
+	fptag = tmpfile();
 	size_t left = op.bytes - 8;
 	char *ptr = op.packet + 8;
+	fwrite(OpusTags, 1, 8, fptag);
 	
+	// ベンダ文字列
 	uint32_t len = oi32(*(uint32_t*)ptr);
+	fwrite(ptr, 4, 1, fptag);
 	ptr += 4;
 	left -= 4;
 	if (len > left) comment_aborted();
-	vendor = malloc(len + 1);
-	memcpy(vendor, ptr, len);
-	vendor[len] = '\0';
+	fwrite(ptr, 1, len, fptag);
 	ptr += len;
 	left -= len;
 	
-	{
+	// レコード数
+	if (left < 4) comment_aborted();
+	len = oi32(*(uint32_t*)ptr);
+	ptr += 4;
+	left -= 4;
+	
+	tagnum_file = len;
+	fpedit = fpedit ? fpedit : tmpfile();
+	size_t mbpnum = 0;
+	
+	for (size_t i = 0; i < tagnum_file; i++) {
 		if (left < 4) comment_aborted();
-		len = oi32(*(uint32_t*)ptr);
+		uint8_t oilen[4];
+		memcpy(oilen, ptr, 4);
+		len = oi32(*(uint32_t*)oilen);
 		ptr += 4;
 		left -= 4;
-		tagnum_file = len;
-		tag_file = malloc((len + 1) * sizeof(*tag_file));
-		char **cp = tag_file;
-		size_t mbpnum = 0;
 		
-		for (size_t i = 0; i < tagnum_file; i++) {
-			if (left < 4) comment_aborted();
-			len = oi32(*(uint32_t*)ptr);
-			ptr += 4;
-			left -= 4;
-			
-			if (left < len) comment_aborted();
-			bool copy, ismbp;
-			switch (O.edit) {
-			case EDIT_WRITE:
-			case EDIT_LIST:
-				ismbp = false;
-				if (len >= mbplen) {
-					uint8_t mbpupper[23];
-					memcpy(mbpupper, ptr, 23);
-					for (size_t i = 0; i < 23; i++) {
-						if (mbpupper[i] >= 0x61 && mbpupper[i] <= 0x7a) {
-							mbpupper[i] -= 32;
-						}
-					}
-					if (memcmp(mbpupper, mbp, mbplen) == 0) {
-						ismbp = true;
+		if (left < len) comment_aborted();
+		bool copy, ismbp;
+		switch (O.edit) {
+		case EDIT_WRITE:
+		case EDIT_LIST:
+			ismbp = false;
+			if (len >= mbplen) {
+				uint8_t mbpupper[23];
+				memcpy(mbpupper, ptr, 23);
+				for (size_t i = 0; i < 23; i++) {
+					if (mbpupper[i] >= 0x61 && mbpupper[i] <= 0x7a) {
+						mbpupper[i] -= 32;
 					}
 				}
-				break;
+				if (memcmp(mbpupper, mbp, mbplen) == 0) {
+					ismbp = true;
+				}
 			}
-			
-			switch (O.edit) {
-			case EDIT_WRITE:
-				copy = ismbp;
-				mbpnum += ismbp;
-				break;
-			case EDIT_LIST:
-				copy = !O.tag_ignore_picture || !ismbp;
-				break;
-			case EDIT_APPEND:
-				copy = true;
-				break;
-			}
-			if (copy) {
-				*cp = malloc(len + 1);
-				memcpy(*cp, ptr, len);
-				(*cp)[len] = '\0';
-				if (O.tag_toupper) {
-					char *eq = memchr(*cp, 0x3d, len);
-					if (eq) {
-						for (char *p = *cp; p < eq; p++) {
-							if (*p >= 0x61 && *p <= 0x7a) {
-								*p -= 32;
-								toupper_applied = true;
-							}
+			break;
+		}
+		
+		switch (O.edit) {
+		case EDIT_WRITE:
+			copy = ismbp;
+			mbpnum += ismbp;
+			break;
+		case EDIT_LIST:
+			copy = !O.tag_ignore_picture || !ismbp;
+			break;
+		case EDIT_APPEND:
+			copy = true;
+			break;
+		}
+		if (copy) {
+			if (O.tag_toupper) {
+				char *eq = memchr(ptr, 0x3d, len);
+				if (eq) {
+					for (char *p = ptr; p < eq; p++) {
+						if (*p >= 0x61 && *p <= 0x7a) {
+							*p -= 32;
+							toupper_applied = true;
 						}
 					}
 				}
-				cp++;
 			}
-			ptr += len;
-			left -= len;
+			fwrite(oilen, 4, 1, fpedit);
+			fwrite(ptr, 1, len, fpedit);
 		}
-		if (O.edit == EDIT_WRITE) {
-			tagnum_file = mbpnum;
-		}
-		*cp = NULL;
-		
-		if (left && (*ptr & 1)) {
-			preserved_padding = tmpfile();
-			fwrite(ptr, 1, left, preserved_padding);
-			left = preserved_padding_len;
-		}
+		ptr += len;
+		left -= len;
+	}
+	if (O.edit == EDIT_WRITE) {
+		tagnum_file = mbpnum;
+	}
+	
+	if (left && (*ptr & 1)) {
+		preserved_padding = tmpfile();
+		fwrite(ptr, 1, left, preserved_padding);
+		left = preserved_padding_len;
 	}
 	
 	if (ogg_stream_packetpeek(&ios, NULL) == 1) {
 		invalid_border();
 	}
 	opst = OPUS_COMMENT_BORDER;
+}
+
+static void parse_comment_border(ogg_page *og) {
+	if (ogg_page_continued(og)) {
+		invalid_border();
+	}
+	switch (O.edit) {
+	case EDIT_APPEND:
+	case EDIT_WRITE:
+		parse_tags();
+		break;
+		
+	case EDIT_LIST:
+	case EDIT_NONE:
+		fclose(stdin);
+		break;
+	}
+	if (O.edit == EDIT_APPEND && !tagnum_edit && !O.out && !O.gain_fix && !toupper_applied) {
+		// タグ追記モードで出力が上書き且つ
+		// タグ入力、ゲイン調整、大文字化適用が全て無い場合はすぐ終了する
+		exit(0);
+	}
+	else if (O.edit == EDIT_LIST) {
+		fclose(fpopus);
+		put_tags();
+		/* NOTREACHED */
+	}
+	else {
+		store_tags(og->header_len + og->body_len);
+	}
+	opst = OPUS_SOUND;
 }
 
 static void parse_page(ogg_page *og) {
@@ -522,23 +538,7 @@ static void parse_page(ogg_page *og) {
 		break;
 		
 	case OPUS_COMMENT_BORDER:
-		if (ogg_page_continued(og)) {
-			invalid_border();
-		}
-		if (O.edit == EDIT_APPEND && !tagnum_edit && !O.out && !O.gain_fix && !toupper_applied) {
-			// タグ追記モードで出力が上書き且つ
-			// タグ入力、ゲイン調整、大文字化適用が全て無い場合はすぐ終了する
-			exit(0);
-		}
-		else if (O.edit == EDIT_LIST) {
-			fclose(fpopus);
-			put_tags();
-			/* NOTREACHED */
-		}
-		else {
-			store_tags(og->header_len + og->body_len);
-		}
-		opst = OPUS_SOUND;
+		parse_comment_border(og);
 		/* FALLTHROUGH */
 		
 	case OPUS_SOUND:

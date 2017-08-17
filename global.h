@@ -47,11 +47,9 @@ GLOBAL enum {
 GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
-GLOBAL char *vendor;
-GLOBAL char **tag_file, **tag_edit;
 GLOBAL size_t tagnum_file, tagnum_edit;
 
-GLOBAL FILE *fpopus;
+GLOBAL FILE *fpopus, *fpedit;
 
 #ifdef NLS
 #include <nl_types.h>

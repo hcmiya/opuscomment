@@ -29,84 +29,49 @@ static void put_bin(char const *buf, size_t len) {
 	}
 }
 
-static void put_tags_r(void) {
-	char **cp;
-	for (cp = tag_file; *cp; cp++) {
-		char *n1, *n2;
-		n1 = *cp;
-		while ((n2 = strchr(n1, 0x0a))) {
-			n2++;
-			put_bin(n1, n2 - n1);
-			put_bin("\x09", 1);
-			n1 = n2;
-		}
-		n2 = strchr(n1, '\0');
-		*n2++ = 0x0a;
-		put_bin(n1, n2 - n1);
-	}
-}
-
-static void put_tags_re(void) {
-	char **cp;
-	char esc[2] = {0x5c};
-	for (cp = tag_file; *cp; cp++) {
-		char *n1;
-		n1 = *cp;
-		while (*n1) {
-			size_t noesc = strcspn(n1, "\x0a\x0d\x5c");
-			put_bin(n1, noesc);
-			n1 += noesc;
-			switch (*n1) {
-				case 0x0a:
-					esc[1] = 0x6e;
-					break;
-				case 0x0d:
-					esc[1] = 0x72;
-					break;
-				case 0x5c:
-					esc[1] = 0x5c;
-					break;
-			}
-			switch (*n1) {
-				case 0x0a:
-				case 0x0d:
-				case 0x5c:
-					put_bin(esc, 2);
-					n1++;
-					break;
-			}
-		}
-		put_bin("\x0a", 1);
-	}
-}
-
 static void put_tags_w(void) {
-	char **cp;
 	iconv_t cd;
 	char charsetname[128];
 	
-	strcpy(charsetname, nl_langinfo(CODESET));
+	if (!O.tag_raw) {
+		strcpy(charsetname, nl_langinfo(CODESET));
 #if defined __GLIBC__ || defined _LIBICONV_VERSION
-	strcat(charsetname, "//TRANSLIT");
+		strcat(charsetname, "//TRANSLIT");
 #endif
-	cd = iconv_open(charsetname, "UTF-8");
-	if (cd == (iconv_t)-1) {
-		oserror_fmt(catgets(catd, 4, 2, "iconvがUTF-8→%sの変換に対応していない"), nl_langinfo(CODESET));
-	}
-	size_t buflen = 1 << 16;
-	uint8_t *buf = malloc(buflen);
-	
-	for (cp = tag_file; *cp; cp++) {
-		char *n1, *n2, *u8, *ls;
-		size_t taglen = strlen(*cp) + 1, bufleft, tagleft;
-		if (taglen * 3 > buflen) {
-			uint8_t *tmp = realloc(buf, taglen * 3);
-			buf = tmp;
-			buflen = taglen * 3;
+		cd = iconv_open(charsetname, "UTF-8");
+		if (cd == (iconv_t)-1) {
+			if (errno == EINVAL) {
+				oserror_fmt(catgets(catd, 4, 2, "iconvがUTF-8→%sの変換に対応していない"), nl_langinfo(CODESET));
+			}
+			else oserror();
 		}
-		if (O.tag_escape) {
-			for (n1 = *cp, n2 = buf; *n1; n1++) {
-				switch (*n1) {
+	}
+	size_t buflenunit = (1 << 13);
+	size_t buflen = buflenunit * 3;
+	uint8_t *buf = malloc(buflen);
+	size_t nth = 1;
+	
+	rewind(fpedit);
+	for (;;) {
+		char *n1, *n2, *u8, *ls;
+		uint32_t len;
+		if (!fread(&len, 4, 1, fpedit)) break;
+		len = oi32(len);
+		size_t left = len, remain = 0;
+		while (left) {
+			size_t readlen = left > buflenunit ? buflenunit : left;
+			fread(buf + remain, 1, readlen, fpedit);
+			left -= readlen;
+			char *escbegin = buf + readlen + remain;
+			n1 = buf, n2 = escbegin;
+			if (O.tag_escape) {
+				for (; n1 < escbegin; n1++) {
+					switch (*n1) {
+					case 0x00:
+						*n2++ = 0x5c;
+						*n2++ = 0x30;
+						break;
+						
 					case 0x0a:
 						*n2++ = 0x5c;
 						*n2++ = 0x6e;
@@ -124,62 +89,58 @@ static void put_tags_w(void) {
 					default:
 						*n2++ = *n1;
 						break;
+					}
 				}
 			}
-			*n2++ = '\0';
+			else {
+				while(n1 < escbegin) {
+					*n2++ = *n1++;
+					if (n1[-1] == 0xa) *n2++ = 0x9;
+				}
+			}
+			size_t tagleft = n2 - escbegin;
+			memmove(buf, escbegin, tagleft);
+			if (O.tag_raw) {
+				put_bin(buf, tagleft);
+			}
+			else {
+				u8 = buf;
+				ls = buf + tagleft;
+				for (;;) {
+					n2 = ls;
+					size_t bufleft = buflen - (ls - (char*)buf) - 1;
+					size_t iconvret = iconv(cd, &u8, &tagleft, &n2, &bufleft);
+					int ie = errno;
+					errno = 0;
+					if (iconvret == (size_t)-1 && ie == EILSEQ) {
+						opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), nth);
+					}
+					*n2 = '\0';
+					if (fputs(ls, stdout) == EOF) {
+						puterror();
+					}
+					if (iconvret != (size_t)-1 || ie == EINVAL) {
+						remain = tagleft;
+						break;
+					}
+				}
+			}
+		}
+		if (O.tag_raw) {
+			put_bin("\x0a", 1);
 		}
 		else {
-			n1 = *cp;
-			u8 = buf;
-			while ((n2 = strchr(n1, 0x0a))) {
-				n2++;
-				strncpy(u8, n1, n2 - n1);
-				u8 += n2 - n1;
-				n1 = n2;
-				*u8++ = 0x09;
+			strcpy(buf, "\x0a");
+			left = 2, remain = 200;
+			n1 = buf, n2 = buf + 2;
+			if (iconv(cd, &n1, &left, &n2, &remain) == (size_t)-1) {
+				oserror();
 			}
-			strcpy(u8, n1);
-		}
-		u8 = buf;
-		tagleft = strlen(u8);
-		buf[tagleft++] = 0x0a;
-		buf[tagleft++] = 0x00;
-		ls = buf + tagleft;
-		for (;;) {
-			n2 = ls;
-			bufleft = buflen - (ls - (char*)buf);
-			size_t iconvret = iconv(cd, &u8, &tagleft, &n2, &bufleft);
-			int c;
-			if (bufleft) {
-				*n2 = '\0';
-			}
-			else {
-				c = n2[-1];
-				n2[-1] = '\0';
-			}
-			if (fputs(ls, stdout) == EOF) {
+			if (fputs(n1, stdout) == EOF) {
 				puterror();
 			}
-			if (!bufleft && c) {
-				if (putchar(c) == EOF) {
-					puterror();
-				}
-			}
-			if (iconvret == (size_t)-1) {
-				switch (errno) {
-				case EILSEQ:
-				case EINVAL:
-					opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), cp - tag_file + 1);
-					break;
-				case E2BIG:
-					break;
-				}
-			}
-			else {
-				errno = 0;
-				break;
-			}
 		}
+		nth++;
 	}
 }
 
@@ -191,17 +152,7 @@ void put_tags(void) {
 			fileerror(O.tag_filename);
 		}
 	}
-	if (O.tag_raw) {
-		if (O.tag_escape) {
-			put_tags_re();
-		}
-		else {
-			put_tags_r();
-		}
-	}
-	else {
-		put_tags_w();
-	}
+	put_tags_w();
 	if (fclose(stdout) == EOF) {
 		puterror();
 	}
