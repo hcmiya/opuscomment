@@ -199,12 +199,10 @@ END_BLANK_TEST:
 }
 
 static void r_line(uint8_t *line, size_t n) {
-	static bool tagcont = false;
 	static bool afterlf = false;
 	
 	if (!line) {
-		if (tagcont) write_record();
-		tagcont = false;
+		write_record();
 		afterlf = false;
 		return;
 	}
@@ -216,8 +214,8 @@ static void r_line(uint8_t *line, size_t n) {
 		}
 		else {
 			write_record();
-			tagcont = false;
 		}
+		afterlf = false;
 	}
 	fwrite(line, 1, n - lf, record);
 	if (lf) {
@@ -225,7 +223,6 @@ static void r_line(uint8_t *line, size_t n) {
 	}
 	else {
 		afterlf = false;
-		tagcont = true;
 	}
 }
 

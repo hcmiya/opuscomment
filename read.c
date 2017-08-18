@@ -104,45 +104,61 @@ static void store_tags(size_t lastpagelen) {
 	tmp32 = oi32(len);
 	fwrite(&tmp32, 1, 4, fptag);
 	
-	size_t headlen = ftell(fptag);
-	size_t bodylen = ftell(fpedit);
-	size_t commentlen = headlen + bodylen;
-	size_t tplen = commentlen + preserved_padding_len;
-	size_t tpnum = tplen / (255*255) + 1;
-	
-	char *tagbuf = malloc(tplen);
-	
-	rewind(fptag); rewind(fpedit);
-	fread(tagbuf, 1, headlen, fptag);
-	fclose(fptag);
-	fread(tagbuf + headlen, 1, bodylen, fpedit);
+	char *tagbuf = malloc(65307);
+	rewind(fpedit);
+	while ((len = fread(tagbuf, 1, 65307, fpedit))) {
+		fwrite(tagbuf, 1, len, fptag);
+	}
 	fclose(fpedit);
 	if (preserved_padding) {
 		rewind(preserved_padding);
-		fread(tagbuf + commentlen, 1, preserved_padding_len, preserved_padding);
+		while ((len = fread(tagbuf, 1, 65307, preserved_padding))) {
+			fwrite(tagbuf, 1, len, fptag);
+		}
 		fclose(preserved_padding);
 	}
+	size_t commentlen = ftell(fptag);
 	
-	ogg_packet op;
-	op.packet = tagbuf;
-	op.bytes = tplen;
-	op.b_o_s = 0;
-	op.e_o_s = 0;
-	op.granulepos = 0;
-	ogg_stream_packetin(&oos, &op);
-	free(tagbuf);
-	
+	rewind(fptag); 
 	ogg_page og;
-	while(ogg_stream_pageout(&oos, &og)) {
+	og.header_len = 282;
+	og.header = tagbuf;
+	og.body_len = 255 * 255;
+	og.body = tagbuf + 282;
+	memcpy(og.header,
+		"\x4f\x67\x67\x53"
+		"\0"
+		"\0"
+		"\0\0\0\0\0\0\0\0", 14);
+// 		"S.NO"
+// 		"SEQ "
+// 		"CRC ", 26);
+	*(uint32_t*)&og.header[14] = oi32(opus_sno);
+	memset(og.header + 26, 0xff, 256);
+	
+	uint32_t idx = 1;
+	while (commentlen >= 255 * 255) {
+		fread(og.body, 1, 255 * 255, fptag);
+		*(uint32_t*)&og.header[18] = oi32(idx++);
+		ogg_page_checksum_set(&og);
 		write_page(&og);
+		og.header[5] = 1;
+		commentlen -= 255 * 255;
 	}
 	
-	if (!preserved_padding && oos.pageno + 1 < ios.pageno) {
+	*(uint32_t*)&og.header[18] = oi32(idx++);
+	og.header[26] = commentlen / 255 + 1;
+	og.header[26 + og.header[26]] = commentlen % 255;
+	fread(og.body, 1, commentlen, fptag);
+	fclose(fptag);
+	og.header_len = 27 + og.header[26];
+	og.body_len = commentlen;
+	
+	if (!preserved_padding && idx < ios.pageno) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 		// 無を含むページを生成して開始ページ番号を合わせる
-		ogg_stream_flush(&oos, &og);
 		uint8_t segnum = og.header[26];
-		uint8_t lastseglen = og.header[og.header_len - 1];
+		uint8_t lastseglen = og.header[26 + segnum];
 		uint8_t lastseg[255];
 		
 		if (segnum == 1) {
@@ -153,7 +169,6 @@ static void store_tags(size_t lastpagelen) {
 			og.body_len = 255;
 			ogg_page_checksum_set(&og);
 			write_page(&og);
-			lastseglen = 0;
 			memset(lastseg, 0, 255);
 		}
 		else {
@@ -171,12 +186,12 @@ static void store_tags(size_t lastpagelen) {
 		og.header[27] = 255;
 		og.header_len = 28;
 		og.body_len = 255;
-		for (uint32_t i = oos.pageno, m = ios.pageno - 1; i < m; i++) {
-			*(uint32_t*)&og.header[18] = oi32(i);
+		for (uint32_t m = ios.pageno - 1; idx < m; idx++) {
+			*(uint32_t*)&og.header[18] = oi32(idx);
 			ogg_page_checksum_set(&og);
 			write_page(&og);
 		}
-		*(uint32_t*)&og.header[18] = oi32(ios.pageno - 1);
+		*(uint32_t*)&og.header[18] = oi32(idx);
 		og.header[26] = 1;
 		og.header[27] = lastseglen;
 		og.header_len = 28;
@@ -189,28 +204,17 @@ static void store_tags(size_t lastpagelen) {
 		/* NOTREACHED */
 	}
 	else {
-		ogg_stream_flush(&oos, &og);
+		ogg_page_checksum_set(&og);
 		write_page(&og);
 		
-		if (oos.pageno == ios.pageno) {
+		if (idx == ios.pageno) {
 			seeked_len -= lastpagelen;
 			put_left();
 			/* NOTREACHED */
 		}
 	}
-	
-	opus_pidx = oos.pageno;
-	ogg_stream_clear(&oos);
-}
-
-static void parse_page_sound(ogg_page *og) {
-	*(uint32_t*)&og->header[18] = oi32(opus_pidx++);
-	ogg_page_checksum_set(og);
-	write_page(og);
-	if (ogg_page_eos(og)) {
-		put_left();
-		/* NOTREACHED */
-	}
+	free(tagbuf);
+	opus_pidx = idx;
 }
 
 static void comment_aborted(void) {
@@ -520,6 +524,16 @@ static void parse_comment_border(ogg_page *og) {
 		store_tags(og->header_len + og->body_len);
 	}
 	opst = OPUS_SOUND;
+}
+
+static void parse_page_sound(ogg_page *og) {
+	*(uint32_t*)&og->header[18] = oi32(opus_pidx++);
+	ogg_page_checksum_set(og);
+	write_page(og);
+	if (ogg_page_eos(og)) {
+		put_left();
+		/* NOTREACHED */
+	}
 }
 
 static void parse_page(ogg_page *og) {
