@@ -32,13 +32,13 @@ static void tagerror(char *e) {
 }
 
 static void err_nosep(void) {
-	tagerror(catgets(catd, 5, 1, "フィールドの区切りが存在しない"));
+	tagerror(catgets(catd, 5, 1, "項目名と値の区切りが存在しない"));
 }
 static void err_name(void) {
-	tagerror(catgets(catd, 5, 2, "フィールド名が不正"));
+	tagerror(catgets(catd, 5, 2, "項目名が不正"));
 }
 static void err_empty(void) {
-	tagerror(catgets(catd, 5, 3, "空のフィールド名"));
+	tagerror(catgets(catd, 5, 3, "空の項目名"));
 }
 static void err_bin(void) {
 	tagerror(catgets(catd, 5, 4, "バイナリファイル"));
