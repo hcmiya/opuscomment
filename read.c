@@ -96,6 +96,7 @@ static void append_tag(FILE *fp, char *tag) {
 }
 
 FILE *fptag;
+static int opus_idx_diff;
 static void store_tags(size_t lastpagelen) {
 	size_t len;
 	uint32_t tmp32;
@@ -216,7 +217,7 @@ static void store_tags(size_t lastpagelen) {
 		}
 	}
 	free(tagbuf);
-	opus_idx = idx;
+	opus_idx_diff = idx - opus_idx;
 }
 
 static void comment_aborted(void) {
@@ -585,7 +586,7 @@ static void parse_comment_border(ogg_page *og) {
 
 static void parse_page_sound(ogg_page *og) {
 	if (ogg_page_serialno(og) == opus_sno) {
-		*(uint32_t*)&og->header[18] = oi32(opus_idx++);
+		*(uint32_t*)&og->header[18] = oi32(ogg_page_pageno(og) + opus_idx_diff);
 		ogg_page_checksum_set(og);
 	}
 	write_page(og);
@@ -596,7 +597,6 @@ static void parse_page_sound(ogg_page *og) {
 }
 
 static void parse_page(ogg_page *og) {
-	ogg_packet op;
 	switch (opst) {
 	case OPUS_HEADER:
 		parse_header(og);
