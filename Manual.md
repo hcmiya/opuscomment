@@ -5,7 +5,7 @@
 ## 書式
 
     opuscomment [-l] [-epRvV] opusfile
-    opuscomment -a|-w [-g gain|-s gain|-n] [-c file|-t NAME=VALUE ...] [-eGprRvV] opusfile [output]
+    opuscomment -a|-w [-g gain|-s gain|-n] [-c tagfile|-t NAME=VALUE ...] [-eGprRvV] opusfile [output]
 
 ## 説明
 
@@ -50,8 +50,8 @@
 <dd>出力ゲインの編集<strong>前</strong>の値を以下の形式で標準エラー出力に出力する<br/>
      <code>"%d\n", &lt;output gain in Q7.8, integer&gt;</code>
 </dd>
-<dt>-c file</dt>
-<dd>出力モード時、タグをfileに書き出す。書き込み・追記モード時、fileからタグを読み出す</dd>
+<dt>-c tagfile</dt>
+<dd>出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す</dd>
 <dt>-t NAME=VALUE</dt>
 <dd>引数をタグとして追加する</dd>
 </dl>
@@ -111,7 +111,7 @@ opuscommentをOpusファイル1つだけを引数に指定して起動すると�
 
     opuscomment some.opus
 
-Opusファイル内のタグを編集したい場合、その出力を好みのエディタで編集した後にopuscommentを書き込みモードで起動して標準入力に渡せば良い。
+Opusファイル内のタグを編集したい場合、その出力を好みのエディタで編集した後にopuscommentを書き込みモードで起動して標準入力に渡せば良い。この編集様式は`vorbiscomment(1)`に倣っている。
 
     opuscomment some.opus >tags.txt
     ed tags.txt
@@ -160,7 +160,7 @@ Ogg VorbisとOgg Opusはタグの内部形式が同じで、またopuscommentは
     sed 's/dog/cat/g' <animal.txt >animal.txt.1
     mv -f animal.txt.1 animal.txt
 
-しかし、opuscommentはタグの読み込みが終わるまでOpusファイルを書き込み用として開かないため、フィルタの前後で同じファイルを開いていても同時に編集されることはなく内容は失われる事は無い。
+しかし、opuscommentはタグの読み込みが終わるまでOpusファイルを書き込み用として開かないため、フィルタの前後で同じファイルを開いていても同時に編集されることはなく内容が失われる事は無い。
 
     # 一時ファイルを作らなくてもsome.opusからDISCTOTALとDISCNUMBERタグを消す編集が意図通り適用される。
     opuscomment -e some.opus |grep -vE '^DISC(TOTAL|NUMBER)=' |opuscomment -we some.opus
@@ -169,7 +169,7 @@ Ogg VorbisとOgg Opusはタグの内部形式が同じで、またopuscommentは
 
 ### NULの扱い
 
-opuscommentは文字「NUL」が入力された場合は一切エラーとする。また`vorbiscomment(1)`との互換として`\0`のエスケープを解釈するが、その後ろに続く文字列が切り捨てられたような動作をする。これはvorbis commentがUTF-8テキストを格納するものでバイナリを受け入れるべきではないという設計に基いており、初版作者はその設計思想を受け継いでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。この動作は初版作者によって修正されない。
+opuscommentは文字「NUL」が入力された場合は一切エラーとする。もしOpus内のタグがNULを含んでいた場合、出力モードで文字が途切れるだろう。これはvorbis commentがUTF-8テキストを格納するものでバイナリを受け入れるべきではないという設計に基いており、初版作者はその設計思想を受け継いでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。この動作は初版作者によって修正されない。
 
 ### 出力ゲインとR128_TRACK_GAIN、R128_ALBUM_GAINの編集
 
