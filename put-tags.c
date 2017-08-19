@@ -6,7 +6,6 @@
 #include <locale.h>
 #include <langinfo.h>
 #include <iconv.h>
-#include <wchar.h>
 #include <errno.h>
 
 #include "opuscomment.h"

@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stddef.h>
-#include <wchar.h>
 #include <stdint.h>
 
 uint16_t oi16(uint16_t i);

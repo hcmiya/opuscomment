@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <wchar.h>
 #include <stdint.h>
 #include <ogg/ogg.h>
 

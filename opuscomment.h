@@ -1,5 +1,4 @@
 #include <ogg/ogg.h>
-#include <wchar.h>
 
 void parse_tags(void);
 void add_tag_from_opt(char const *);
