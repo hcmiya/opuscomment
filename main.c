@@ -17,13 +17,13 @@
 #include "global.h"
 
 static void usage(void) {
-	fprintf(stderr, catgets(catd, 1, 1,
+	fprintf(stderr, catgets(catd, 6, 1,
 "使い方:\n"
 "    %1$s [-l] [-epRUvV] opusfile\n"
 "    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n"
 	), program_name);
 	fputc('\n', stderr);
-	fputs(catgets(catd, 1, 2,
+	fputs(catgets(catd, 6, 2,
 "オプション:\n"
 "    -l            タグ出力モード\n"
 "    -a            タグ追記モード\n"
@@ -180,11 +180,7 @@ int main(int argc, char **argv) {
 		program_name = program_name_default;
 	}
 #ifdef NLS
-	{
-		size_t l = strlen(program_name) + 5;
-		char catname[l];
-		catd = catopen("opuscomment.cat", NL_CAT_LOCALE);
-	}
+	catd = catopen("opuscomment.cat", NL_CAT_LOCALE);
 #endif
 	if (argc == 1) usage();
 	
