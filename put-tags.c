@@ -59,7 +59,8 @@ static void put_tags_w(void) {
 		len = oi32(len);
 		size_t left = len, remain = 0;
 		while (left) {
-			size_t readlen = left > buflenunit ? buflenunit : left;
+			size_t readmax = buflenunit - remain;
+			size_t readlen = left > readmax ? readmax : left;
 			fread(buf + remain, 1, readlen, fpedit);
 			left -= readlen;
 			char *escbegin = buf + readlen + remain;
@@ -121,10 +122,16 @@ static void put_tags_w(void) {
 					}
 					if (iconvret != (size_t)-1 || ie == EINVAL) {
 						remain = tagleft;
+						if (remain) {
+							memcpy(buf, u8, remain);
+						}
 						break;
 					}
 				}
 			}
+		}
+		if (remain) {
+			opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), nth);
 		}
 		if (O.tag_raw) {
 			put_bin("\x0a", 1);
