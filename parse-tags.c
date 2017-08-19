@@ -58,8 +58,8 @@ void check_tagpacket_length(void) {
 
 static FILE *record;
 static int recordfd;
-static void *toutf8(void *fpu8_) {
-	FILE *fpu8 = fpu8_;
+static void *toutf8(void *fdu8_) {
+	int fdu8 = *(int*)fdu8_;
 	size_t const buflen = 512;
 	char ubuf[buflen];
 	char lbuf[buflen];
@@ -104,7 +104,7 @@ static void *toutf8(void *fpu8_) {
 				}
 				memmove(lbuf, lp, remain);
 			}
-			fwrite(ubuf, 1, up - ubuf, fpu8);
+			write(fdu8, ubuf, up - ubuf);
 			if (iconvret != (size_t)-1 || ie == EINVAL) break;
 		}
 	}
@@ -119,8 +119,8 @@ static void *toutf8(void *fpu8_) {
 	remain = iconv(cd, NULL, NULL, &up, &readlen);
 	if (remain == (size_t)-1) oserror();
 	iconv_close(cd);
-	fwrite(ubuf, 1, up - ubuf, fpu8);
-	fclose(fpu8);
+	write(fdu8, ubuf, up - ubuf);
+	close(fdu8);
 	return NULL;
 }
 
@@ -297,9 +297,8 @@ static void split(void) {
 	int pfd[2];
 	pipe(pfd);
 	FILE *fpu8 = fdopen(pfd[0], "r");
-	FILE *fpu8_write = fdopen(pfd[1], "w");
 	pthread_t thu8;
-	pthread_create(&thu8, NULL, toutf8, fpu8_write);
+	pthread_create(&thu8, NULL, toutf8, &pfd[1]);
 	pthread_detach(thu8);
 	
 	while ((readlen = fread(tagbuf, 1, tagbuflen, fpu8)) != 0) {
