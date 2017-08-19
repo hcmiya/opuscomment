@@ -3,7 +3,7 @@ HEADER=global.h ocutil.h limit.h
 CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
 #CFLAGS=-D_XOPEN_SOURCE=600 -DNLS
 LDFLAGS=
-LIBS=-logg -lm
+LIBS=-logg -lm -lpthread
 CC=c99
 
 all: opuscomment ;

@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "opuscomment.h"
 #include "global.h"
@@ -56,11 +57,10 @@ void check_tagpacket_length(void) {
 	}
 }
 
-static FILE *fpu8;
-static FILE *record, *splitted;
+static FILE *record;
 static int recordfd;
-static void toutf8(void) {
-	fpu8 = tmpfile();
+static void *toutf8(void *fpu8_) {
+	FILE *fpu8 = fpu8_;
 	size_t const buflen = 512;
 	char ubuf[buflen];
 	char lbuf[buflen];
@@ -121,7 +121,8 @@ static void toutf8(void) {
 	if (remain == (size_t)-1) oserror();
 	iconv_close(cd);
 	fwrite(ubuf, 1, up - ubuf, fpu8);
-	rewind(fpu8);
+	fclose(fpu8);
+	return NULL;
 }
 
 static void blank_record() {
@@ -294,6 +295,14 @@ static void split(void) {
 	line = O.tag_escape ? r_line_e : r_line;
 	prepare_record();
 	
+	int pfd[2];
+	pipe(pfd);
+	FILE *fpu8 = fdopen(pfd[0], "r");
+	FILE *fpu8_write = fdopen(pfd[1], "w");
+	pthread_t thu8;
+	pthread_create(&thu8, NULL, toutf8, fpu8_write);
+	pthread_detach(thu8);
+	
 	while ((readlen = fread(tagbuf, 1, tagbuflen, fpu8)) != 0) {
 		if (memchr(tagbuf, 0, readlen) != NULL) {
 			err_bin();
@@ -307,6 +316,7 @@ static void split(void) {
 		size_t left = readlen - (p1 - tagbuf);
 		if (left) line(p1, left);
 	}
+	fclose(fpu8);
 	line(NULL, 0);
 	fclose(record);
 }
@@ -319,7 +329,6 @@ void parse_tags(void) {
 			fileerror(O.tag_filename);
 		}
 	}
-	toutf8();
 	split();
 }
 
