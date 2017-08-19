@@ -263,7 +263,7 @@ static void parse_header(ogg_page *og) {
 	if (og->body_len < 19 || memcmp(og->body, OpusHead, 8) != 0) {
 		not_an_opus();
 	}
-	if (og->body[8] != 1) {
+	if ((og->body[8] & 0xf0) != 0) {
 		opuserror(catgets(catd, 3, 6, "未対応のバージョン"));
 	}
 	switch (O.info_gain) {
