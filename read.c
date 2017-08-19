@@ -116,7 +116,10 @@ static void store_tags(size_t lastpagelen) {
 		}
 		fclose(preserved_padding);
 	}
-	size_t commentlen = ftell(fptag);
+	long commentlen = ftell(fptag);
+	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
+		mainerror("保存出来るタグの長さが上限を超えた(%uMiBまで)", TAG_LENGTH_LIMIT__OUTPUT >> 20);
+	}
 	
 	rewind(fptag); 
 	ogg_page og;
@@ -340,6 +343,11 @@ static void parse_header(ogg_page *og) {
 
 
 static void copy_tag_packet(ogg_page *og) {
+	static unsigned int total = 0;
+	total += og->body_len;
+	if (total > TAG_LENGTH_LIMIT__INPUT) {
+		opuserror(catgets(catd, 3, 9, "扱えるタグの長さを超えた(%uMiBまで)"), TAG_LENGTH_LIMIT__INPUT >> 20);
+	}
 	fwrite(og->body, 1, og->body_len, fptag);
 }
 
@@ -472,6 +480,7 @@ static void rtcopy(void) {
 				uint8_t chunk[4];
 				*(uint32_t*)chunk = oi32(len);
 				fwrite(chunk, 4, 1, fpedit);
+				tagpacket_total += 4;
 			}
 		}
 		if (copy) {
@@ -487,6 +496,8 @@ static void rtcopy(void) {
 				}
 			}
 			fwrite(buf, 1, rl, fpedit);
+			tagpacket_total += rl;
+			check_tagpacket_length();
 		}
 		len -= rl;
 	}
@@ -508,7 +519,7 @@ static void retrieve_tag() {
 		rtread(buf, rl);
 		len -= rl;
 	}
-	long int tagpacket_end = ftell(fptag);
+	long int tagpacket_end = tagpacket_total = ftell(fptag);
 	
 	// レコード数
 	size_t tagnum_file = rtchunk();
@@ -532,6 +543,8 @@ static void retrieve_tag() {
 		while ((n = fread(buf, 1, 512, fptag))) {
 			fwrite(buf, 1, n, preserved_padding);
 		}
+		tagpacket_total += ftell(preserved_padding);
+		check_tagpacket_length();
 	}
 	fseek(fptag, tagpacket_end, SEEK_SET);
 	int fdtag = fileno(fptag);

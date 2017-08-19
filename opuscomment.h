@@ -11,6 +11,7 @@ void oserror(void);
 void oserror_fmt(char const*, ...);
 void fileerror(char const*);
 void move_file(void);
+void check_tagpacket_length(void);
 
 #ifdef NLS
 #include <nl_types.h>
@@ -19,3 +20,4 @@ void move_file(void);
 #endif
 
 #include "ocutil.h"
+#include "limit.h"

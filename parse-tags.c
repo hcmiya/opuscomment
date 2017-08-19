@@ -50,28 +50,9 @@ static void err_utf8(void) {
 	tagerror(catgets(catd, 5, 6, "不正なUTF-8シーケンス"));
 }
 
-void validate_tag(wchar_t *tag) {
-	static wchar_t const *accept = L" !\"#$%&\'()*+,-./01234565789:;<>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}";
-	static wchar_t const *upper = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	static wchar_t const *lower = L"abcdefghijklmnopqrstuvwxyz";
-
-	if (!wcschr(tag, L'=')) {
-		err_nosep();
-	}
-	size_t fieldlen = wcsspn(tag, accept);
-	if (tag[fieldlen] != L'=') {
-		err_name();
-	}
-	if (fieldlen == 0) {
-		err_empty();
-	}
-	
-	wchar_t *p;
-	for (p = tag; *p != L'='; p++) {
-		wchar_t *q = wcschr(lower, *p);
-		if (q) {
-			*p = upper[q - lower];
-		}
+void check_tagpacket_length(void) {
+	if (tagpacket_total > TAG_LENGTH_LIMIT__OUTPUT) {
+		mainerror(catgets(catd, 1, 10, "保存出来るタグの長さが上限を超えた(%uMiBまで)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
 	}
 }
 
@@ -99,7 +80,7 @@ static void toutf8(void) {
 			oserror();
 		}
 	}
-	size_t readlen, remain;
+	size_t readlen, remain, total;
 	remain = 0;
 	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
 		if (strnlen(&lbuf[remain], readlen) != readlen) {
@@ -148,7 +129,7 @@ static void blank_record() {
 	ftruncate(recordfd, 0);
 }
 static void write_record(void) {
-	uint32_t end = oi32(ftell(record));
+	uint32_t end = ftell(record);
 	rewind(record);
 	uint8_t buf[512];
 	size_t n;
@@ -169,6 +150,9 @@ END_BLANK_TEST:
 		return;
 	}
 	// 空白じゃなかったら編集に採用
+	tagpacket_total += 4 + end;
+	check_tagpacket_length();
+	end = oi32(end);
 	fwrite(&end, 4, 1, fpedit);
 	rewind(record);
 	

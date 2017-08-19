@@ -1,5 +1,5 @@
 SRC=main.c put-tags.c parse-tags.c read.c error.c ocutil.c endianness.c
-HEADER=global.h ocutil.h
+HEADER=global.h ocutil.h limit.h
 CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
 #CFLAGS=-D_XOPEN_SOURCE=600 -DNLS
 LDFLAGS=

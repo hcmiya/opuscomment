@@ -48,6 +48,7 @@ GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
 GLOBAL size_t tagnum_file, tagnum_edit;
+GLOBAL long int tagpacket_total;
 
 GLOBAL FILE *fpopus, *fpedit;
 

@@ -41,4 +41,3 @@ void fileerror(char const *file) {
 	perror(NULL);
 	exit(3);
 }
-
