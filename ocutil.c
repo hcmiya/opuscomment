@@ -2,20 +2,28 @@
 #include <string.h>
 #include <stdlib.h>
 #include <wchar.h>
+#include <stdint.h>
+#include <ogg/ogg.h>
 
-size_t fgetws2(wchar_t *buf, size_t len, FILE *fp) {
-	if (len <= 1) {
-		wchar_t c = fgetwc(fp);
-		if (c == WEOF) {
-			return (size_t)-1;
+int page_breaks(ogg_page *og, size_t num, uint16_t *at) {
+	uint_fast8_t segnum = og->header[26];
+	uint16_t breaks[255] = {0};
+	if (!segnum) return 0;
+	
+	uint8_t *endp, *p;
+	uint16_t *bp = breaks;
+	uint_fast16_t bytes = 0;
+	p = og->header + 27;
+	endp = p + segnum;
+	while (p < endp) {
+		bytes += *p;
+		if (*p++ != 0xff) {
+			*bp++ = bytes;
 		}
-		ungetwc(c, fp);
-		return 0;
 	}
-	memset(buf, 1, len * sizeof(*buf));
-	if (!fgetws(buf, len, fp)) return (size_t)-1;
-	while (buf[--len]) {}
-	return len;
+	int breaknum = bp - breaks;
+	memcpy(at, breaks, breaknum * sizeof(*at));
+	return breaknum;
 }
 
 #if _POSIX_C_SOURCE < 200809L

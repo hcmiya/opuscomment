@@ -14,10 +14,9 @@
 #include "global.h"
 
 static size_t seeked_len, preserved_padding_len;
-static ogg_stream_state ios, oos;
 static char *outtmp;
 static bool remove_tmp, toupper_applied;
-static uint32_t opus_pidx, opus_sno;
+static uint32_t opus_idx = 2, opus_sno;
 static FILE *fpout, *preserved_padding;
 
 static char const
@@ -154,7 +153,7 @@ static void store_tags(size_t lastpagelen) {
 	og.header_len = 27 + og.header[26];
 	og.body_len = commentlen;
 	
-	if (!preserved_padding && idx < ios.pageno) {
+	if (!preserved_padding && idx < opus_idx) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 		// 無を含むページを生成して開始ページ番号を合わせる
 		uint8_t segnum = og.header[26];
@@ -186,7 +185,7 @@ static void store_tags(size_t lastpagelen) {
 		og.header[27] = 255;
 		og.header_len = 28;
 		og.body_len = 255;
-		for (uint32_t m = ios.pageno - 1; idx < m; idx++) {
+		for (uint32_t m = opus_idx - 1; idx < m; idx++) {
 			*(uint32_t*)&og.header[18] = oi32(idx);
 			ogg_page_checksum_set(&og);
 			write_page(&og);
@@ -207,14 +206,14 @@ static void store_tags(size_t lastpagelen) {
 		ogg_page_checksum_set(&og);
 		write_page(&og);
 		
-		if (idx == ios.pageno) {
+		if (idx == opus_idx) {
 			seeked_len -= lastpagelen;
 			put_left();
 			/* NOTREACHED */
 		}
 	}
 	free(tagbuf);
-	opus_pidx = idx;
+	opus_idx = idx;
 }
 
 static void comment_aborted(void) {
@@ -239,40 +238,47 @@ static void cleanup(void) {
 	}
 }
 
-static void parse_header(ogg_page *og) {
-	ogg_packet op;
-	opus_sno = ogg_page_serialno(og);
-	ogg_stream_init(&ios, opus_sno);
-	ogg_stream_pagein(&ios, og);
-	if (ogg_stream_packetout(&ios, &op) != 1) {
-		invalid_stream();
+static int test_break(ogg_page *og) {
+	uint16_t plen;
+	switch (page_breaks(og, 1, &plen)) {
+	case 0:
+		return -1;
+	case 1:
+		if (plen == og->body_len) return plen;
 	}
-	
-	if (!op.b_o_s || op.e_o_s) {
+	invalid_border();
+}
+
+static void parse_header(ogg_page *og) {
+	opus_sno = ogg_page_serialno(og);
+	if (!ogg_page_bos(og) || ogg_page_eos(og)) {
 		invalid_stream();
 	}
 	if (ogg_page_pageno(og) != 0) {
 		invalid_stream();
 	}
-	if (op.bytes < 19 || memcmp(op.packet, OpusHead, 8) != 0) {
+	if (test_break(og) < 0) {
+		invalid_border();
+	}
+	if (og->body_len < 19 || memcmp(og->body, OpusHead, 8) != 0) {
 		not_an_opus();
 	}
-	if (op.packet[8] != 1) {
+	if (og->body[8] != 1) {
 		opuserror(catgets(catd, 3, 6, "未対応のバージョン"));
 	}
 	switch (O.info_gain) {
 		case 1:
-			fprintf(stderr, "%.8g\n", (int16_t)oi16(*(int16_t*)(&op.packet[16])) / 256.0);
+			fprintf(stderr, "%.8g\n", (int16_t)oi16(*(int16_t*)(&og->body[16])) / 256.0);
 			break;
 		case 2:
-			fprintf(stderr, "%d\n", (int16_t)oi16(*(int16_t*)(&op.packet[16])));
+			fprintf(stderr, "%d\n", (int16_t)oi16(*(int16_t*)(&og->body[16])));
 			break;
 	}
 	if (O.gain_fix) {
 		int16_t gi;
 		bool sign;
 		if (O.gain_relative) {
-			double gain = (int16_t)oi16(*(int16_t*)(&op.packet[16]));
+			double gain = (int16_t)oi16(*(int16_t*)(&og->body[16]));
 			gain += O.gain_val * 256;
 			if (gain > 32767) {
 				gain = 32767;
@@ -291,11 +297,9 @@ static void parse_header(ogg_page *og) {
 			gi = sign ? -1 : 1;
 		}
 		
-		*(int16_t*)(&op.packet[16]) = oi16(gi);
+		*(int16_t*)(&og->body[16]) = oi16(gi);
 	}
-	ogg_page out;
 	if (O.edit != EDIT_LIST) {
-		ogg_stream_init(&oos, opus_sno);
 		if (O.out) {
 			if (strcmp(O.out, "-") == 0) {
 				fpout = stdout;
@@ -328,18 +332,25 @@ static void parse_header(ogg_page *og) {
 			atexit(cleanup);
 			fpout = fdopen(fd, "w+");
 		}
-		ogg_stream_packetin(&oos, &op);
-		ogg_stream_flush(&oos, &out);
-		write_page(&out);
-	}
-	if (ogg_stream_packetpeek(&ios, NULL) == 1) {
-		invalid_border();
+		ogg_page_checksum_set(og);
+		write_page(og);
 	}
 	opst = OPUS_HEADER_BORDER;
 }
 
+
+static void copy_tag_packet(ogg_page *og) {
+	fwrite(og->body, 1, og->body_len, fptag);
+}
+
 static void parse_header_border(ogg_page *og) {
+	if (ogg_page_serialno(og) != opus_sno) {
+		opuserror(catgets(catd, 3, 7, "複数論理ストリームを持つOggには対応していない"));
+	}
 	if (ogg_page_pageno(og) != 1) {
+		invalid_stream();
+	}
+	if (ogg_page_bos(og) || ogg_page_eos(og)) {
 		invalid_stream();
 	}
 	if (ogg_page_continued(og)) {
@@ -378,127 +389,160 @@ static void parse_header_border(ogg_page *og) {
 		}
 		/* NOTREACHED */
 	}
-	opst = OPUS_COMMENT;
+	
+	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
+	fptag = tmpfile();
+	copy_tag_packet(og);
 }
 
 static void parse_comment(ogg_page *og) {
-	ogg_packet op;
 	if (ogg_page_serialno(og) != opus_sno) {
 		opuserror(catgets(catd, 3, 7, "複数論理ストリームを持つOggには対応していない"));
 	}
-	ogg_stream_pagein(&ios, og);
-	if (ogg_stream_packetout(&ios, &op) != 1) return;
-	
-	if (op.b_o_s || op.e_o_s) {
+	if (ogg_page_pageno(og) != opus_idx++) {
 		invalid_stream();
 	}
-	if (op.bytes < 16 || memcmp(op.packet, OpusTags, 8) != 0) {
-		not_an_opus();
+	
+	if (ogg_page_bos(og) || ogg_page_bos(og)) {
+		invalid_stream();
 	}
-	fptag = tmpfile();
-	size_t left = op.bytes - 8;
-	char *ptr = op.packet + 8;
-	fwrite(OpusTags, 1, 8, fptag);
-	
-	// ベンダ文字列
-	uint32_t len = oi32(*(uint32_t*)ptr);
-	fwrite(ptr, 4, 1, fptag);
-	ptr += 4;
-	left -= 4;
-	if (len > left) comment_aborted();
-	fwrite(ptr, 1, len, fptag);
-	ptr += len;
-	left -= len;
-	
-	// レコード数
-	if (left < 4) comment_aborted();
-	len = oi32(*(uint32_t*)ptr);
-	ptr += 4;
-	left -= 4;
-	
-	tagnum_file = len;
-	fpedit = fpedit ? fpedit : tmpfile();
-	size_t mbpnum = 0;
-	
-	for (size_t i = 0; i < tagnum_file; i++) {
-		if (left < 4) comment_aborted();
-		uint8_t oilen[4];
-		memcpy(oilen, ptr, 4);
-		len = oi32(*(uint32_t*)oilen);
-		ptr += 4;
-		left -= 4;
-		
-		if (left < len) comment_aborted();
-		bool copy, ismbp;
-		switch (O.edit) {
-		case EDIT_WRITE:
-		case EDIT_LIST:
-			ismbp = false;
-			if (len >= mbplen) {
-				uint8_t mbpupper[23];
-				memcpy(mbpupper, ptr, 23);
-				for (size_t i = 0; i < 23; i++) {
-					if (mbpupper[i] >= 0x61 && mbpupper[i] <= 0x7a) {
-						mbpupper[i] -= 32;
-					}
-				}
-				if (memcmp(mbpupper, mbp, mbplen) == 0) {
-					ismbp = true;
-				}
-			}
-			break;
-		}
-		
-		switch (O.edit) {
-		case EDIT_WRITE:
-			copy = ismbp;
-			mbpnum += ismbp;
-			break;
-		case EDIT_LIST:
-			copy = !O.tag_ignore_picture || !ismbp;
-			break;
-		case EDIT_APPEND:
-			copy = true;
-			break;
-		}
-		if (copy) {
-			if (O.tag_toupper) {
-				char *eq = memchr(ptr, 0x3d, len);
-				if (eq) {
-					for (char *p = ptr; p < eq; p++) {
-						if (*p >= 0x61 && *p <= 0x7a) {
-							*p -= 32;
-							toupper_applied = true;
+	if (!ogg_page_continued(og)) {
+		invalid_stream();
+	}
+	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
+	copy_tag_packet(og);
+}
+
+static void rtread(void *p, size_t len) {
+	size_t readlen = fread(p, 1, len, fptag);
+	if (readlen != len) comment_aborted();
+}
+
+static uint32_t rtchunk(void) {
+	uint32_t rtn;
+	rtread(&rtn, 4);
+	return oi32(rtn);
+}
+
+static size_t mbpnum;
+static void rtcopy(void) {
+	uint32_t len = rtchunk();
+	uint8_t buf[512];
+	bool first = true;
+	bool field = true;
+	bool copy;
+	while (len) {
+		size_t rl = len > 512 ? 512 : len;
+		rtread(buf, rl);
+		if (first) {
+			first = false;
+			bool ismbp;
+			switch (O.edit) {
+			case EDIT_WRITE:
+			case EDIT_LIST:
+				ismbp = false;
+				if (O.tag_ignore_picture && len >= mbplen) {
+					uint8_t mbpupper[23];
+					memcpy(mbpupper, buf, 23);
+					for (size_t i = 0; i < 23; i++) {
+						if (mbpupper[i] >= 0x61 && mbpupper[i] <= 0x7a) {
+							mbpupper[i] -= 32;
 						}
 					}
+					if (memcmp(mbpupper, mbp, mbplen) == 0) {
+						ismbp = true;
+					}
+				}
+				break;
+			}
+			
+			switch (O.edit) {
+			case EDIT_WRITE:
+				copy = ismbp;
+				mbpnum += ismbp;
+				break;
+			case EDIT_LIST:
+				copy = !O.tag_ignore_picture || !ismbp;
+				break;
+			case EDIT_APPEND:
+				copy = true;
+				break;
+			}
+			if (copy) {
+				uint8_t chunk[4];
+				*(uint32_t*)chunk = oi32(len);
+				fwrite(chunk, 4, 1, fpedit);
+			}
+		}
+		if (copy) {
+			if (O.tag_toupper && field) {
+				for (char *p = buf, *endp = buf + rl; p < endp; p++) {
+					if (*p >= 0x61 && *p <= 0x7a) {
+						*p -= 32;
+					}
+					if (*p == 0x3d) {
+						field = false;
+						break;
+					}
 				}
 			}
-			fwrite(oilen, 4, 1, fpedit);
-			fwrite(ptr, 1, len, fpedit);
+			fwrite(buf, 1, rl, fpedit);
 		}
-		ptr += len;
-		left -= len;
+		len -= rl;
 	}
+}
+
+static void retrieve_tag() {
+	uint8_t buf[512];
+	rewind(fptag);
+	
+	rtread(buf, 8);
+	if (memcmp(buf, OpusTags, 8) != 0) {
+		not_an_opus();
+	}
+	
+	// ベンダ文字列
+	uint32_t len = rtchunk();
+	while (len) {
+		size_t rl = len > 512 ? 512 : len;
+		rtread(buf, rl);
+		len -= rl;
+	}
+	long int tagpacket_end = ftell(fptag);
+	
+	// レコード数
+	size_t tagnum_file = rtchunk();
+	size_t recordnum = tagnum_file;
+	fpedit = fpedit ? fpedit : tmpfile();
+	
+	while (recordnum) {
+		rtcopy();
+		recordnum--;
+	}
+	
 	if (O.edit == EDIT_WRITE) {
 		tagnum_file = mbpnum;
 	}
 	
-	if (left && (*ptr & 1)) {
+	len = fread(buf, 1, 1, fptag);
+	if (len && (*buf & 1)) {
 		preserved_padding = tmpfile();
-		fwrite(ptr, 1, left, preserved_padding);
-		left = preserved_padding_len;
+		fwrite(buf, 1, 1, preserved_padding);
+		size_t n;
+		while ((n = fread(buf, 1, 512, fptag))) {
+			fwrite(buf, 1, n, preserved_padding);
+		}
 	}
-	
-	if (ogg_stream_packetpeek(&ios, NULL) == 1) {
-		invalid_border();
-	}
-	opst = OPUS_COMMENT_BORDER;
+	fseek(fptag, tagpacket_end, SEEK_SET);
+	int fdtag = fileno(fptag);
+	ftruncate(fdtag, tagpacket_end);
 }
 
 static void parse_comment_border(ogg_page *og) {
 	if (ogg_page_continued(og)) {
 		invalid_border();
 	}
+	retrieve_tag();
 	switch (O.edit) {
 	case EDIT_APPEND:
 	case EDIT_WRITE:
@@ -527,10 +571,12 @@ static void parse_comment_border(ogg_page *og) {
 }
 
 static void parse_page_sound(ogg_page *og) {
-	*(uint32_t*)&og->header[18] = oi32(opus_pidx++);
-	ogg_page_checksum_set(og);
+	if (ogg_page_serialno(og) == opus_sno) {
+		*(uint32_t*)&og->header[18] = oi32(opus_idx++);
+		ogg_page_checksum_set(og);
+	}
 	write_page(og);
-	if (ogg_page_eos(og)) {
+	if (ogg_page_serialno(og) == opus_sno && ogg_page_eos(og)) {
 		put_left();
 		/* NOTREACHED */
 	}
@@ -545,7 +591,7 @@ static void parse_page(ogg_page *og) {
 		
 	case OPUS_HEADER_BORDER:
 		parse_header_border(og);
-		/* FALLTHROUGH */
+		break;
 		
 	case OPUS_COMMENT:
 		parse_comment(og);
