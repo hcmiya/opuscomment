@@ -80,8 +80,12 @@ static void *toutf8(void *fdu8_) {
 		}
 	}
 	size_t readlen, remain, total;
-	remain = 0;
+	remain = 0; total = 0;
 	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
+		total += readlen;
+		if (total > TAG_LENGTH_LIMIT__INPUT) {
+			mainerror(catgets(catd, 2, 11, "編集入力が長過ぎる。変なコマンドを挟んでいませんか?"));
+		}
 		if (strnlen(&lbuf[remain], readlen) != readlen) {
 			err_bin();
 		}
