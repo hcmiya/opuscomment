@@ -28,3 +28,6 @@ $ option: これはfputsの引数なので%はそのまま出力される
                   "%d\\n", <output gain in Q7.8, integer>\n\
     -c tagfile    出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す\n\
     -t NAME=VALUE 引数をタグとして追加する\n`
+
+$ version: %1$s = バージョン番号 (x.y.z), %2$s = 更新日 strftimeで"%x"で出力された文字列が入る
+3 `バージョン: %s (%s更新)\n`

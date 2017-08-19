@@ -11,12 +11,21 @@
 #include <stdarg.h>
 #include <iconv.h>
 #include <langinfo.h>
+#include <time.h>
 
 #include "opuscomment.h"
 #define GLOBAL_MAIN
 #include "global.h"
 
 static void usage(void) {
+	char revision[64];
+	strftime(revision, 64, "%x", &(struct tm){
+		.tm_year = OPUSCOMMENT_REVISION_YEAR,
+		.tm_mon = OPUSCOMMENT_REVISION_MONTH,
+		.tm_mday = OPUSCOMMENT_REVISION_DAY,
+	});
+	fprintf(stderr, catgets(catd, 6, 3, "バージョン: %s (%s更新)\n"), OPUSCOMMENT_VERSION, revision);
+	fputc('\n', stderr);
 	fprintf(stderr, catgets(catd, 6, 1,
 "使い方:\n"
 "    %1$s [-l] [-epRUvV] opusfile\n"

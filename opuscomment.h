@@ -20,3 +20,4 @@ void check_tagpacket_length(void);
 
 #include "ocutil.h"
 #include "limit.h"
+#include "version.h"
