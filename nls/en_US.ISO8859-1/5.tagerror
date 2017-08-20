@@ -1,0 +1,8 @@
+$set 5
+
+1 no field separator
+2 invalid field name
+3 empty field name
+4 binary file
+5 invalid escape sequence
+6 invalid UTF-8 sequence

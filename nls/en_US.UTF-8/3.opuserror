@@ -1,0 +1,11 @@
+$set 3
+
+1 not an Ogg
+2 ヘッダが途切れている
+3 ヘッダのページとパケットの境界が変
+4 not an Opus
+5 invalid stream
+6 unsupported version
+7 複数論理ストリームを持つOggには対応していない
+8 invalid UTF-8 sequence in tag record #%d
+9 扱えるタグの長さを超えた(%uMiBまで)

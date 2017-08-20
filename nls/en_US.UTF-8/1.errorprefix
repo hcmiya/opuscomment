@@ -1,0 +1,17 @@
+$ 以下でいう「プログラム名」とはプログラムパスから得られた実行ファイル名を指す
+
+$set 1
+
+$quote "
+
+$ mainerror / oserror_fmt: %s = プログラム名
+3 "%s: "
+
+$ opuserror: %s = プログラム名
+4 "%s: Opus format error: "
+
+$ fileerror: %1$s = プログラム名 / %2$s = ファイル名
+5 "%s: %s: "
+
+$ tagerror: %1$s = プログラム名 / %2$zu = エラーが起こったタグの順番
+6 "%s: editing input, record #%zu: "
