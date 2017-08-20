@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <stdbool.h>
 #include <getopt.h>
 #include <math.h>
@@ -16,6 +15,7 @@
 #include "opuscomment.h"
 #define GLOBAL_MAIN
 #include "global.h"
+#include "version.h"
 
 static void usage(void) {
 	char revision[64];
@@ -58,12 +58,11 @@ static void usage(void) {
 
 static void parse_args(int argc, char **argv) {
 	int c;
-	iconv_t cd = (iconv_t)-1;
 	while ((c = getopt(argc, argv, "lwag:s:nrGpReUvVc:t:")) != -1) {
 		switch (c) {
-			case 'g':
-			case 's':
-				O.gain_fix = true;
+		case 'g':
+		case 's':
+			O.gain_fix = true;
 			{
 				double f;
 				char *endp;
@@ -85,71 +84,71 @@ static void parse_args(int argc, char **argv) {
 				}
 				O.gain_val = f;
 			}
-				break;
-				
-			case '?':
-				exit(1);
-				break;
+			break;
+			
+		case '?':
+			exit(1);
+			break;
 		}
 		switch (c) {
-			case 'r':
-				O.gain_relative = true;
-				break;
-				
-			case 'n':
-				O.gain_fix = true;
-				O.gain_relative = false;
-				O.gain_val = 0;
-				O.gain_not_zero = false;
-				break;
-				
-			case 'G':
-				O.gain_not_zero = true;
-				break;
-				
-			case 'l':
-				O.edit = EDIT_LIST;
-				break;
-				
-			case 'w':
-				O.edit = EDIT_WRITE;
-				break;
-				
-			case 'a':
-				O.edit = EDIT_APPEND;
-				break;
-				
-			case 'p':
-				O.tag_ignore_picture = true;
-				break;
-				
-			case 'R':
-				O.tag_raw = true;
-				break;
-				
-			case 'e':
-				O.tag_escape = true;
-				break;
-				
-			case 'U':
-				O.tag_toupper = true;
-				break;
-				
-			case 'v':
-				O.info_gain = 1;
-				break;
-				
-			case 'V':
-				O.info_gain = 2;
-				break;
-				
-			case 'c':
-				O.tag_filename = optarg;
-				break;
+		case 'r':
+			O.gain_relative = true;
+			break;
 			
-			case 't':
-				add_tag_from_opt(optarg);
-				break;
+		case 'n':
+			O.gain_fix = true;
+			O.gain_relative = false;
+			O.gain_val = 0;
+			O.gain_not_zero = false;
+			break;
+			
+		case 'G':
+			O.gain_not_zero = true;
+			break;
+			
+		case 'l':
+			O.edit = EDIT_LIST;
+			break;
+			
+		case 'w':
+			O.edit = EDIT_WRITE;
+			break;
+			
+		case 'a':
+			O.edit = EDIT_APPEND;
+			break;
+			
+		case 'p':
+			O.tag_ignore_picture = true;
+			break;
+			
+		case 'R':
+			O.tag_raw = true;
+			break;
+			
+		case 'e':
+			O.tag_escape = true;
+			break;
+			
+		case 'U':
+			O.tag_toupper = true;
+			break;
+			
+		case 'v':
+			O.info_gain = 1;
+			break;
+			
+		case 'V':
+			O.info_gain = 2;
+			break;
+			
+		case 'c':
+			O.tag_filename = optarg;
+			break;
+		
+		case 't':
+			add_tag_from_opt(optarg);
+			break;
 		}
 	}
 	if (fpedit && O.edit == EDIT_LIST) {
@@ -173,9 +172,6 @@ static void parse_args(int argc, char **argv) {
 	}
 	if (O.edit == EDIT_APPEND) {
 		O.tag_ignore_picture = false;
-	}
-	if (cd != (iconv_t)-1) {
-		iconv_close(cd);
 	}
 }
 
