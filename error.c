@@ -21,7 +21,7 @@ void opuserror(char const *e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
-	fputs(catgets(catd, 1, 4, "Opus format error: "), stderr);
+	fprintf(stderr, catgets(catd, 1, 4, "Opus format error at page %u: "), opus_idx);
 	vfprintf(stderr, e, ap);
 	fputc('\n', stderr);
 	exit(2);

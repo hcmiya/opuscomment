@@ -14,7 +14,7 @@
 static size_t seeked_len;
 static char *outtmp;
 static bool remove_tmp, toupper_applied;
-static uint32_t opus_idx = 2, opus_sno;
+static uint32_t opus_sno;
 static FILE *fpout, *preserved_padding;
 
 static char const
@@ -333,6 +333,7 @@ static void parse_header(ogg_page *og) {
 		ogg_page_checksum_set(og);
 		write_page(og);
 	}
+	opus_idx++;
 	opst = OPUS_HEADER_BORDER;
 }
 
@@ -396,13 +397,14 @@ static void parse_header_border(ogg_page *og) {
 	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
 	fptag = tmpfile();
 	copy_tag_packet(og);
+	opus_idx++;
 }
 
 static void parse_comment(ogg_page *og) {
 	if (ogg_page_serialno(og) != opus_sno) {
 		multiple_stream();
 	}
-	if (ogg_page_pageno(og) != opus_idx++) {
+	if (ogg_page_pageno(og) != opus_idx) {
 		invalid_stream();
 	}
 	
@@ -414,6 +416,7 @@ static void parse_comment(ogg_page *og) {
 	}
 	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
 	copy_tag_packet(og);
+	opus_idx++;
 }
 
 static void rtread(void *p, size_t len) {

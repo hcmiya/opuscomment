@@ -8,7 +8,7 @@ $ errorprefix: %s = プログラム名
 3 "%s: "
 
 $ opuserror:
-4 "Opus format error: "
+4 "Opus format error at page %u: "
 
 $ fileerror: %s = ファイル名
 5 "%s: "

@@ -57,8 +57,6 @@ void check_tagpacket_length(void) {
 	}
 }
 
-static FILE *record;
-static int recordfd;
 static void *toutf8(void *fdu8_) {
 	int fdu8 = *(int*)fdu8_;
 	size_t const buflen = 512;
@@ -129,6 +127,8 @@ static void *toutf8(void *fdu8_) {
 	return NULL;
 }
 
+static FILE *record;
+static int recordfd;
 static void blank_record() {
 	rewind(record);
 	ftruncate(recordfd, 0);
