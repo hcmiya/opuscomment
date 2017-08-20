@@ -21,7 +21,7 @@ static void puterror(void) {
 	}
 }
 static void u8error(int nth) {
-	opuserror(catgets(catd, 3, 8, "invalid UTF-8 sequence in tag record #%d"), nth);
+	opuserror(false, catgets(catd, 3, 8, "invalid UTF-8 sequence in tag record #%d"), nth);
 }
 
 static void put_bin(char const *buf, size_t len) {

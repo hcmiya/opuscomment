@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #include "opuscomment.h"
 #include "global.h"
 
@@ -211,23 +212,27 @@ static void store_tags(size_t lastpagelen) {
 }
 
 static void comment_aborted(void) {
-	opuserror(catgets(catd, 3, 2, "header is interrupted"));
+	opuserror(true, catgets(catd, 3, 2, "header is interrupted"));
 }
 
 static void invalid_border(void) {
-	opuserror(catgets(catd, 3, 3, "unexpected page break"));
+	opuserror(true, catgets(catd, 3, 3, "unexpected page break"));
 }
 
 static void not_an_opus(void) {
-	opuserror(catgets(catd, 3, 4, "not an Opus"));
+	opuserror(false, catgets(catd, 3, 4, "not an Opus"));
 }
 
 static void invalid_stream(void) {
-	opuserror(catgets(catd, 3, 5, "invalid stream"));
+	opuserror(true, catgets(catd, 3, 5, "invalid stream"));
 }
 
 static void multiple_stream(void) {
-	opuserror(catgets(catd, 3, 7, "not supported for multiple logical stream"));
+	opuserror(false, catgets(catd, 3, 7, "not supported for multiple logical stream"));
+}
+
+static void disconsecutive_page(unsigned int page) {
+	opuserror(false, catgets(catd, 3, 10, "disconsecutive page - encountered p. %u against expectation of p. %u"), page, opus_idx);
 }
 
 static void cleanup(void) {
@@ -253,7 +258,7 @@ static void parse_header(ogg_page *og) {
 		invalid_stream();
 	}
 	if (ogg_page_pageno(og) != 0) {
-		invalid_stream();
+		disconsecutive_page(ogg_page_pageno(og));
 	}
 	if (test_break(og) < 0) {
 		invalid_border();
@@ -262,7 +267,7 @@ static void parse_header(ogg_page *og) {
 		not_an_opus();
 	}
 	if ((og->body[8] & 0xf0) != 0) {
-		opuserror(catgets(catd, 3, 6, "unsupported version"));
+		opuserror(false, catgets(catd, 3, 6, "unsupported version"));
 	}
 	switch (O.info_gain) {
 		case 1:
@@ -342,7 +347,7 @@ static void copy_tag_packet(ogg_page *og) {
 	static unsigned int total = 0;
 	total += og->body_len;
 	if (total > TAG_LENGTH_LIMIT__INPUT) {
-		opuserror(catgets(catd, 3, 9, "tag packet is too long (up to %u MiB)"), TAG_LENGTH_LIMIT__INPUT >> 20);
+		opuserror(true, catgets(catd, 3, 9, "tag packet is too long (up to %u MiB)"), TAG_LENGTH_LIMIT__INPUT >> 20);
 	}
 	fwrite(og->body, 1, og->body_len, fptag);
 }
@@ -352,7 +357,7 @@ static void parse_header_border(ogg_page *og) {
 		multiple_stream();
 	}
 	if (ogg_page_pageno(og) != 1) {
-		invalid_stream();
+		disconsecutive_page(ogg_page_pageno(og));
 	}
 	if (ogg_page_bos(og) || ogg_page_eos(og)) {
 		invalid_stream();
@@ -405,7 +410,7 @@ static void parse_comment(ogg_page *og) {
 		multiple_stream();
 	}
 	if (ogg_page_pageno(og) != opus_idx) {
-		invalid_stream();
+		disconsecutive_page(ogg_page_pageno(og));
 	}
 	
 	if (ogg_page_bos(og) || ogg_page_bos(og)) {

@@ -366,6 +366,7 @@ void add_tag_from_opt(char const *arg) {
 		size_t ret = iconv(cd, &ls, &l, &u8, &u8left);
 		
 		if (ret == (size_t)-1) {
+			// 引数処理なのでEINVAL時のバッファ持ち越しは考慮しない
 			if (errno != E2BIG) {
 				oserror();
 			}

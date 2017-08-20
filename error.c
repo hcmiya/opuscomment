@@ -17,11 +17,16 @@ void mainerror(char const *e, ...) {
 	exit(1);
 }
 
-void opuserror(char const *e, ...) {
+void opuserror(bool page, char const *e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
-	fprintf(stderr, catgets(catd, 1, 4, "Opus format error at page %u: "), opus_idx);
+	if (page) {
+		fprintf(stderr, catgets(catd, 1, 4, "Opus format error: page %u: "), opus_idx);
+	}
+	else {
+		fprintf(stderr, catgets(catd, 1, 8, "Opus format error: "));
+	}
 	vfprintf(stderr, e, ap);
 	fputc('\n', stderr);
 	exit(2);

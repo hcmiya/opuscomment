@@ -9,3 +9,4 @@ $set 3
 7 not supported for multiple logical stream
 8 invalid UTF-8 sequence in tag record #%d
 9 tag packet is too long (up to %u MiB)
+10 disconsecutive page - encountered p. %u against expectation of p. %u

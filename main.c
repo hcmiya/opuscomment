@@ -239,10 +239,10 @@ int main(int argc, char **argv) {
 	size_t len = fread(buf, 1, buflen, fpopus);
 	if (len == (size_t)-1) oserror();
 	if (len < 4) {
-		opuserror(catgets(catd, 3, 1, "not an Ogg"));
+		opuserror(false, catgets(catd, 3, 1, "not an Ogg"));
 	}
 	if (strncmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
-		opuserror(catgets(catd, 3, 1, "not an Ogg"));
+		opuserror(false, catgets(catd, 3, 1, "not an Ogg"));
 	}
 	ogg_sync_wrote(&oy, len);
 	read_page(&oy);
@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
 	}
 	
 	if (opst < OPUS_SOUND) {
-		opuserror(catgets(catd, 3, 2, "header is interrupted"));
+		opuserror(true, catgets(catd, 3, 2, "header is interrupted"));
 	}
 	
 	move_file();

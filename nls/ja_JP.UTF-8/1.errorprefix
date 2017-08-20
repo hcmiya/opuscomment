@@ -7,8 +7,8 @@ $quote "
 $ errorprefix: %s = プログラム名
 3 "%s: "
 
-$ opuserror
-4 "Opusフォーマットエラー %uページ目: "
+$ opuserror ページ番号あり
+4 "Opusフォーマットエラー: %uページ目: "
 
 $ fileerror: %1$s = ファイル名
 5 "%s: "
@@ -18,3 +18,7 @@ $ tagerror: %zu = エラーが起こったタグの順番
 
 $ opterror: %c = オプションの1文字
 7 "-%c: "
+
+$ opuserror ページ番号無し
+8 "Opusフォーマットエラー: "
+

@@ -8,7 +8,7 @@ $ errorprefix: %s = プログラム名
 3 "%s: "
 
 $ opuserror:
-4 "Opus format error at page %u: "
+4 "Opus format error: page %u: "
 
 $ fileerror: %s = ファイル名
 5 "%s: "
@@ -18,3 +18,7 @@ $ tagerror: %zu = エラーが起こったタグの順番
 
 $ opterror: %c = オプションの1文字
 7 "-%c: "
+
+$ opuserror:
+8 "Opus format error: "
+
