@@ -4,7 +4,7 @@ $set 2
 4 gain value is out of range
 5 can not use -t with list mode
 6 use -a|-w with editing tag
-7 editing gain option can not use with list mode
+7 options of editing gain can not use with list mode
 8 no file specified
 9 too many arguments
 10 tag length exceeded the limit of storing (up to %u MiB)

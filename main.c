@@ -183,7 +183,7 @@ static void parse_args(int argc, char **argv) {
 	}
 	else if (O.gain_fix) {
 		if (O.edit == EDIT_LIST) {
-			mainerror(catgets(catd, 2, 7, "editing gain option can not use with list mode"));
+			mainerror(catgets(catd, 2, 7, "options of editing gain can not use with list mode"));
 		}
 		else if (!O.edit) {
 			if (O.tag_filename/* || fpedit*/) {
