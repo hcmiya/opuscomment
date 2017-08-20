@@ -16,7 +16,7 @@ void mainerror(char const *e, ...) {
 void opuserror(char const *e, ...) {
 	va_list ap;
 	va_start(ap, e);
-	fprintf(stderr, catgets(catd, 1, 4, "%s: Opusフォーマットエラー: "), program_name);
+	fprintf(stderr, catgets(catd, 1, 4, "%s: Opus format error: "), program_name);
 	vfprintf(stderr, e, ap);
 	fputc('\n', stderr);
 	exit(2);

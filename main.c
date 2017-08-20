@@ -24,34 +24,41 @@ static void usage(void) {
 		.tm_mon = OPUSCOMMENT_REVISION_MONTH,
 		.tm_mday = OPUSCOMMENT_REVISION_DAY,
 	});
-	fprintf(stderr, catgets(catd, 6, 3, "バージョン: %s (%s更新)\n"), OPUSCOMMENT_VERSION, revision);
+	fprintf(stderr, catgets(catd, 6, 3, "Version: %s (rev. %s)\n"), OPUSCOMMENT_VERSION, revision);
 	fputc('\n', stderr);
 	fprintf(stderr, catgets(catd, 6, 1,
-"使い方:\n"
+"Synopsys:\n"
 "    %1$s [-l] [-epRUvV] opusfile\n"
 "    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n"
 	), program_name);
 	fputc('\n', stderr);
 	fputs(catgets(catd, 6, 2,
-"オプション:\n"
-"    -l            タグ出力モード\n"
-"    -a            タグ追記モード\n"
-"    -w            タグ書き込みモード\n"
-"    -R            タグ入出力の文字符号化方式をUTF-8として扱う\n"
-"    -e            バックスラッシュ、改行、復帰、ヌルにそれぞれ\\\\, \\n, \\r, \\0のエスケープを使用する\n"
-"    -g gain       出力ゲインをdBで指定する\n"
-"    -s gain       出力ゲインをPCMサンプルの倍率で指定する。1で等倍。0.5で半分\n"
-"    -n            出力ゲインを0にする\n"
-"    -r            出力ゲインの指定を内部の設定に対する相対値とする\n"
-"    -G            出力ゲインが内部形式にした時に0になる場合は[-+]1/256 dBを設定する\n"
-"    -p            METADATA_BLOCK_PICTUREの出力または削除をしない\n"
-"    -U            Opusファイル内のタグの項目名を大文字に変換する\n"
-"    -v            出力ゲインの編集『前』の値を以下の形式で標準エラー出力に出力する\n"
-"                  \"%.8g\\n\", <output gain in dB, floating point>\n"
-"    -V            出力ゲインの編集『前』の値を以下の形式で標準エラー出力に出力する\n"
-"                  \"%d\\n\", <output gain in Q7.8, integer>\n"
-"    -c tagfile    出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す\n"
-"    -t NAME=VALUE 引数をタグとして追加する\n"
+"Options:\n"
+"    -l    List mode\n"
+"    -a    Append mode\n"
+"    -w    Write mode\n"
+"    -R    Assume editing IO to be encoded in UTF-8\n"
+"    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
+"    -g gain\n"
+"          Specify output gain in dB\n"
+"    -s gain\n"
+"          Specify output gain in scale for PCM samples.\n"
+"          1 for same scale. 0.5 for half.\n"
+"    -n    Set output gain to 0\n"
+"    -r    Specify that the gain is relative to internal value\n"
+"    -G    When output gain becomes 0 by converting to internal representation,\n"
+"          set [+-]1/256 dB instead\n"
+"    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
+"    -U    Convert field name in Opus file to uppercase\n"
+"    -v    Put output gain of BEFORE editing to stderr by following format:\n"
+"          \"%.8g\\n\", <output gain in dB>\n"
+"    -V    Put output gain of BEFORE editing to stderr by following format:\n"
+"          \"%d\\n\", <output gain in Q7.8>\n"
+"    -c tagfile\n"
+"          In list mode, write tags to tagfile.\n"
+"          In append/write mode, read tags from tagfile\n"
+"    -t NAME=VALUE\n"
+"          add the argument as editing item\n"
 	), stderr);
 	exit(1);
 }
@@ -191,14 +198,14 @@ int main(int argc, char **argv) {
 	
 	parse_args(argc, argv);
 	if (!argv[optind]) {
-		mainerror(catgets(catd, 2, 8, "ファイル指定がない"));
+		mainerror(catgets(catd, 2, 8, "no file specified"));
 	}
 	if (argv[optind + 1]) {
 		if (O.edit == EDIT_LIST) {
-			mainerror(catgets(catd, 2, 9, "ファイル指定が多い"));
+			mainerror(catgets(catd, 2, 9, "too many arguments"));
 		}
 		if (argv[optind + 2]) {
-			mainerror(catgets(catd, 2, 9, "ファイル指定が多い"));
+			mainerror(catgets(catd, 2, 9, "too many arguments"));
 		}
 		O.out = argv[optind + 1];
 	}
@@ -218,10 +225,10 @@ int main(int argc, char **argv) {
 	size_t len = fread(buf, 1, buflen, fpopus);
 	if (len == (size_t)-1) oserror();
 	if (len < 4) {
-		opuserror(catgets(catd, 3, 1, "Oggではない"));
+		opuserror(catgets(catd, 3, 1, "not an Ogg"));
 	}
 	if (strncmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
-		opuserror(catgets(catd, 3, 1, "Oggではない"));
+		opuserror(catgets(catd, 3, 1, "not an Ogg"));
 	}
 	ogg_sync_wrote(&oy, len);
 	read_page(&oy);

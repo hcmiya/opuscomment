@@ -21,7 +21,7 @@ static void puterror(void) {
 	}
 }
 static void u8error(int nth) {
-	opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), nth);
+	opuserror(catgets(catd, 3, 8, "invalid UTF-8 sequence in tag record #%d"), nth);
 }
 
 static void put_bin(char const *buf, size_t len) {
@@ -88,7 +88,7 @@ void put_tags(void) {
 		cd = iconv_open(charsetname, "UTF-8");
 		if (cd == (iconv_t)-1) {
 			if (errno == EINVAL) {
-				oserror_fmt(catgets(catd, 4, 2, "iconvがUTF-8→%sの変換に対応していない"), nl_langinfo(CODESET));
+				oserror_fmt(catgets(catd, 4, 2, "iconv doesn't support converting UTF-8 -> %s"), nl_langinfo(CODESET));
 			}
 			else oserror();
 		}

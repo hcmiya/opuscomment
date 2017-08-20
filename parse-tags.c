@@ -25,29 +25,29 @@ static void readerror(void) {
 }
 
 static void tagerror(char *e) {
-	fprintf(stderr, catgets(catd, 1, 6, "%s: タグ入力%zu番目: "), program_name, tagnum_edit + 1);
+	fprintf(stderr, catgets(catd, 1, 6, "%s: editing input, record #%zu: "), program_name, tagnum_edit + 1);
 	fputs(e, stderr);
 	fputc('\n', stderr);
 	exit(1);
 }
 
 static void err_nosep(void) {
-	tagerror(catgets(catd, 5, 1, "項目名と値の区切りが存在しない"));
+	tagerror(catgets(catd, 5, 1, "no field separator"));
 }
 static void err_name(void) {
-	tagerror(catgets(catd, 5, 2, "項目名が不正"));
+	tagerror(catgets(catd, 5, 2, "invalid field name"));
 }
 static void err_empty(void) {
-	tagerror(catgets(catd, 5, 3, "空の項目名"));
+	tagerror(catgets(catd, 5, 3, "empty field name"));
 }
 static void err_bin(void) {
-	tagerror(catgets(catd, 5, 4, "バイナリファイル"));
+	tagerror(catgets(catd, 5, 4, "binary file"));
 }
 static void err_esc(void) {
-	tagerror(catgets(catd, 5, 5, "不正なエスケープシーケンス"));
+	tagerror(catgets(catd, 5, 5, "invalid escape sequence"));
 }
 static void err_utf8(void) {
-	tagerror(catgets(catd, 5, 6, "不正なUTF-8シーケンス"));
+	tagerror(catgets(catd, 5, 6, "invalid UTF-8 sequence"));
 }
 
 void check_tagpacket_length(void) {
@@ -73,7 +73,7 @@ static void *toutf8(void *fdu8_) {
 #endif
 	if (cd == (iconv_t)-1) {
 		if (errno == EINVAL) {
-			oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), fromcode);
+			oserror_fmt(catgets(catd, 4, 1, "iconv doesn't support converting %s -> UTF-8"), fromcode);
 		}
 		else {
 			oserror();
@@ -84,7 +84,7 @@ static void *toutf8(void *fdu8_) {
 	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
 		total += readlen;
 		if (total > TAG_LENGTH_LIMIT__INPUT) {
-			mainerror(catgets(catd, 2, 11, "編集入力が長過ぎる。変なコマンドを挟んでいませんか?"));
+			mainerror(catgets(catd, 2, 11, "too long editing input"));
 		}
 		if (strnlen(&lbuf[remain], readlen) != readlen) {
 			err_bin();
@@ -351,7 +351,7 @@ void add_tag_from_opt(char const *arg) {
 		cd = iconv_open("UTF-8", nl_langinfo(CODESET));
 #endif
 		if (cd == (iconv_t)-1) {
-			oserror_fmt(catgets(catd, 4, 1, "iconvが%s→UTF-8の変換に対応していない"), nl_langinfo(CODESET));
+			oserror_fmt(catgets(catd, 4, 1, "iconv doesn't support converting %s -> UTF-8"), nl_langinfo(CODESET));
 		}
 	}
 	fpedit = fpedit ? fpedit : tmpfile();

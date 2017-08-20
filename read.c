@@ -219,11 +219,11 @@ static void invalid_border(void) {
 }
 
 static void not_an_opus(void) {
-	opuserror(catgets(catd, 3, 4, "Opusではない"));
+	opuserror(catgets(catd, 3, 4, "not an Opus"));
 }
 
 static void invalid_stream(void) {
-	opuserror(catgets(catd, 3, 5, "異常なOpusストリーム"));
+	opuserror(catgets(catd, 3, 5, "invalid stream"));
 }
 
 static void cleanup(void) {
@@ -258,7 +258,7 @@ static void parse_header(ogg_page *og) {
 		not_an_opus();
 	}
 	if ((og->body[8] & 0xf0) != 0) {
-		opuserror(catgets(catd, 3, 6, "未対応のバージョン"));
+		opuserror(catgets(catd, 3, 6, "unsupported version"));
 	}
 	switch (O.info_gain) {
 		case 1:
