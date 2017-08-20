@@ -63,6 +63,20 @@ static void usage(void) {
 	exit(1);
 }
 
+void opterror(int c, char const *e, ...) {
+	va_list ap;
+	va_start(ap, e);
+	errorprefix();
+	fprintf(stderr, catgets(catd, 1, 7, "-%c: "), c);
+	vfprintf(stderr, e, ap);
+	fputc('\n', stderr);
+	exit(1);
+}
+
+static void out_of_range(int c) {
+	opterror(c, catgets(catd, 2, 3, "gain value is out of range"));
+}
+
 static void parse_args(int argc, char **argv) {
 	int c;
 	while ((c = getopt(argc, argv, "lwag:s:nrGpReUvVc:t:")) != -1) {
@@ -75,19 +89,19 @@ static void parse_args(int argc, char **argv) {
 				char *endp;
 				f = strtod(optarg, &endp);
 				if (optarg == endp) {
-					mainerror(catgets(catd, 2, 3, "ゲイン値のパース失敗"));
+					opterror(c, catgets(catd, 2, 3, "failed to parse gain value"));
 				}
 				if (!isfinite(f)) {
-					mainerror(catgets(catd, 2, 4, "ゲイン値の範囲外"));
+					out_of_range(c);
 				}
 				if (c == 's') {
 					if (f <= 0) {
-						mainerror(catgets(catd, 2, 4, "ゲイン値の範囲外"));
+						out_of_range(c);
 					}
 					f = 20 * log10(f);
 				}
 				if (f > 128 || f < -128) {
-					mainerror(catgets(catd, 2, 4, "ゲイン値の範囲外"));
+					out_of_range(c);
 				}
 				O.gain_val = f;
 			}
@@ -159,21 +173,21 @@ static void parse_args(int argc, char **argv) {
 		}
 	}
 	if (fpedit && O.edit == EDIT_LIST) {
-		mainerror(catgets(catd, 2, 5, "タグ出力時は-tを使用できない"));
+		mainerror(catgets(catd, 2, 5, "can not use -t with list mode"));
 	}
 	if (fpedit && !O.edit) {
-		mainerror(catgets(catd, 2, 6, "タグ編集時は-a|-wの指定が必要"));
+		mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
 	}
 	if (!O.gain_fix && !O.edit) {
 		O.edit = EDIT_LIST;
 	}
 	else if (O.gain_fix) {
 		if (O.edit == EDIT_LIST) {
-			mainerror(catgets(catd, 2, 7, "ゲイン調整のオプションは-lと同時に使用できない"));
+			mainerror(catgets(catd, 2, 7, "editing gain option can not use with list mode"));
 		}
 		else if (!O.edit) {
 			if (O.tag_filename/* || fpedit*/) {
-				mainerror(catgets(catd, 2, 6, "タグ編集時は-a|-wの指定が必要"));
+				mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
 			}
 		}
 	}
@@ -244,7 +258,7 @@ int main(int argc, char **argv) {
 	}
 	
 	if (opst < OPUS_SOUND) {
-		opuserror(catgets(catd, 3, 2, "ヘッダが途切れている"));
+		opuserror(catgets(catd, 3, 2, "header is interrupted"));
 	}
 	
 	move_file();

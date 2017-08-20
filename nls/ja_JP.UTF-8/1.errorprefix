@@ -4,14 +4,17 @@ $set 1
 
 $quote "
 
-$ mainerror / oserror_fmt: %s = プログラム名
+$ errorprefix: %s = プログラム名
 3 "%s: "
 
-$ opuserror: %s = プログラム名
-4 "%s: Opusフォーマットエラー: "
+$ opuserror
+4 "Opusフォーマットエラー: "
 
-$ fileerror: %1$s = プログラム名 / %2$s = ファイル名
-5 "%s: %s: "
+$ fileerror: %1$s = ファイル名
+5 "%s: "
 
-$ tagerror: %1$s = プログラム名 / %2$zu = エラーが起こったタグの順番
-6 "%s: タグ入力%zu番目: "
+$ tagerror: %zu = エラーが起こったタグの順番
+6 "タグ入力%zu番目: "
+
+$ opterror: %c = オプションの1文字
+7 "-%c: "

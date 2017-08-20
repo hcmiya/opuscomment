@@ -110,7 +110,7 @@ static void store_tags(size_t lastpagelen) {
 	}
 	long commentlen = ftell(fptag);
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
-		mainerror("保存出来るタグの長さが上限を超えた(%uMiBまで)", TAG_LENGTH_LIMIT__OUTPUT >> 20);
+		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
 	}
 	
 	rewind(fptag); 
@@ -211,11 +211,11 @@ static void store_tags(size_t lastpagelen) {
 }
 
 static void comment_aborted(void) {
-	opuserror(catgets(catd, 3, 2, "ヘッダが途切れている"));
+	opuserror(catgets(catd, 3, 2, "header is interrupted"));
 }
 
 static void invalid_border(void) {
-	opuserror(catgets(catd, 3, 3, "ヘッダのページとパケットの境界が変"));
+	opuserror(catgets(catd, 3, 3, "unexpected page break"));
 }
 
 static void not_an_opus(void) {
@@ -224,6 +224,10 @@ static void not_an_opus(void) {
 
 static void invalid_stream(void) {
 	opuserror(catgets(catd, 3, 5, "invalid stream"));
+}
+
+static void multiple_stream(void) {
+	opuserror(catgets(catd, 3, 7, "not supported for multiple logical stream"));
 }
 
 static void cleanup(void) {
@@ -337,14 +341,14 @@ static void copy_tag_packet(ogg_page *og) {
 	static unsigned int total = 0;
 	total += og->body_len;
 	if (total > TAG_LENGTH_LIMIT__INPUT) {
-		opuserror(catgets(catd, 3, 9, "扱えるタグの長さを超えた(%uMiBまで)"), TAG_LENGTH_LIMIT__INPUT >> 20);
+		opuserror(catgets(catd, 3, 9, "tag packet is too long (up to %u MiB)"), TAG_LENGTH_LIMIT__INPUT >> 20);
 	}
 	fwrite(og->body, 1, og->body_len, fptag);
 }
 
 static void parse_header_border(ogg_page *og) {
 	if (ogg_page_serialno(og) != opus_sno) {
-		opuserror(catgets(catd, 3, 7, "複数論理ストリームを持つOggには対応していない"));
+		multiple_stream();
 	}
 	if (ogg_page_pageno(og) != 1) {
 		invalid_stream();
@@ -396,7 +400,7 @@ static void parse_header_border(ogg_page *og) {
 
 static void parse_comment(ogg_page *og) {
 	if (ogg_page_serialno(og) != opus_sno) {
-		opuserror(catgets(catd, 3, 7, "複数論理ストリームを持つOggには対応していない"));
+		multiple_stream();
 	}
 	if (ogg_page_pageno(og) != opus_idx++) {
 		invalid_stream();

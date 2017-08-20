@@ -1,11 +1,11 @@
 $set 2
 
-3 ゲイン値のパース失敗
-4 ゲイン値の範囲外
-5 タグ出力時は-tを使用できない
-6 タグ編集時は-a|-wの指定が必要
-7 ゲイン調整のオプションは-lと同時に使用できない
+3 failed to parse gain value
+4 gain value is out of range
+5 can not use -t with list mode
+6 use -a|-w with editing tag
+7 editing gain option can not use with list mode
 8 no file specified
 9 too many arguments
-10 保存出来るタグの長さが上限を超えた(%uMiBまで)
-11 編集入力が長過ぎる。変なコマンドを挟んでいませんか?
+10 tag length exceeded the limit of storing (up to %u MiB)
+11 too long editing input

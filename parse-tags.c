@@ -25,7 +25,8 @@ static void readerror(void) {
 }
 
 static void tagerror(char *e) {
-	fprintf(stderr, catgets(catd, 1, 6, "%s: editing input, record #%zu: "), program_name, tagnum_edit + 1);
+	errorprefix();
+	fprintf(stderr, catgets(catd, 1, 6, "editing input #%zu: "), tagnum_edit + 1);
 	fputs(e, stderr);
 	fputc('\n', stderr);
 	exit(1);
@@ -52,7 +53,7 @@ static void err_utf8(void) {
 
 void check_tagpacket_length(void) {
 	if (tagpacket_total > TAG_LENGTH_LIMIT__OUTPUT) {
-		mainerror(catgets(catd, 1, 10, "保存出来るタグの長さが上限を超えた(%uMiBまで)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
 	}
 }
 

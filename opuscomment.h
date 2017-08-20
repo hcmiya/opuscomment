@@ -4,6 +4,7 @@ void parse_tags(void);
 void add_tag_from_opt(char const *);
 void put_tags(void);
 void read_page(ogg_sync_state*);
+void errorprefix(void);
 void mainerror(char const*, ...);
 void opuserror(char const*, ...);
 void oserror(void);
