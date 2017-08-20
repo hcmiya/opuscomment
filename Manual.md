@@ -130,7 +130,7 @@ Ogg VorbisとOgg Opusはタグの内部形式が同じで、またopuscommentは
 
     vorbiscomment -Re music-01.oga |opuscomment -wRe music-01.opus
 
-### opuscomment方式のエスケープを編集する場合
+### opuscomment方式のエスケープで編集する場合
 
 エンコードのやり直しのために同じタグを別のOpusファイルにコピーするという状況を考える。この時、opuscomment同士を直接パイプで繋いでタグの受け渡しを行うことは安全である。
 

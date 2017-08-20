@@ -20,6 +20,9 @@ static void puterror(void) {
 		oserror();
 	}
 }
+static void u8error(int nth) {
+	opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), nth);
+}
 
 static void put_bin(char const *buf, size_t len) {
 	size_t ret = fwrite(buf, 1, len, stdout);
@@ -27,8 +30,53 @@ static void put_bin(char const *buf, size_t len) {
 		puterror();
 	}
 }
-
-static void put_tags_w(void) {
+static char *esc_oc(char *n1, char *end) {
+	char *n2 = end;
+	while(n1 < end) {
+		*n2++ = *n1++;
+		if (n1[-1] == 0xa) *n2++ = 0x9;
+	}
+	return n2;
+}
+static char *esc_vc(char *n1, char *end) {
+	char *n2 = end;
+	for (; n1 < end; n1++) {
+		switch (*n1) {
+		case 0x00:
+			*n2++ = 0x5c;
+			*n2++ = 0x30;
+			break;
+			
+		case 0x0a:
+			*n2++ = 0x5c;
+			*n2++ = 0x6e;
+			break;
+		case 0x0d:
+			*n2++ = 0x5c;
+			*n2++ = 0x72;
+			break;
+			
+		case 0x5c:
+			*n2++ = 0x5c;
+			*n2++ = 0x5c;
+			break;
+			
+		default:
+			*n2++ = *n1;
+			break;
+		}
+	}
+	return n2;
+}
+void put_tags(void) {
+	bool to_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
+	if (to_file) {
+		FILE *tmp = freopen(O.tag_filename, "w", stdout);
+		if (!tmp) {
+			fileerror(O.tag_filename);
+		}
+	}
+	
 	iconv_t cd;
 	char charsetname[128];
 	
@@ -48,11 +96,12 @@ static void put_tags_w(void) {
 	size_t buflenunit = (1 << 13);
 	size_t buflen = buflenunit * 3;
 	uint8_t *buf = malloc(buflen);
-	size_t nth = 1;
+	int nth = 1;
+	char* (*esc)(char*, char*) = O.tag_escape ? esc_vc : esc_oc;
 	
 	rewind(fpedit);
 	for (;;) {
-		char *n1, *n2, *u8, *ls;
+		char *u8, *ls;
 		uint32_t len;
 		if (!fread(&len, 4, 1, fpedit)) break;
 		len = oi32(len);
@@ -62,44 +111,12 @@ static void put_tags_w(void) {
 			size_t readlen = left > readmax ? readmax : left;
 			fread(buf + remain, 1, readlen, fpedit);
 			left -= readlen;
+			
 			char *escbegin = buf + readlen + remain;
-			n1 = buf, n2 = escbegin;
-			if (O.tag_escape) {
-				for (; n1 < escbegin; n1++) {
-					switch (*n1) {
-					case 0x00:
-						*n2++ = 0x5c;
-						*n2++ = 0x30;
-						break;
-						
-					case 0x0a:
-						*n2++ = 0x5c;
-						*n2++ = 0x6e;
-						break;
-					case 0x0d:
-						*n2++ = 0x5c;
-						*n2++ = 0x72;
-						break;
-						
-					case 0x5c:
-						*n2++ = 0x5c;
-						*n2++ = 0x5c;
-						break;
-						
-					default:
-						*n2++ = *n1;
-						break;
-					}
-				}
-			}
-			else {
-				while(n1 < escbegin) {
-					*n2++ = *n1++;
-					if (n1[-1] == 0xa) *n2++ = 0x9;
-				}
-			}
-			size_t tagleft = n2 - escbegin;
+			char *escend = esc(buf, escbegin);
+			size_t tagleft = escend - escbegin;
 			memmove(buf, escbegin, tagleft);
+			
 			if (O.tag_raw) {
 				put_bin(buf, tagleft);
 			}
@@ -107,15 +124,15 @@ static void put_tags_w(void) {
 				u8 = buf;
 				ls = buf + tagleft;
 				for (;;) {
-					n2 = ls;
+					char *lsend = ls;
 					size_t bufleft = buflen - (ls - (char*)buf) - 1;
-					size_t iconvret = iconv(cd, &u8, &tagleft, &n2, &bufleft);
+					size_t iconvret = iconv(cd, &u8, &tagleft, &lsend, &bufleft);
 					int ie = errno;
 					errno = 0;
 					if (iconvret == (size_t)-1 && ie == EILSEQ) {
-						opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), nth);
+						u8error(nth);
 					}
-					*n2 = '\0';
+					*lsend = '\0';
 					if (fputs(ls, stdout) == EOF) {
 						puterror();
 					}
@@ -130,7 +147,7 @@ static void put_tags_w(void) {
 			}
 		}
 		if (remain) {
-			opuserror(catgets(catd, 3, 8, "%d個目のタグのUTF-8シーケンスが不正"), nth);
+			u8error(nth);
 		}
 		if (O.tag_raw) {
 			put_bin("\x0a", 1);
@@ -138,27 +155,17 @@ static void put_tags_w(void) {
 		else {
 			strcpy(buf, "\x0a");
 			left = 2, remain = 200;
-			n1 = buf, n2 = buf + 2;
-			if (iconv(cd, &n1, &left, &n2, &remain) == (size_t)-1) {
+			u8 = buf, ls = buf + 2;
+			if (iconv(cd, &u8, &left, &ls, &remain) == (size_t)-1) {
 				oserror();
 			}
-			if (fputs(n1, stdout) == EOF) {
+			if (fputs(u8, stdout) == EOF) {
 				puterror();
 			}
 		}
 		nth++;
 	}
-}
-
-void put_tags(void) {
-	bool to_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
-	if (to_file) {
-		FILE *tmp = freopen(O.tag_filename, "w", stdout);
-		if (!tmp) {
-			fileerror(O.tag_filename);
-		}
-	}
-	put_tags_w();
+	
 	if (fclose(stdout) == EOF) {
 		puterror();
 	}

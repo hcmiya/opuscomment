@@ -13,7 +13,7 @@
 #include "opuscomment.h"
 #include "global.h"
 
-static size_t seeked_len, preserved_padding_len;
+static size_t seeked_len;
 static char *outtmp;
 static bool remove_tmp, toupper_applied;
 static uint32_t opus_idx = 2, opus_sno;
@@ -46,18 +46,24 @@ void move_file(void) {
 	}
 }
 
+static uint8_t *gbuf;
+static size_t const gbuflen = 65307; // oggページの最大長
+static void prepare_gbuf(void) {
+	if (gbuf) return;
+	gbuf = malloc(gbuflen);
+}
+
 static void put_left(void) {
 	size_t l;
-	size_t buflen = 1 << 18;
-	uint8_t *buf = malloc(buflen);
+	prepare_gbuf();
 	
 	clearerr(fpopus);
 	if (fseek(fpopus, seeked_len, SEEK_SET)) {
 		oserror();
 	}
 	
-	while (l = fread(buf, 1, buflen, fpopus)) {
-		size_t ret = fwrite(buf, 1, l, fpout);
+	while (l = fread(gbuf, 1, gbuflen, fpopus)) {
+		size_t ret = fwrite(gbuf, 1, l, fpout);
 		if (ret != l) {
 			oserror();
 		}
@@ -65,7 +71,7 @@ static void put_left(void) {
 	if (ferror(fpopus)) {
 		oserror();
 	}
-	free(buf);
+	free(gbuf);
 	move_file();
 	exit(0);
 }
@@ -82,19 +88,6 @@ static void write_page(ogg_page *og) {
 	}
 }
 
-static void append_tag(FILE *fp, char *tag) {
-	size_t len = strlen(tag);
-	uint32_t tmp32 = oi32(len);
-	size_t ret = fwrite(&tmp32, 1, 4, fp);
-	if (ret != 4) {
-		oserror();
-	}
-	ret = fwrite(tag, 1, len, fp);
-	if (ret != len) {
-		oserror();
-	}
-}
-
 FILE *fptag;
 static int opus_idx_diff;
 static void store_tags(size_t lastpagelen) {
@@ -104,16 +97,16 @@ static void store_tags(size_t lastpagelen) {
 	tmp32 = oi32(len);
 	fwrite(&tmp32, 1, 4, fptag);
 	
-	char *tagbuf = malloc(65307);
+	prepare_gbuf();
 	rewind(fpedit);
-	while ((len = fread(tagbuf, 1, 65307, fpedit))) {
-		fwrite(tagbuf, 1, len, fptag);
+	while ((len = fread(gbuf, 1, gbuflen, fpedit))) {
+		fwrite(gbuf, 1, len, fptag);
 	}
 	fclose(fpedit);
 	if (preserved_padding) {
 		rewind(preserved_padding);
-		while ((len = fread(tagbuf, 1, 65307, preserved_padding))) {
-			fwrite(tagbuf, 1, len, fptag);
+		while ((len = fread(gbuf, 1, gbuflen, preserved_padding))) {
+			fwrite(gbuf, 1, len, fptag);
 		}
 		fclose(preserved_padding);
 	}
@@ -125,9 +118,9 @@ static void store_tags(size_t lastpagelen) {
 	rewind(fptag); 
 	ogg_page og;
 	og.header_len = 282;
-	og.header = tagbuf;
+	og.header = gbuf;
 	og.body_len = 255 * 255;
-	og.body = tagbuf + 282;
+	og.body = gbuf + 282;
 	memcpy(og.header,
 		"\x4f\x67\x67\x53"
 		"\0"
@@ -216,7 +209,6 @@ static void store_tags(size_t lastpagelen) {
 			/* NOTREACHED */
 		}
 	}
-	free(tagbuf);
 	opus_idx_diff = idx - opus_idx;
 }
 

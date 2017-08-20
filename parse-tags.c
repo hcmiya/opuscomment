@@ -289,14 +289,17 @@ void prepare_record(void) {
 	recordfd = fileno(record);
 }
 
-static void split(void) {
-	uint8_t tagbuf[512], *p1, *p2;
-	size_t tagbuflen, readlen;
-	void (*line)(uint8_t *, size_t);
-	
-	tagbuflen = 512;
-	line = O.tag_escape ? r_line_e : r_line;
+void parse_tags(void) {
+	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
+	if (from_file) {
+		FILE *tmp = freopen(O.tag_filename, "r", stdin);
+		if (!tmp) {
+			fileerror(O.tag_filename);
+		}
+	}
 	prepare_record();
+	
+	void (*line)(uint8_t *, size_t) = O.tag_escape ? r_line_e : r_line;
 	
 	int pfd[2];
 	pipe(pfd);
@@ -305,7 +308,12 @@ static void split(void) {
 	pthread_create(&thu8, NULL, toutf8, &pfd[1]);
 	pthread_detach(thu8);
 	
+	uint8_t tagbuf[512];
+	size_t tagbuflen, readlen;
+	tagbuflen = 512;
+	
 	while ((readlen = fread(tagbuf, 1, tagbuflen, fpu8)) != 0) {
+		uint8_t *p1, *p2;
 		if (memchr(tagbuf, 0, readlen) != NULL) {
 			err_bin();
 		}
@@ -321,17 +329,6 @@ static void split(void) {
 	fclose(fpu8);
 	line(NULL, 0);
 	fclose(record);
-}
-
-void parse_tags(void) {
-	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
-	if (from_file) {
-		FILE *tmp = freopen(O.tag_filename, "r", stdin);
-		if (!tmp) {
-			fileerror(O.tag_filename);
-		}
-	}
-	split();
 }
 
 void add_tag_from_opt(char const *arg) {
