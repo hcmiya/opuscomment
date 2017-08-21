@@ -83,7 +83,7 @@ static void *toutf8(void *fdu8_) {
 	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
 		total += readlen;
 		if (total > TAG_LENGTH_LIMIT__INPUT) {
-			mainerror(catgets(catd, 2, 11, "too long editing input"));
+			mainerror(catgets(catd, 2, 11, "too long editing input. Haven't you executed odd command?"));
 		}
 		if (strnlen(&lbuf[remain], readlen) != readlen) {
 			err_bin();

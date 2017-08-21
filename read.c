@@ -237,7 +237,7 @@ static void disconsecutive_page(unsigned int page) {
 
 static void cleanup(void) {
 	if (remove_tmp) {
-		remove(outtmp);
+		unlink(outtmp);
 	}
 }
 

@@ -11,6 +11,7 @@
 #include <iconv.h>
 #include <langinfo.h>
 #include <time.h>
+#include <signal.h>
 
 #include "opuscomment.h"
 #define GLOBAL_MAIN
@@ -196,7 +197,23 @@ static void parse_args(int argc, char **argv) {
 	}
 }
 
+static void interrupted(int sig) {
+	exit(1);
+}
+
 int main(int argc, char **argv) {
+	struct sigaction sa;
+	sa.sa_handler = interrupted;
+	sigemptyset(&sa.sa_mask);
+	sigaddset(&sa.sa_mask, SIGINT);
+	sigaddset(&sa.sa_mask, SIGQUIT);
+	sigaddset(&sa.sa_mask, SIGTERM);
+	sigaddset(&sa.sa_mask, SIGPIPE);
+	sa.sa_flags = 0;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	
 	setlocale(LC_ALL, "");
 	if (*argv[0]) {
 		char *p = strrchr(argv[0], '/');
