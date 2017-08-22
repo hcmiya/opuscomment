@@ -69,6 +69,9 @@ static char *esc_vc(char *n1, char *end) {
 	return n2;
 }
 void *put_tags(void *fp_) {
+	// retrieve_tag() からスレッド化された
+	// fpはチャンク化されたタグ
+	// [4バイト: タグ長(ホストエンディアン)][任意長: UTF-8タグ]
 	FILE *fp = fp_;
 	bool to_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
 	if (to_file) {

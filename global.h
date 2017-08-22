@@ -47,7 +47,7 @@ GLOBAL enum {
 GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
-GLOBAL size_t tagnum_file, tagnum_edit;
+GLOBAL size_t tagnum_edit;
 GLOBAL long int tagpacket_total;
 GLOBAL uint32_t opus_idx;
 GLOBAL bool error_on_thread;

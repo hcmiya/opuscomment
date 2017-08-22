@@ -302,6 +302,7 @@ void parse_tags(void) {
 	
 	void (*line)(uint8_t *, size_t) = O.tag_escape ? r_line_e : r_line;
 	
+	// stdinからのUTF-8生成を別スレッド化、合流なし
 	int pfd[2];
 	pipe(pfd);
 	FILE *fpu8 = fdopen(pfd[0], "r");
@@ -310,6 +311,7 @@ void parse_tags(void) {
 	pthread_create(&thu8, NULL, toutf8, &pfd[1]);
 	pthread_detach(thu8);
 	
+	// 本スレッドは生成されたUTF-8文字列をチャンク化する
 	uint8_t tagbuf[512];
 	size_t tagbuflen, readlen;
 	tagbuflen = 512;

@@ -91,6 +91,7 @@ static void write_page(ogg_page *og) {
 
 FILE *fptag;
 static int opus_idx_diff;
+static size_t tagnum_file;
 static void store_tags(size_t lastpagelen) {
 	size_t len;
 	uint32_t tmp32;
@@ -374,8 +375,7 @@ static bool test_mbp(uint8_t *buf) {
 	return memcmp(mbpupper, mbp, mbplen) == 0;
 }
 
-static size_t mbpnum;
-static void rtcopy_write(FILE *fp, int nouse_) {
+static bool rtcopy_write(FILE *fp, int nouse_) {
 	uint32_t len = rtchunk(fp);
 	uint8_t buf[512];
 	bool first = true;
@@ -390,7 +390,6 @@ static void rtcopy_write(FILE *fp, int nouse_) {
 			switch (O.edit) {
 			case EDIT_WRITE:
 				copy = O.tag_ignore_picture && len >= mbplen && test_mbp(buf);
-				mbpnum += copy;
 				break;
 			case EDIT_APPEND:
 				copy = true;
@@ -421,9 +420,10 @@ static void rtcopy_write(FILE *fp, int nouse_) {
 		}
 		len -= rl;
 	}
+	return copy;
 }
 
-static void rtcopy_list(FILE *fp, int listfd) {
+static bool rtcopy_list(FILE *fp, int listfd) {
 	uint32_t len = rtchunk(fp);
 	uint8_t buf[512];
 	bool first = true;
@@ -455,9 +455,12 @@ static void rtcopy_list(FILE *fp, int listfd) {
 		}
 		len -= rl;
 	}
+	return copy;
 }
 
 static void *retrieve_tag(void *fp_) {
+	// parse_header_border() からスレッド化された
+	// fp はタグパケットの読み込みパイプ
 	FILE *fp = fp_;
 	uint8_t buf[512];
 	
@@ -481,12 +484,12 @@ static void *retrieve_tag(void *fp_) {
 	tagpacket_total = ftell(fptag);
 	
 	// レコード数
-	size_t tagnum_file = rtchunk(fp);
-	size_t recordnum = tagnum_file;
-	void (*rtcopy)(FILE*, int);
+	size_t recordnum = rtchunk(fp);
+	bool (*rtcopy)(FILE*, int);
 	int pfd[2];
 	pthread_t putth;
 	if (O.edit == EDIT_LIST) {
+		// タグ出力をスレッド化 put-tags.c へ
 		pipe(pfd);
 		FILE *fpput = fdopen(pfd[0], "r");
 		pthread_create(&putth, NULL, put_tags, fpput);
@@ -498,25 +501,19 @@ static void *retrieve_tag(void *fp_) {
 	}
 	
 	while (recordnum) {
-		rtcopy(fp, pfd[1]);
+		tagnum_file += rtcopy(fp, pfd[1]);
 		recordnum--;
 	}
 	
-	switch (O.edit) {
-	case EDIT_LIST:
-		{
-			void *nouse_;
-			close(pfd[1]);
-			pthread_join(putth, &nouse_);
-		}
-		break;
-	case EDIT_WRITE:
-		tagnum_file = mbpnum;
-		break;
+	if (O.edit == EDIT_LIST) {
+		// タグ出力スレッド合流
+		void *nouse_;
+		close(pfd[1]);
+		pthread_join(putth, &nouse_);
 	}
 	
 	len = fread(buf, 1, 1, fp);
-	if (len && (*buf & 1)) {
+	if (O.edit != EDIT_LIST && len && (*buf & 1)) {
 		preserved_padding = tmpfile();
 		fwrite(buf, 1, 1, preserved_padding);
 		size_t n;
@@ -595,12 +592,14 @@ static void parse_header_border(ogg_page *og) {
 	atexit(exit_without_sigpipe);
 	error_on_thread = true;
 	
+	// OpusTagsパケットパースを別スレッド化
 	int pfd[2];
 	pipe(pfd);
 	retriever_fd = pfd[1];
 	FILE *retriever = fdopen(pfd[0], "r");
 	pthread_create(&retriever_thread, NULL, retrieve_tag, retriever);
 	
+	// 本スレッドはOpusTagsのパケットを構築する
 	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
 	copy_tag_packet(og);
 	opus_idx++;
@@ -613,10 +612,7 @@ static void parse_comment(ogg_page *og) {
 	if (ogg_page_pageno(og) != opus_idx) {
 		disconsecutive_page(ogg_page_pageno(og));
 	}
-	if (ogg_page_bos(og) || ogg_page_bos(og)) {
-		invalid_stream();
-	}
-	if (!ogg_page_continued(og)) {
+	if (ogg_page_bos(og) || ogg_page_bos(og) || !ogg_page_continued(og)) {
 		invalid_stream();
 	}
 	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
@@ -628,10 +624,12 @@ static void parse_comment_border(ogg_page *og) {
 	if (ogg_page_continued(og)) {
 		invalid_border();
 	}
+	// タグパケットのパース処理のスレッドを合流
 	close(retriever_fd);
 	void *nouse_;
 	pthread_join(retriever_thread, &nouse_);
 	error_on_thread = false;
+	
 	switch (O.edit) {
 	case EDIT_APPEND:
 	case EDIT_WRITE:
