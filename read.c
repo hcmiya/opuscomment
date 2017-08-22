@@ -22,9 +22,7 @@ static FILE *fpout, *preserved_padding;
 
 static char const
 	*OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
-	*OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73",
-	*mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d"; // "METADATA_BLOCK_PICTURE=" in ASCII
-static size_t const mbplen = 23;
+	*OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73";
 
 void move_file(void) {
 	if (fclose(fpout) == EOF) {
@@ -364,15 +362,24 @@ static uint32_t rtchunk(FILE *fp) {
 	return oi32(rtn);
 }
 
-static bool test_mbp(uint8_t *buf) {
-	uint8_t mbpupper[23];
-	memcpy(mbpupper, buf, 23);
-	for (size_t i = 0; i < 23; i++) {
-		if (mbpupper[i] >= 0x61 && mbpupper[i] <= 0x7a) {
-			mbpupper[i] -= 32;
-		}
+
+static bool test_mbp(uint8_t *buf, size_t len) {
+	uint8_t const *mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d"; // "METADATA_BLOCK_PICTURE=" in ASCII
+	size_t const mbplen = 23;
+	if (len < mbplen) {
+		return false;
 	}
-	return memcmp(mbpupper, mbp, mbplen) == 0;
+	while (*mbp) {
+		uint8_t c = *buf++;
+		if (c >= 0x61 && c <= 0x7a) { // a-z in ASCII
+			c -= 32;
+		}
+		if (*mbp != c) {
+			break;
+		}
+		mbp++;
+	}
+	return !*mbp;
 }
 
 static bool rtcopy_write(FILE *fp, int nouse_) {
@@ -389,7 +396,7 @@ static bool rtcopy_write(FILE *fp, int nouse_) {
 			
 			switch (O.edit) {
 			case EDIT_WRITE:
-				copy = O.tag_ignore_picture && len >= mbplen && test_mbp(buf);
+				copy = O.tag_ignore_picture && test_mbp(buf, len);
 				break;
 			case EDIT_APPEND:
 				copy = true;
@@ -434,7 +441,7 @@ static bool rtcopy_list(FILE *fp, int listfd) {
 		rtread(buf, rl, fp);
 		if (first) {
 			first = false;
-			copy = !O.tag_ignore_picture || !(len >= mbplen && test_mbp(buf));
+			copy = !O.tag_ignore_picture || !test_mbp(buf, len);
 			if (copy) {
 				write(listfd, &len, 4);
 			}
