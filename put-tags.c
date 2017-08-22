@@ -30,43 +30,43 @@ static void put_bin(char const *buf, size_t len) {
 		puterror();
 	}
 }
-static char *esc_oc(char *n1, char *end) {
-	char *n2 = end;
-	while(n1 < end) {
-		*n2++ = *n1++;
-		if (n1[-1] == 0xa) *n2++ = 0x9;
+static char *esc_oc(char *src, char *dest, size_t len) {
+	char *end = src + len;
+	while(src < end) {
+		*dest++ = *src++;
+		if (src[-1] == 0xa) *dest++ = 0x9;
 	}
-	return n2;
+	return dest;
 }
-static char *esc_vc(char *n1, char *end) {
-	char *n2 = end;
-	for (; n1 < end; n1++) {
-		switch (*n1) {
+static char *esc_vc(char *src, char *dest, size_t len) {
+	char *end = src + len;
+	for (; src < end; src++) {
+		switch (*src) {
 		case 0x00:
-			*n2++ = 0x5c;
-			*n2++ = 0x30;
+			*dest++ = 0x5c;
+			*dest++ = 0x30;
 			break;
 			
 		case 0x0a:
-			*n2++ = 0x5c;
-			*n2++ = 0x6e;
+			*dest++ = 0x5c;
+			*dest++ = 0x6e;
 			break;
 		case 0x0d:
-			*n2++ = 0x5c;
-			*n2++ = 0x72;
+			*dest++ = 0x5c;
+			*dest++ = 0x72;
 			break;
 			
 		case 0x5c:
-			*n2++ = 0x5c;
-			*n2++ = 0x5c;
+			*dest++ = 0x5c;
+			*dest++ = 0x5c;
 			break;
 			
 		default:
-			*n2++ = *n1;
+			*dest++ = *src;
 			break;
 		}
 	}
-	return n2;
+	return dest;
 }
 void *put_tags(void *fp_) {
 	// retrieve_tag() からスレッド化された
@@ -101,7 +101,8 @@ void *put_tags(void *fp_) {
 	size_t buflen = buflenunit * 3;
 	uint8_t *buf = malloc(buflen);
 	int nth = 1;
-	char* (*esc)(char*, char*) = O.tag_escape ? esc_vc : esc_oc;
+	char* (*esc)(char*, char*, size_t) = O.tag_escape ? esc_vc : esc_oc;
+	char *raw = buf + buflenunit * 2;
 	
 	for (;;) {
 		char *u8, *ls;
@@ -111,13 +112,10 @@ void *put_tags(void *fp_) {
 		while (left) {
 			size_t readmax = buflenunit - remain;
 			size_t readlen = left > readmax ? readmax : left;
-			fread(buf + remain, 1, readlen, fp);
+			fread(raw, 1, readlen, fp);
 			left -= readlen;
 			
-			char *escbegin = buf + readlen + remain;
-			char *escend = esc(buf, escbegin);
-			size_t tagleft = escend - escbegin;
-			memmove(buf, escbegin, tagleft);
+			size_t tagleft = esc(raw, buf + remain, readlen) - (char*)buf;
 			
 			if (O.tag_raw) {
 				put_bin(buf, tagleft);

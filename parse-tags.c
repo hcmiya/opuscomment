@@ -325,7 +325,7 @@ void parse_tags(void) {
 		}
 	}
 	
-	// UTF-8化された文字列をチャンク化する処理をスレッド化
+	// UTF-8化された文字列をチャンク化する処理をスレッド化(化が多い)
 	int pfd[2];
 	pipe(pfd);
 	FILE *fpu8 = fdopen(pfd[0], "r");
