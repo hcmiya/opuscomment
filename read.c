@@ -507,9 +507,8 @@ static void *retrieve_tag(void *fp_) {
 	
 	if (O.edit == EDIT_LIST) {
 		// タグ出力スレッド合流
-		void *nouse_;
 		close(pfd[1]);
-		pthread_join(putth, &nouse_);
+		pthread_join(putth, NULL);
 	}
 	
 	len = fread(buf, 1, 1, fp);
@@ -626,8 +625,7 @@ static void parse_comment_border(ogg_page *og) {
 	}
 	// タグパケットのパース処理のスレッドを合流
 	close(retriever_fd);
-	void *nouse_;
-	pthread_join(retriever_thread, &nouse_);
+	pthread_join(retriever_thread, NULL);
 	error_on_thread = false;
 	
 	switch (O.edit) {

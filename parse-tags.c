@@ -57,8 +57,7 @@ void check_tagpacket_length(void) {
 	}
 }
 
-static void *toutf8(void *fdu8_) {
-	int fdu8 = *(int*)fdu8_;
+static void toutf8(int fdu8) {
 	size_t const buflen = 512;
 	char ubuf[buflen];
 	char lbuf[buflen];
@@ -124,7 +123,6 @@ static void *toutf8(void *fdu8_) {
 	iconv_close(cd);
 	write(fdu8, ubuf, up - ubuf);
 	close(fdu8);
-	return NULL;
 }
 
 static FILE *record;
@@ -290,33 +288,15 @@ void prepare_record(void) {
 	recordfd = fileno(record);
 }
 
-void parse_tags(void) {
-	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
-	if (from_file) {
-		FILE *tmp = freopen(O.tag_filename, "r", stdin);
-		if (!tmp) {
-			fileerror(O.tag_filename);
-		}
-	}
+void *split(void *fp_) {
+	FILE *fp = fp_;
 	prepare_record();
-	
 	void (*line)(uint8_t *, size_t) = O.tag_escape ? r_line_e : r_line;
 	
-	// stdinからのUTF-8生成を別スレッド化、合流なし
-	int pfd[2];
-	pipe(pfd);
-	FILE *fpu8 = fdopen(pfd[0], "r");
-	error_on_thread = true;
-	pthread_t thu8;
-	pthread_create(&thu8, NULL, toutf8, &pfd[1]);
-	pthread_detach(thu8);
-	
-	// 本スレッドは生成されたUTF-8文字列をチャンク化する
 	uint8_t tagbuf[512];
 	size_t tagbuflen, readlen;
 	tagbuflen = 512;
-	
-	while ((readlen = fread(tagbuf, 1, tagbuflen, fpu8)) != 0) {
+	while ((readlen = fread(tagbuf, 1, tagbuflen, fp)) != 0) {
 		uint8_t *p1, *p2;
 		if (memchr(tagbuf, 0, readlen) != NULL) {
 			err_bin();
@@ -330,10 +310,32 @@ void parse_tags(void) {
 		size_t left = readlen - (p1 - tagbuf);
 		if (left) line(p1, left);
 	}
-	fclose(fpu8);
+	fclose(fp);
 	error_on_thread = false;
 	line(NULL, 0);
 	fclose(record);
+}
+
+void parse_tags(void) {
+	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
+	if (from_file) {
+		FILE *tmp = freopen(O.tag_filename, "r", stdin);
+		if (!tmp) {
+			fileerror(O.tag_filename);
+		}
+	}
+	
+	// UTF-8化された文字列をチャンク化する処理をスレッド化
+	int pfd[2];
+	pipe(pfd);
+	FILE *fpu8 = fdopen(pfd[0], "r");
+	error_on_thread = true;
+	pthread_t split_thread;
+	pthread_create(&split_thread, NULL, split, fpu8);
+	
+	// 本スレッドはstdinをUTF-8化する
+	toutf8(pfd[1]);
+	pthread_join(split_thread, NULL);
 }
 
 void add_tag_from_opt(char const *arg) {
