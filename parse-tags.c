@@ -305,6 +305,7 @@ void parse_tags(void) {
 	int pfd[2];
 	pipe(pfd);
 	FILE *fpu8 = fdopen(pfd[0], "r");
+	error_on_thread = true;
 	pthread_t thu8;
 	pthread_create(&thu8, NULL, toutf8, &pfd[1]);
 	pthread_detach(thu8);
@@ -328,6 +329,7 @@ void parse_tags(void) {
 		if (left) line(p1, left);
 	}
 	fclose(fpu8);
+	error_on_thread = false;
 	line(NULL, 0);
 	fclose(record);
 }

@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <signal.h>
 
 #include "opuscomment.h"
 #include "global.h"
@@ -241,6 +243,13 @@ static void cleanup(void) {
 	}
 }
 
+static void exit_without_sigpipe(void) {
+	if (!error_on_thread) {
+		return;
+	}
+	signal(SIGPIPE, SIG_IGN);
+}
+
 static int test_break(ogg_page *og) {
 	uint16_t plen;
 	switch (page_breaks(og, 1, &plen)) {
@@ -343,15 +352,199 @@ static void parse_header(ogg_page *og) {
 }
 
 
+static void rtread(void *p, size_t len, FILE *fp) {
+	size_t readlen = fread(p, 1, len, fp);
+	if (readlen != len) comment_aborted();
+}
+
+static uint32_t rtchunk(FILE *fp) {
+	uint32_t rtn;
+	rtread(&rtn, 4, fp);
+	return oi32(rtn);
+}
+
+static bool test_mbp(uint8_t *buf) {
+	uint8_t mbpupper[23];
+	memcpy(mbpupper, buf, 23);
+	for (size_t i = 0; i < 23; i++) {
+		if (mbpupper[i] >= 0x61 && mbpupper[i] <= 0x7a) {
+			mbpupper[i] -= 32;
+		}
+	}
+	return memcmp(mbpupper, mbp, mbplen) == 0;
+}
+
+static size_t mbpnum;
+static void rtcopy_write(FILE *fp, int nouse_) {
+	uint32_t len = rtchunk(fp);
+	uint8_t buf[512];
+	bool first = true;
+	bool field = true;
+	bool copy;
+	while (len) {
+		size_t rl = len > 512 ? 512 : len;
+		rtread(buf, rl, fp);
+		if (first) {
+			first = false;
+			
+			switch (O.edit) {
+			case EDIT_WRITE:
+				copy = O.tag_ignore_picture && len >= mbplen && test_mbp(buf);
+				mbpnum += copy;
+				break;
+			case EDIT_APPEND:
+				copy = true;
+				break;
+			}
+			if (copy) {
+				uint8_t chunk[4];
+				*(uint32_t*)chunk = oi32(len);
+				fwrite(chunk, 4, 1, fpedit);
+				tagpacket_total += 4;
+			}
+		}
+		if (copy) {
+			if (O.tag_toupper && field) {
+				for (char *p = buf, *endp = buf + rl; p < endp; p++) {
+					if (*p >= 0x61 && *p <= 0x7a) {
+						*p -= 32;
+					}
+					if (*p == 0x3d) {
+						field = false;
+						break;
+					}
+				}
+			}
+			fwrite(buf, 1, rl, fpedit);
+			tagpacket_total += rl;
+			check_tagpacket_length();
+		}
+		len -= rl;
+	}
+}
+
+static void rtcopy_list(FILE *fp, int listfd) {
+	uint32_t len = rtchunk(fp);
+	uint8_t buf[512];
+	bool first = true;
+	bool field = true;
+	bool copy;
+	while (len) {
+		size_t rl = len > 512 ? 512 : len;
+		rtread(buf, rl, fp);
+		if (first) {
+			first = false;
+			copy = !O.tag_ignore_picture || !(len >= mbplen && test_mbp(buf));
+			if (copy) {
+				write(listfd, &len, 4);
+			}
+		}
+		if (copy) {
+			if (O.tag_toupper && field) {
+				for (char *p = buf, *endp = buf + rl; p < endp; p++) {
+					if (*p >= 0x61 && *p <= 0x7a) {
+						*p -= 32;
+					}
+					if (*p == 0x3d) {
+						field = false;
+						break;
+					}
+				}
+			}
+			write(listfd, buf, rl);
+		}
+		len -= rl;
+	}
+}
+
+static void *retrieve_tag(void *fp_) {
+	FILE *fp = fp_;
+	uint8_t buf[512];
+	
+	rtread(buf, 8, fp);
+	if (memcmp(buf, OpusTags, 8) != 0) {
+		not_an_opus();
+	}
+	fptag = tmpfile();
+	fwrite(buf, 1, 8, fptag);
+	
+	// ベンダ文字列
+	uint32_t len = rtchunk(fp);
+	*(uint32_t*)buf = oi32(len);
+	fwrite(buf, 4, 1, fptag);
+	while (len) {
+		size_t rl = len > 512 ? 512 : len;
+		rtread(buf, rl, fp);
+		fwrite(buf, 1, len, fptag);
+		len -= rl;
+	}
+	tagpacket_total = ftell(fptag);
+	
+	// レコード数
+	size_t tagnum_file = rtchunk(fp);
+	size_t recordnum = tagnum_file;
+	void (*rtcopy)(FILE*, int);
+	int pfd[2];
+	pthread_t putth;
+	if (O.edit == EDIT_LIST) {
+		pipe(pfd);
+		FILE *fpput = fdopen(pfd[0], "r");
+		pthread_create(&putth, NULL, put_tags, fpput);
+		rtcopy = rtcopy_list;
+	}
+	else {
+		rtcopy = rtcopy_write;
+		fpedit = fpedit ? fpedit : tmpfile();
+	}
+	
+	while (recordnum) {
+		rtcopy(fp, pfd[1]);
+		recordnum--;
+	}
+	
+	switch (O.edit) {
+	case EDIT_LIST:
+		{
+			void *nouse_;
+			close(pfd[1]);
+			pthread_join(putth, &nouse_);
+		}
+		break;
+	case EDIT_WRITE:
+		tagnum_file = mbpnum;
+		break;
+	}
+	
+	len = fread(buf, 1, 1, fp);
+	if (len && (*buf & 1)) {
+		preserved_padding = tmpfile();
+		fwrite(buf, 1, 1, preserved_padding);
+		size_t n;
+		while ((n = fread(buf, 1, 512, fp))) {
+			fwrite(buf, 1, n, preserved_padding);
+		}
+		tagpacket_total += ftell(preserved_padding);
+		check_tagpacket_length();
+	}
+	else {
+		size_t n;
+		while ((n = fread(buf, 1, 512, fp))) {}
+	}
+	fclose(fp);
+	return NULL;
+}
+
+static int retriever_fd;
 static void copy_tag_packet(ogg_page *og) {
 	static unsigned int total = 0;
 	total += og->body_len;
 	if (total > TAG_LENGTH_LIMIT__INPUT) {
 		opuserror(true, catgets(catd, 3, 9, "tag packet is too long (up to %u MiB)"), TAG_LENGTH_LIMIT__INPUT >> 20);
 	}
-	fwrite(og->body, 1, og->body_len, fptag);
+	write(retriever_fd, og->body, og->body_len);
 }
 
+static pthread_t retriever_thread;
 static void parse_header_border(ogg_page *og) {
 	if (ogg_page_serialno(og) != opus_sno) {
 		multiple_stream();
@@ -399,8 +592,16 @@ static void parse_header_border(ogg_page *og) {
 		/* NOTREACHED */
 	}
 	
+	atexit(exit_without_sigpipe);
+	error_on_thread = true;
+	
+	int pfd[2];
+	pipe(pfd);
+	retriever_fd = pfd[1];
+	FILE *retriever = fdopen(pfd[0], "r");
+	pthread_create(&retriever_thread, NULL, retrieve_tag, retriever);
+	
 	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
-	fptag = tmpfile();
 	copy_tag_packet(og);
 	opus_idx++;
 }
@@ -412,7 +613,6 @@ static void parse_comment(ogg_page *og) {
 	if (ogg_page_pageno(og) != opus_idx) {
 		disconsecutive_page(ogg_page_pageno(og));
 	}
-	
 	if (ogg_page_bos(og) || ogg_page_bos(og)) {
 		invalid_stream();
 	}
@@ -424,141 +624,14 @@ static void parse_comment(ogg_page *og) {
 	opus_idx++;
 }
 
-static void rtread(void *p, size_t len) {
-	size_t readlen = fread(p, 1, len, fptag);
-	if (readlen != len) comment_aborted();
-}
-
-static uint32_t rtchunk(void) {
-	uint32_t rtn;
-	rtread(&rtn, 4);
-	return oi32(rtn);
-}
-
-static size_t mbpnum;
-static void rtcopy(void) {
-	uint32_t len = rtchunk();
-	uint8_t buf[512];
-	bool first = true;
-	bool field = true;
-	bool copy;
-	while (len) {
-		size_t rl = len > 512 ? 512 : len;
-		rtread(buf, rl);
-		if (first) {
-			first = false;
-			bool ismbp;
-			switch (O.edit) {
-			case EDIT_WRITE:
-			case EDIT_LIST:
-				ismbp = false;
-				if (O.tag_ignore_picture && len >= mbplen) {
-					uint8_t mbpupper[23];
-					memcpy(mbpupper, buf, 23);
-					for (size_t i = 0; i < 23; i++) {
-						if (mbpupper[i] >= 0x61 && mbpupper[i] <= 0x7a) {
-							mbpupper[i] -= 32;
-						}
-					}
-					if (memcmp(mbpupper, mbp, mbplen) == 0) {
-						ismbp = true;
-					}
-				}
-				break;
-			}
-			
-			switch (O.edit) {
-			case EDIT_WRITE:
-				copy = ismbp;
-				mbpnum += ismbp;
-				break;
-			case EDIT_LIST:
-				copy = !O.tag_ignore_picture || !ismbp;
-				break;
-			case EDIT_APPEND:
-				copy = true;
-				break;
-			}
-			if (copy) {
-				uint8_t chunk[4];
-				*(uint32_t*)chunk = oi32(len);
-				fwrite(chunk, 4, 1, fpedit);
-				tagpacket_total += 4;
-			}
-		}
-		if (copy) {
-			if (O.tag_toupper && field) {
-				for (char *p = buf, *endp = buf + rl; p < endp; p++) {
-					if (*p >= 0x61 && *p <= 0x7a) {
-						*p -= 32;
-					}
-					if (*p == 0x3d) {
-						field = false;
-						break;
-					}
-				}
-			}
-			fwrite(buf, 1, rl, fpedit);
-			tagpacket_total += rl;
-			check_tagpacket_length();
-		}
-		len -= rl;
-	}
-}
-
-static void retrieve_tag() {
-	uint8_t buf[512];
-	rewind(fptag);
-	
-	rtread(buf, 8);
-	if (memcmp(buf, OpusTags, 8) != 0) {
-		not_an_opus();
-	}
-	
-	// ベンダ文字列
-	uint32_t len = rtchunk();
-	while (len) {
-		size_t rl = len > 512 ? 512 : len;
-		rtread(buf, rl);
-		len -= rl;
-	}
-	long int tagpacket_end = tagpacket_total = ftell(fptag);
-	
-	// レコード数
-	size_t tagnum_file = rtchunk();
-	size_t recordnum = tagnum_file;
-	fpedit = fpedit ? fpedit : tmpfile();
-	
-	while (recordnum) {
-		rtcopy();
-		recordnum--;
-	}
-	
-	if (O.edit == EDIT_WRITE) {
-		tagnum_file = mbpnum;
-	}
-	
-	len = fread(buf, 1, 1, fptag);
-	if (len && (*buf & 1)) {
-		preserved_padding = tmpfile();
-		fwrite(buf, 1, 1, preserved_padding);
-		size_t n;
-		while ((n = fread(buf, 1, 512, fptag))) {
-			fwrite(buf, 1, n, preserved_padding);
-		}
-		tagpacket_total += ftell(preserved_padding);
-		check_tagpacket_length();
-	}
-	fseek(fptag, tagpacket_end, SEEK_SET);
-	int fdtag = fileno(fptag);
-	ftruncate(fdtag, tagpacket_end);
-}
-
 static void parse_comment_border(ogg_page *og) {
 	if (ogg_page_continued(og)) {
 		invalid_border();
 	}
-	retrieve_tag();
+	close(retriever_fd);
+	void *nouse_;
+	pthread_join(retriever_thread, &nouse_);
+	error_on_thread = false;
 	switch (O.edit) {
 	case EDIT_APPEND:
 	case EDIT_WRITE:
@@ -576,9 +649,7 @@ static void parse_comment_border(ogg_page *og) {
 		exit(0);
 	}
 	else if (O.edit == EDIT_LIST) {
-		fclose(fpopus);
-		put_tags();
-		/* NOTREACHED */
+		exit(0);
 	}
 	else {
 		store_tags(og->header_len + og->body_len);

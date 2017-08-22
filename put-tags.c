@@ -68,7 +68,8 @@ static char *esc_vc(char *n1, char *end) {
 	}
 	return n2;
 }
-void put_tags(void) {
+void *put_tags(void *fp_) {
+	FILE *fp = fp_;
 	bool to_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
 	if (to_file) {
 		FILE *tmp = freopen(O.tag_filename, "w", stdout);
@@ -99,17 +100,15 @@ void put_tags(void) {
 	int nth = 1;
 	char* (*esc)(char*, char*) = O.tag_escape ? esc_vc : esc_oc;
 	
-	rewind(fpedit);
 	for (;;) {
 		char *u8, *ls;
 		uint32_t len;
-		if (!fread(&len, 4, 1, fpedit)) break;
-		len = oi32(len);
+		if (!fread(&len, 4, 1, fp)) break;
 		size_t left = len, remain = 0;
 		while (left) {
 			size_t readmax = buflenunit - remain;
 			size_t readlen = left > readmax ? readmax : left;
-			fread(buf + remain, 1, readlen, fpedit);
+			fread(buf + remain, 1, readlen, fp);
 			left -= readlen;
 			
 			char *escbegin = buf + readlen + remain;
@@ -165,9 +164,10 @@ void put_tags(void) {
 		}
 		nth++;
 	}
+	fclose(fp);
 	
 	if (fclose(stdout) == EOF) {
 		puterror();
 	}
-	exit(0);
+	return NULL;
 }
