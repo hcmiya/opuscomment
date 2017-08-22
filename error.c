@@ -17,17 +17,37 @@ void mainerror(char const *e, ...) {
 	exit(1);
 }
 
-void opuserror(bool page, char const *e, ...) {
+void opuserror(int e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
-	if (page) {
+	
+	struct {
+		bool report_page;
+		char const *default_message;
+	} msg[] = {
+#define LIST(I, B, S) {B, S},
+		LIST( 0, false, NULL )
+		LIST( 1, false, "not an Ogg" )
+		LIST( 2, true, "header is interrupted" )
+		LIST( 3, true, "unexpected page break" )
+		LIST( 4, false, "not an Opus" )
+		LIST( 5, true, "invalid stream" )
+		LIST( 6, false, "unsupported version" )
+		LIST( 7, false, "not supported for multiple logical stream" )
+		LIST( 8, false, "invalid UTF-8 sequence in tag record #%d" )
+		LIST( 9, true, "tag packet is too long (up to %u MiB)" )
+		LIST( 10, false, "disconsecutive page - encountered p. %u against expectation of p. %u" )
+		LIST( 11, false, "tag packet is incomplete" )
+#undef LIST
+	};
+	if (msg[e].report_page) {
 		fprintf(stderr, catgets(catd, 1, 4, "Opus format error: page %u: "), opus_idx);
 	}
 	else {
 		fprintf(stderr, catgets(catd, 1, 8, "Opus format error: "));
 	}
-	vfprintf(stderr, e, ap);
+	vfprintf(stderr, catgets(catd, 3, e, msg[e].default_message), ap);
 	fputc('\n', stderr);
 	exit(2);
 }

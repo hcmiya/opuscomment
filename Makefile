@@ -5,8 +5,8 @@
 # iconv(3)は昔のFreeBSDの様に別ライブラリになっている可能性もあるので、適宜LIBSを編集するようお願いします。
 # NLSに対応していない、あるいは必要がない場合は、CFLAGSから-DNLSを除くことで無効に出来ます。
 
-SRC=main.c put-tags.c parse-tags.c read.c error.c ocutil.c endianness.c
-HEADER=global.h ocutil.h limit.h version.h
+SRC=main.c put-tags.c parse-tags.c read.c error.c ocutil.c endianness.c retrieve-tags.c
+HEADER=global.h ocutil.h limit.h version.h error.h
 CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
 #CFLAGS=-D_XOPEN_SOURCE=600 -DNLS
 LDFLAGS=
