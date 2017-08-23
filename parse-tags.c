@@ -104,7 +104,7 @@ static void toutf8(int fdu8) {
 	close(fdu8);
 }
 
-static FILE *record;
+static FILE *record, *fpedit;
 static int recordfd;
 static void blank_record() {
 	rewind(record);
@@ -295,12 +295,11 @@ void *split(void *fp_) {
 		if (left) line(p1, left);
 	}
 	fclose(fp);
-	error_on_thread = false;
 	line(NULL, 0);
 	fclose(record);
 }
 
-void parse_tags(void) {
+void *parse_tags(void* nouse_) {
 	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
 	if (from_file) {
 		FILE *tmp = freopen(O.tag_filename, "r", stdin);
@@ -313,13 +312,13 @@ void parse_tags(void) {
 	int pfd[2];
 	pipe(pfd);
 	FILE *fpu8 = fdopen(pfd[0], "r");
-	error_on_thread = true;
 	pthread_t split_thread;
 	pthread_create(&split_thread, NULL, split, fpu8);
 	
 	// 本スレッドはstdinをUTF-8化する
 	toutf8(pfd[1]);
 	pthread_join(split_thread, NULL);
+	return fpedit;
 }
 
 void add_tag_from_opt(char const *arg) {

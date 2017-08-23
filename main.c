@@ -173,10 +173,10 @@ static void parse_args(int argc, char **argv) {
 			break;
 		}
 	}
-	if (fpedit && O.edit == EDIT_LIST) {
+	if (tagnum_edit && O.edit == EDIT_LIST) {
 		mainerror(catgets(catd, 2, 5, "can not use -t with list mode"));
 	}
-	if (fpedit && !O.edit) {
+	if (tagnum_edit && !O.edit) {
 		mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
 	}
 	if (!O.gain_fix && !O.edit) {
@@ -187,7 +187,7 @@ static void parse_args(int argc, char **argv) {
 			mainerror(catgets(catd, 2, 7, "options of editing gain can not use with list mode"));
 		}
 		else if (!O.edit) {
-			if (O.tag_filename/* || fpedit*/) {
+			if (O.tag_filename/* || tagnum_edit*/) {
 				mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
 			}
 		}

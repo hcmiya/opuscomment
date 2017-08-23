@@ -131,7 +131,7 @@ static bool rtcopy_list(FILE *fp, int listfd) {
 	return copy;
 }
 
-void not_an_opus(void);
+void *put_tags(void*);
 void *retrieve_tags(void *fp_) {
 	// parse_header_border() からスレッド化された
 	// fp はタグパケットの読み込みパイプ
@@ -187,6 +187,7 @@ void *retrieve_tags(void *fp_) {
 		// タグ出力スレッド合流
 		close(pfd[1]);
 		pthread_join(putth, NULL);
+		exit(0);
 	}
 	
 	len = fread(buf, 1, 1, fp);

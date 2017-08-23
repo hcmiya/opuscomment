@@ -52,7 +52,7 @@ GLOBAL long int tagpacket_tagnumpos;
 GLOBAL uint32_t opus_idx;
 GLOBAL bool error_on_thread;
 
-GLOBAL FILE *fpopus, *fpedit, *fptag, *preserved_padding;
+GLOBAL FILE *fpopus, *fptag, *preserved_padding;
 
 #ifdef NLS
 #include <nl_types.h>

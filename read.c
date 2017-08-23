@@ -18,7 +18,7 @@ static size_t seeked_len;
 static char *outtmp;
 static bool remove_tmp, toupper_applied;
 static uint32_t opus_sno;
-static FILE *fpout;
+static FILE *fpout, *fpedit;
 
 static char const
 	*OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
@@ -349,8 +349,9 @@ static void copy_tag_packet(ogg_page *og) {
 	write(retriever_fd, og->body, og->body_len);
 }
 
-static pthread_t retriever_thread;
+static pthread_t retriever_thread, parser_thread;
 void *retrieve_tags(void*);
+void *parse_tags(void*);
 static void parse_header_border(ogg_page *og) {
 	if (ogg_page_serialno(og) != opus_sno) {
 		opuserror(err_opus_multi);
@@ -364,7 +365,7 @@ static void parse_header_border(ogg_page *og) {
 	if (ogg_page_continued(og)) {
 		opuserror(err_opus_border);
 	}
-	if (O.gain_fix && O.edit == EDIT_NONE) {
+	if (/*O.gain_fix && */O.edit == EDIT_NONE) {
 		// 出力ゲイン編集のみの場合
 		if (O.out) {
 			// 出力指定が別にあれば残りをコピー
@@ -401,6 +402,11 @@ static void parse_header_border(ogg_page *og) {
 	atexit(exit_without_sigpipe);
 	error_on_thread = true;
 	
+	if (O.edit != EDIT_LIST) {
+		// 編集入力タグパースを別スレッド化 parse_tags.c へ
+		pthread_create(&parser_thread, NULL, parse_tags, NULL);
+	}
+	
 	// OpusTagsパケットパースを別スレッド化 retrieve_tags.c へ
 	int pfd[2];
 	pipe(pfd);
@@ -436,19 +442,12 @@ static void parse_comment_border(ogg_page *og) {
 	// タグパケットのパース処理のスレッドを合流
 	close(retriever_fd);
 	pthread_join(retriever_thread, NULL);
+	if (O.edit != EDIT_LIST) {
+		// 編集入力タグパースのスレッドを合流
+		pthread_join(parser_thread, (void **)&fpedit);
+	}
 	error_on_thread = false;
 	
-	switch (O.edit) {
-	case EDIT_APPEND:
-	case EDIT_WRITE:
-		parse_tags();
-		break;
-		
-	case EDIT_LIST:
-	case EDIT_NONE:
-		fclose(stdin);
-		break;
-	}
 	if (O.edit == EDIT_APPEND && !tagnum_edit && !O.out && !O.gain_fix && !toupper_applied) {
 		// タグ追記モードで出力が上書き且つ
 		// タグ入力、ゲイン調整、大文字化適用が全て無い場合はすぐ終了する
