@@ -51,12 +51,6 @@ static void err_utf8(void) {
 	tagerror(catgets(catd, 5, 6, "invalid UTF-8 sequence"));
 }
 
-void check_tagpacket_length(void) {
-	if (tagpacket_total > TAG_LENGTH_LIMIT__OUTPUT) {
-		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
-	}
-}
-
 static void toutf8(int fdu8) {
 	size_t const buflen = 512;
 	char ubuf[buflen];
@@ -116,6 +110,8 @@ static void blank_record() {
 	rewind(record);
 	ftruncate(recordfd, 0);
 }
+
+static size_t editlen;
 static void write_record(void) {
 	uint32_t end = ftell(record);
 	rewind(record);
@@ -138,8 +134,10 @@ END_BLANK_TEST:
 		return;
 	}
 	// 空白じゃなかったら編集に採用
-	tagpacket_total += 4 + end;
-	check_tagpacket_length();
+	editlen += 4 + end;
+	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
+		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+	}
 	end = oi32(end);
 	fwrite(&end, 4, 1, fpedit);
 	rewind(record);
@@ -276,6 +274,7 @@ void prepare_record(void) {
 void *split(void *fp_) {
 	FILE *fp = fp_;
 	prepare_record();
+	fpedit = fpedit ? fpedit : tmpfile();
 	void (*line)(uint8_t *, size_t) = O.tag_escape ? r_line_e : r_line;
 	
 	uint8_t tagbuf[512];

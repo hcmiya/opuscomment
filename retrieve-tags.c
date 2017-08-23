@@ -41,6 +41,14 @@ static bool test_mbp(uint8_t *buf, size_t len) {
 	return !*mbp;
 }
 
+static size_t tagpacket_total = 0;
+void check_tagpacket_length(size_t len) {
+	tagpacket_total += len;
+	if (tagpacket_total > TAG_LENGTH_LIMIT__OUTPUT) {
+		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+	}
+}
+
 static bool rtcopy_write(FILE *fp, int nouse_) {
 	uint32_t len = rtchunk(fp);
 	uint8_t buf[512];
@@ -64,8 +72,8 @@ static bool rtcopy_write(FILE *fp, int nouse_) {
 			if (copy) {
 				uint8_t chunk[4];
 				*(uint32_t*)chunk = oi32(len);
-				fwrite(chunk, 4, 1, fpedit);
-				tagpacket_total += 4;
+				fwrite(chunk, 4, 1, fptag);
+				check_tagpacket_length(4);
 			}
 		}
 		if (copy) {
@@ -80,9 +88,8 @@ static bool rtcopy_write(FILE *fp, int nouse_) {
 					}
 				}
 			}
-			fwrite(buf, 1, rl, fpedit);
-			tagpacket_total += rl;
-			check_tagpacket_length();
+			fwrite(buf, 1, rl, fptag);
+			check_tagpacket_length(rl);
 		}
 		len -= rl;
 	}
@@ -143,16 +150,20 @@ void *retrieve_tags(void *fp_) {
 	uint32_t len = rtchunk(fp);
 	*(uint32_t*)buf = oi32(len);
 	fwrite(buf, 4, 1, fptag);
+	check_tagpacket_length(12);
 	while (len) {
 		size_t rl = len > 512 ? 512 : len;
 		rtread(buf, rl, fp);
-		fwrite(buf, 1, len, fptag);
+		fwrite(buf, 1, rl, fptag);
+		check_tagpacket_length(rl);
 		len -= rl;
 	}
-	tagpacket_total = ftell(fptag);
+	tagpacket_tagnumpos = tagpacket_total;
 	
 	// レコード数
 	size_t recordnum = rtchunk(fp);
+	fwrite(buf, 4, 1, fptag); // レコード数埋め(後でstore_tags()で書き換え)
+	check_tagpacket_length(4);
 	bool (*rtcopy)(FILE*, int);
 	int pfd[2];
 	pthread_t putth;
@@ -165,7 +176,6 @@ void *retrieve_tags(void *fp_) {
 	}
 	else {
 		rtcopy = rtcopy_write;
-		fpedit = fpedit ? fpedit : tmpfile();
 	}
 	
 	while (recordnum) {
@@ -186,9 +196,8 @@ void *retrieve_tags(void *fp_) {
 		size_t n;
 		while ((n = fread(buf, 1, 512, fp))) {
 			fwrite(buf, 1, n, preserved_padding);
+			check_tagpacket_length(n);
 		}
-		tagpacket_total += ftell(preserved_padding);
-		check_tagpacket_length();
 	}
 	else {
 		size_t n;

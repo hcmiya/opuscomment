@@ -89,18 +89,23 @@ static void write_page(ogg_page *og) {
 
 static int opus_idx_diff;
 static void store_tags(size_t lastpagelen) {
-	size_t len;
-	uint32_t tmp32;
-	len = tagnum_edit + tagnum_file;
-	tmp32 = oi32(len);
-	fwrite(&tmp32, 1, 4, fptag);
-	
 	prepare_gbuf();
+	
+	// タグ個数書き込み
+	fseek(fptag, tagpacket_tagnumpos, SEEK_SET);
+	*(uint32_t*)gbuf = oi32(tagnum_edit + tagnum_file);
+	fwrite(gbuf, 4, 1, fptag);
+	fseek(fptag, 0, SEEK_END);
+	
+	// 編集入力書き込み
 	rewind(fpedit);
+	size_t len;
 	while ((len = fread(gbuf, 1, gbuflen, fpedit))) {
 		fwrite(gbuf, 1, len, fptag);
 	}
 	fclose(fpedit);
+	
+	// パディング書き込み
 	if (preserved_padding) {
 		rewind(preserved_padding);
 		while ((len = fread(gbuf, 1, gbuflen, preserved_padding))) {
@@ -108,6 +113,7 @@ static void store_tags(size_t lastpagelen) {
 		}
 		fclose(preserved_padding);
 	}
+	
 	long commentlen = ftell(fptag);
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);

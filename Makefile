@@ -18,13 +18,13 @@ all: opuscomment ;
 opuscomment: $(HEADER) $(SRC)
 	$(CC) -o opuscomment -O2 $(CFLAGS) $(LDFLAGS) -DNDEBUG $(LIBS) $(SRC)
 
-debug: opuscomment.debug ;
+debug: ocd ;
 
-opuscomment.debug: $(HEADER) $(SRC)
-	$(CC) -g -o opuscomment.debug $(CFLAGS) $(LDFLAGS) $(LIBS) $(SRC)
+ocd: $(HEADER) $(SRC)
+	$(CC) -g -o ocd $(CFLAGS) $(LDFLAGS) $(LIBS) $(SRC)
 
 endianness.c: endianness-check.sh
 	./endianness-check.sh >endianness.c
 
 clean:
-	rm endianness.c opuscomment opuscomment.debug 2>/dev/null || :
+	rm endianness.c opuscomment ocd 2>/dev/null || :
