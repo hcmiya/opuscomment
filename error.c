@@ -27,18 +27,19 @@ void opuserror(int e, ...) {
 		char const *default_message;
 	} msg[] = {
 #define LIST(I, B, S) {B, S},
-		LIST( 0, false, NULL )
-		LIST( 1, false, "not an Ogg" )
-		LIST( 2, true, "header is interrupted" )
-		LIST( 3, true, "unexpected page break" )
-		LIST( 4, false, "not an Opus" )
-		LIST( 5, true, "invalid stream" )
-		LIST( 6, false, "unsupported version" )
-		LIST( 7, false, "not supported for multiple logical stream" )
-		LIST( 8, false, "invalid UTF-8 sequence in tag record #%d" )
-		LIST( 9, true, "tag packet is too long (up to %u MiB)" )
+		LIST(  0, false, NULL )
+		LIST(  1, false, "not an Ogg" )
+		LIST(  2, true,  "header is interrupted" )
+		LIST(  3, true,  "unexpected page break" )
+		LIST(  4, false, "not an Opus" )
+		LIST(  5, true,  "invalid Ogg stream" )
+		LIST(  6, false, "unsupported version" )
+		LIST(  7, false, "not supported for multiple logical stream" )
+		LIST(  8, false, "invalid UTF-8 sequence in tag record #%d" )
+		LIST(  9, true,  "tag packet is too long (up to %u MiB)" )
 		LIST( 10, false, "disconsecutive page - encountered p. %u against expectation of p. %u" )
 		LIST( 11, false, "tag packet is incomplete" )
+		LIST( 12, true,  "invalid header content" )
 #undef LIST
 	};
 	if (msg[e].report_page) {

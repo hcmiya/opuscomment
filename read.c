@@ -151,6 +151,8 @@ static void store_tags(size_t lastpagelen) {
 	if (!preserved_padding && idx < opus_idx) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 		// 無を含むページを生成して開始ページ番号を合わせる
+		// 余談: ページ番号を埋めるだけなら長さ0のページを作るのも合法だが
+		// そうするとエラーになるアプリケーションが多かったので無の生成方式に落ち着いた
 		uint8_t segnum = og.header[26];
 		uint8_t lastseglen = og.header[26 + segnum];
 		uint8_t lastseg[255];
@@ -249,8 +251,11 @@ static void parse_header(ogg_page *og) {
 	if (test_break(og) < 0) {
 		opuserror(err_opus_border);
 	}
-	if (og->body_len < 19 || memcmp(og->body, OpusHead, 8) != 0) {
+	if (og->body_len < 8 || memcmp(og->body, OpusHead, 8) != 0) {
 		opuserror(err_opus_non_opus);
+	}
+	if (og->body_len < 19) {
+		opuserror(err_opus_bad_content);
 	}
 	if ((og->body[8] & 0xf0) != 0) {
 		opuserror(err_opus_version);
@@ -390,7 +395,7 @@ static void parse_header_border(ogg_page *og) {
 	atexit(exit_without_sigpipe);
 	error_on_thread = true;
 	
-	// OpusTagsパケットパースを別スレッド化
+	// OpusTagsパケットパースを別スレッド化 retrieve_tags.c へ
 	int pfd[2];
 	pipe(pfd);
 	retriever_fd = pfd[1];

@@ -134,7 +134,7 @@ void *retrieve_tags(void *fp_) {
 	rtread(buf, 8, fp);
 	char const *OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73";
 	if (memcmp(buf, OpusTags, 8) != 0) {
-		opuserror(err_opus_non_opus);
+		opuserror(err_opus_bad_content);
 	}
 	fptag = tmpfile();
 	fwrite(buf, 1, 8, fptag);

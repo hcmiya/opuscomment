@@ -4,9 +4,11 @@ $set 3
 2 header is interrupted
 3 unexpected page break
 4 not an Opus
-5 invalid stream
+5 invalid Ogg stream
 6 unsupported version
 7 not supported for multiple logical stream
 8 invalid UTF-8 sequence in tag record #%d
 9 tag packet is too long (up to %u MiB)
 10 disconsecutive page—encountered p. %u against expectation of p. %u
+11 tag packet is incomplete
+12 invalid header content
