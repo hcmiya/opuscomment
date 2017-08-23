@@ -30,7 +30,7 @@
 <dd>バックスラッシュ、改行、復帰、ヌルにそれぞれ\\, \n, \r, \0のエスケープを使用する(<code>vorbiscomment(1)</code>互換)</dd>
 <dt>-g gain</dt>
 <dd>出力ゲインをdBで指定する</dd>
-<dt>-s gain</dt>
+<dt>-s scale</dt>
 <dd>出力ゲインをPCMサンプルの倍率で指定する。1で等倍。0.5で半分(コマンド内でdBに変換)</dd>
 <dt>-n</dt>
 <dd>出力ゲインを0にする</dd>
@@ -44,11 +44,11 @@
 <dd>Opusファイル内のタグの項目名に小文字が含まれていた場合、大文字に変換する。他のソフトウェアで編集されたファイルのために用意されているオプションであり、opuscommentは編集入力のタグの項目名を常に大文字に変換する。</dd>
 <dt>-v</dt>
 <dd>出力ゲインの編集<strong>前</strong>の値を以下の形式で標準エラー出力に出力する<br/>
-     <code>"%.8g\n", &lt;output gain in dB, floating point&gt;</code>
+     <code>"%.8g\n", &lt;output gain in dB&gt;</code>
 </dd>
 <dt>-V</dt>
 <dd>出力ゲインの編集<strong>前</strong>の値を以下の形式で標準エラー出力に出力する<br/>
-     <code>"%d\n", &lt;output gain in Q7.8, integer&gt;</code>
+     <code>"%d\n", &lt;output gain in Q7.8&gt;</code>
 </dd>
 <dt>-c tagfile</dt>
 <dd>出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す</dd>
@@ -60,7 +60,7 @@
 
 <dl>
 <dt>LANG</dt>
-<dd>vorbis commentのUTF-8とロケールの文字符号化方式との変換に影響を受ける</dd>
+<dd>タグ内部形式のUTF-8とロケールの文字符号化方式との変換に影響を受ける</dd>
 <dt>LC_NUMERIC</dt>
 <dd>出力ゲイン編集に使う浮動小数点数の書式に影響を受ける</dd>
 <dt>LC_MESSAGES, NLSPATH</dt>
@@ -130,6 +130,20 @@ Ogg VorbisとOgg Opusはタグの内部形式が同じで、またopuscommentは
 
     vorbiscomment -Re music-01.oga |opuscomment -wRe music-01.opus
 
+### Opusファイルの同時編集
+
+シェルスクリプトの一般論として、1つのファイルをパイプを繋いで同時に編集しようとすると書き込みのタイミングにより内容が消えてしまうため、結果を一度別ファイルにリダイレクトしてリネームするという処理をするのが定石である。
+
+    sed 's/dog/cat/g' <animal.txt >animal.txt.1
+    mv -f animal.txt.1 animal.txt
+
+しかし、opuscommentはタグの読み込みが終わるまでOpusファイルを書き込み用として開かないため、フィルタの前後で同じファイルを開いていても同時に編集されることはなく内容が失われる事は無い。
+
+    # 一時ファイルを作らなくてもsome.opusからDISCTOTALとDISCNUMBERタグを消す編集が意図通り適用される。
+    opuscomment -e some.opus |grep -vE '^DISC(TOTAL|NUMBER)=' |opuscomment -we some.opus
+
+## 注意
+
 ### opuscomment方式のエスケープで編集する場合
 
 エンコードのやり直しのために同じタグを別のOpusファイルにコピーするという状況を考える。この時、opuscomment同士を直接パイプで繋いでタグの受け渡しを行うことは安全である。
@@ -153,23 +167,9 @@ Ogg VorbisとOgg Opusはタグの内部形式が同じで、またopuscommentは
     # 複数行のレコードを考慮した削除の例2
     opuscomment -e old.opus |sed '/^COMMENT=/d' |opuscomment -we re-encoded.opus
 
-### Opusファイルの同時編集
-
-シェルスクリプトの一般論として、1つのファイルをパイプを繋いで同時に編集しようとすると書き込みのタイミングにより内容が消えてしまうため、結果を一度別ファイルにリダイレクトしてリネームするという処理をするのが定石である。
-
-    sed 's/dog/cat/g' <animal.txt >animal.txt.1
-    mv -f animal.txt.1 animal.txt
-
-しかし、opuscommentはタグの読み込みが終わるまでOpusファイルを書き込み用として開かないため、フィルタの前後で同じファイルを開いていても同時に編集されることはなく内容が失われる事は無い。
-
-    # 一時ファイルを作らなくてもsome.opusからDISCTOTALとDISCNUMBERタグを消す編集が意図通り適用される。
-    opuscomment -e some.opus |grep -vE '^DISC(TOTAL|NUMBER)=' |opuscomment -we some.opus
-
-## 注意
-
 ### NULの扱い
 
-opuscommentは文字「NUL」が入力された場合は一切エラーとする。もしOpus内のタグがNULを含んでいた場合、出力モードで文字が途切れるだろう。これはvorbis commentがUTF-8テキストを格納するものでバイナリを受け入れるべきではないという設計に基いており、初版作者はその設計思想を受け継いでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。この動作は初版作者によって修正されない。
+opuscommentは文字「NUL」が入力された場合は一切エラーとする。もしOpus内のタグがNULを含んでいた場合、出力モードで文字が途切れるだろう。これはvorbis commentがUTF-8テキストを格納するものでバイナリを受け入れるべきではないという設計に基いており、初版作者はその設計思想を受け継いでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。この動作は初版作者によって修正されない。しかし必要ならば-Rか-eいずれかのオプションを指定することで回避できる。
 
 ### 出力ゲインとR128_TRACK_GAIN、R128_ALBUM_GAINの編集
 

@@ -9,7 +9,7 @@ Ogg Opusのタグとゲインを編集するユーティリティ
 ## コンパイル・動作要件
 
 * C99
-* POSIX.1-2008またはPOSIX.1-2001 XSI拡張に対応したAPI
+* POSIX.1-2008またはPOSIX.1-2001 XSI拡張(SUSv2)に対応したAPI
 * libogg
 
 尚、libopus、libopusfileは必要ありません。configureスクリプトを使用していないので、Debianならば`libogg-dev`などといった対応するヘッダファイルがインストールされていることをコンパイル前にご確認下さい。Makefileのコメントも参照下さい。

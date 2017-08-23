@@ -123,6 +123,8 @@ void *put_tags(void *fp_) {
 						u8error(nth);
 					}
 					*lsend = '\0';
+					// WONTFIX
+					// ロケール文字列に \0 が含まれていてもそのままそこで途切れさせる
 					if (fputs(ls, stdout) == EOF) {
 						puterror();
 					}

@@ -30,7 +30,7 @@ static void usage(void) {
 	fprintf(stderr, catgets(catd, 6, 1,
 "Synopsys:\n"
 "    %1$s [-l] [-epRUvV] opusfile\n"
-"    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n"
+"    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n"
 	), program_name);
 	fputc('\n', stderr);
 	fputs(catgets(catd, 6, 2,

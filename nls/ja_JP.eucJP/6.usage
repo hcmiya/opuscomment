@@ -6,7 +6,7 @@ $quote `
 $ usage: %1$s = プログラム名
 1 `使い方:\n\
     %1$s [-l] [-epRUvV] opusfile\n\
-    %1$s -a|-w [-g gain|-s gain|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n`
+    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n`
 
 $ option: これはfputsの引数なので%はそのまま出力される
 2 `オプション:\n\
