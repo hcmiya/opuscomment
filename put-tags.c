@@ -85,17 +85,7 @@ void *put_tags(void *fp_) {
 	char charsetname[128];
 	
 	if (!O.tag_raw) {
-		strcpy(charsetname, nl_langinfo(CODESET));
-#if defined __GLIBC__ || defined _LIBICONV_VERSION
-		strcat(charsetname, "//TRANSLIT");
-#endif
-		cd = iconv_open(charsetname, "UTF-8");
-		if (cd == (iconv_t)-1) {
-			if (errno == EINVAL) {
-				oserror_fmt(catgets(catd, 4, 2, "iconv doesn't support converting UTF-8 -> %s"), nl_langinfo(CODESET));
-			}
-			else oserror();
-		}
+		cd = iconv_new(nl_langinfo(CODESET), "UTF-8");
 	}
 	size_t buflenunit = (1 << 13);
 	size_t buflen = buflenunit * 3;
@@ -171,4 +161,22 @@ void *put_tags(void *fp_) {
 		puterror();
 	}
 	return NULL;
+}
+
+iconv_t iconv_new(char const *to, char const *from) {
+#if defined __GLIBC__ || defined _LIBICONV_VERSION
+	char to2[64];
+	strcat(strcpy(to2, to), "//TRANSLIT");
+#else
+	char const *to2 = to;
+#endif
+	iconv_t cd = iconv_open(to2, from);
+	if (cd == (iconv_t)-1) {
+		if (errno == EINVAL) {
+			oserror_fmt(catgets(catd, 4, 3, "iconv doesn't support converting %s -> %s"), from, to);
+		}
+		else {
+			oserror();
+		}
+	}
 }

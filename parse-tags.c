@@ -62,21 +62,7 @@ static void toutf8(int fdu8) {
 	char ubuf[buflen];
 	char lbuf[buflen];
 	
-	iconv_t cd;
-	char *fromcode = O.tag_raw ? "UTF-8" : nl_langinfo(CODESET);
-#if defined __GLIBC__ || defined _LIBICONV_VERSION
-	cd = iconv_open("UTF-8//TRANSLIT", fromcode);
-#else
-	cd = iconv_open("UTF-8", fromcode);
-#endif
-	if (cd == (iconv_t)-1) {
-		if (errno == EINVAL) {
-			oserror_fmt(catgets(catd, 4, 1, "iconv doesn't support converting %s -> UTF-8"), fromcode);
-		}
-		else {
-			oserror();
-		}
-	}
+	iconv_t cd = iconv_new("UTF-8", O.tag_raw ? "UTF-8" : nl_langinfo(CODESET));
 	size_t readlen, remain, total;
 	remain = 0; total = 0;
 	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
@@ -100,11 +86,10 @@ static void toutf8(int fdu8) {
 					oserror();
 					break;
 				case EINVAL:
-					break;
 				case E2BIG:
 					break;
 				}
-				memmove(lbuf, lp, remain);
+				memcpy(lbuf, lp, remain);
 			}
 			write(fdu8, ubuf, up - ubuf);
 			if (iconvret != (size_t)-1 || ie == EINVAL) break;
@@ -352,14 +337,7 @@ void add_tag_from_opt(char const *arg) {
 	size_t l = strlen(ls);
 	
 	if (cd == (iconv_t)-1) {
-#if defined __GLIBC__ || defined _LIBICONV_VERSION
-		cd = iconv_open("UTF-8//TRANSLIT", nl_langinfo(CODESET));
-#else
-		cd = iconv_open("UTF-8", nl_langinfo(CODESET));
-#endif
-		if (cd == (iconv_t)-1) {
-			oserror_fmt(catgets(catd, 4, 1, "iconv doesn't support converting %s -> UTF-8"), nl_langinfo(CODESET));
-		}
+		cd = iconv_new("UTF-8", nl_langinfo(CODESET));
 	}
 	fpedit = fpedit ? fpedit : tmpfile();
 	prepare_record();

@@ -1,5 +1,4 @@
 $set 4
 
-$ %s = charset
-1 iconv doesn’t support converting %s → UTF-8
-2 iconv doesn’t support converting UTF-8 → %s
+$ %1$s = 変換元 %2$s = 変換先 
+3 iconv doesn’t support converting %s → %s
