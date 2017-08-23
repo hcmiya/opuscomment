@@ -24,9 +24,10 @@ static void readerror(void) {
 	}
 }
 
+static size_t tagnum;
 static void tagerror(char *e) {
 	errorprefix();
-	fprintf(stderr, catgets(catd, 1, 6, "editing input #%zu: "), tagnum_edit + 1);
+	fprintf(stderr, catgets(catd, 1, 6, "editing input #%zu: "), tagnum + 1);
 	fputs(e, stderr);
 	fputc('\n', stderr);
 	exit(1);
@@ -165,7 +166,7 @@ END_BLANK_TEST:
 		fwrite(buf, 1, n, fpedit);
 	}
 	blank_record();
-	tagnum_edit++;
+	tagnum++;
 }
 
 static void r_line(uint8_t *line, size_t n) {
@@ -318,7 +319,11 @@ void *parse_tags(void* nouse_) {
 	// 本スレッドはstdinをUTF-8化する
 	toutf8(pfd[1]);
 	pthread_join(split_thread, NULL);
-	return fpedit;
+	
+	struct edit_st *rtn = calloc(1, sizeof(*rtn));
+	rtn->fp = fpedit;
+	rtn->num = tagnum;
+	return rtn;
 }
 
 void add_tag_from_opt(char const *arg) {

@@ -80,6 +80,7 @@ static void out_of_range(int c) {
 
 static void parse_args(int argc, char **argv) {
 	int c;
+	bool added_tag = false;
 	while ((c = getopt(argc, argv, "lwag:s:nrGpReUvVc:t:")) != -1) {
 		switch (c) {
 		case 'g':
@@ -170,13 +171,14 @@ static void parse_args(int argc, char **argv) {
 		
 		case 't':
 			add_tag_from_opt(optarg);
+			added_tag = true;
 			break;
 		}
 	}
-	if (tagnum_edit && O.edit == EDIT_LIST) {
+	if (added_tag && O.edit == EDIT_LIST) {
 		mainerror(catgets(catd, 2, 5, "can not use -t with list mode"));
 	}
-	if (tagnum_edit && !O.edit) {
+	if (added_tag && !O.edit) {
 		mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
 	}
 	if (!O.gain_fix && !O.edit) {
@@ -187,7 +189,7 @@ static void parse_args(int argc, char **argv) {
 			mainerror(catgets(catd, 2, 7, "options of editing gain can not use with list mode"));
 		}
 		else if (!O.edit) {
-			if (O.tag_filename/* || tagnum_edit*/) {
+			if (O.tag_filename/* || added_tag*/) {
 				mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
 			}
 		}

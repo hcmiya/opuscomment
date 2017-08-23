@@ -47,12 +47,10 @@ GLOBAL enum {
 GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
-GLOBAL size_t tagnum_edit, tagnum_file;
-GLOBAL long int tagpacket_tagnumpos;
 GLOBAL uint32_t opus_idx;
 GLOBAL bool error_on_thread;
 
-GLOBAL FILE *fpopus, *fptag, *preserved_padding;
+GLOBAL FILE *fpopus;
 
 #ifdef NLS
 #include <nl_types.h>

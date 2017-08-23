@@ -18,7 +18,7 @@ static size_t seeked_len;
 static char *outtmp;
 static bool remove_tmp, toupper_applied;
 static uint32_t opus_sno;
-static FILE *fpout, *fpedit;
+static FILE *fpout;
 
 static char const
 	*OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
@@ -88,30 +88,32 @@ static void write_page(ogg_page *og) {
 }
 
 static int opus_idx_diff;
-static void store_tags(size_t lastpagelen) {
+static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st *est) {
 	prepare_gbuf();
 	
+	FILE *fptag = rst->tag;
 	// タグ個数書き込み
-	fseek(fptag, tagpacket_tagnumpos, SEEK_SET);
-	*(uint32_t*)gbuf = oi32(tagnum_edit + tagnum_file);
+	fseek(fptag, rst->tagbegin, SEEK_SET);
+	*(uint32_t*)gbuf = oi32(rst->num + est->num);
 	fwrite(gbuf, 4, 1, fptag);
 	fseek(fptag, 0, SEEK_END);
 	
 	// 編集入力書き込み
-	rewind(fpedit);
+	rewind(est->fp);
 	size_t len;
-	while ((len = fread(gbuf, 1, gbuflen, fpedit))) {
+	while ((len = fread(gbuf, 1, gbuflen, est->fp))) {
 		fwrite(gbuf, 1, len, fptag);
 	}
-	fclose(fpedit);
+	fclose(est->fp);
 	
 	// パディング書き込み
-	if (preserved_padding) {
-		rewind(preserved_padding);
-		while ((len = fread(gbuf, 1, gbuflen, preserved_padding))) {
+	if (rst->padding) {
+		FILE *pfp = rst->padding;
+		rewind(pfp);
+		while ((len = fread(gbuf, 1, gbuflen, pfp))) {
 			fwrite(gbuf, 1, len, fptag);
 		}
-		fclose(preserved_padding);
+		fclose(pfp);
 	}
 	
 	long commentlen = ftell(fptag);
@@ -154,7 +156,7 @@ static void store_tags(size_t lastpagelen) {
 	og.header_len = 27 + og.header[26];
 	og.body_len = commentlen;
 	
-	if (!preserved_padding && idx < opus_idx) {
+	if (!rst->padding && idx < opus_idx) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 		// 無を含むページを生成して開始ページ番号を合わせる
 		// 余談: ページ番号を埋めるだけなら長さ0のページを作るのも合法だが
@@ -440,15 +442,17 @@ static void parse_comment_border(ogg_page *og) {
 		opuserror(err_opus_border);
 	}
 	// タグパケットのパース処理のスレッドを合流
+	struct rettag_st *rst;
+	struct edit_st *est;
 	close(retriever_fd);
-	pthread_join(retriever_thread, NULL);
+	pthread_join(retriever_thread, (void**)&rst);
 	if (O.edit != EDIT_LIST) {
 		// 編集入力タグパースのスレッドを合流
-		pthread_join(parser_thread, (void **)&fpedit);
+		pthread_join(parser_thread, (void **)&est);
 	}
 	error_on_thread = false;
 	
-	if (O.edit == EDIT_APPEND && !tagnum_edit && !O.out && !O.gain_fix && !toupper_applied) {
+	if (O.edit == EDIT_APPEND && !est->num && !O.out && !O.gain_fix && !toupper_applied) {
 		// タグ追記モードで出力が上書き且つ
 		// タグ入力、ゲイン調整、大文字化適用が全て無い場合はすぐ終了する
 		exit(0);
@@ -457,7 +461,9 @@ static void parse_comment_border(ogg_page *og) {
 		exit(0);
 	}
 	else {
-		store_tags(og->header_len + og->body_len);
+		store_tags(og->header_len + og->body_len, rst, est);
+		free(rst);
+		free(est);
 	}
 	opst = OPUS_SOUND;
 }

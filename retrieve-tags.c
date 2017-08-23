@@ -49,7 +49,8 @@ void check_tagpacket_length(size_t len) {
 	}
 }
 
-static bool rtcopy_write(FILE *fp, int nouse_) {
+static bool rtcopy_write(FILE *fp, void *fptag_) {
+	FILE *fptag = fptag_;
 	uint32_t len = rtchunk(fp);
 	uint8_t buf[512];
 	bool first = true;
@@ -96,7 +97,8 @@ static bool rtcopy_write(FILE *fp, int nouse_) {
 	return copy;
 }
 
-static bool rtcopy_list(FILE *fp, int listfd) {
+static bool rtcopy_list(FILE *fp, void *listfd_) {
+	int listfd = *(int*)listfd_;
 	uint32_t len = rtchunk(fp);
 	uint8_t buf[512];
 	bool first = true;
@@ -138,12 +140,14 @@ void *retrieve_tags(void *fp_) {
 	FILE *fp = fp_;
 	uint8_t buf[512];
 	
+	struct rettag_st *rtn = calloc(1, sizeof(*rtn));
+	
 	rtread(buf, 8, fp);
 	char const *OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73";
 	if (memcmp(buf, OpusTags, 8) != 0) {
 		opuserror(err_opus_bad_content);
 	}
-	fptag = tmpfile();
+	FILE *fptag = rtn->tag = tmpfile();
 	fwrite(buf, 1, 8, fptag);
 	
 	// ベンダ文字列
@@ -158,28 +162,31 @@ void *retrieve_tags(void *fp_) {
 		check_tagpacket_length(rl);
 		len -= rl;
 	}
-	tagpacket_tagnumpos = tagpacket_total;
+	rtn->tagbegin = tagpacket_total;
 	
 	// レコード数
 	size_t recordnum = rtchunk(fp);
 	fwrite(buf, 4, 1, fptag); // レコード数埋め(後でstore_tags()で書き換え)
 	check_tagpacket_length(4);
-	bool (*rtcopy)(FILE*, int);
+	bool (*rtcopy)(FILE*, void*);
 	int pfd[2];
 	pthread_t putth;
+	void *wh;
 	if (O.edit == EDIT_LIST) {
 		// タグ出力をスレッド化 put-tags.c へ
 		pipe(pfd);
 		FILE *fpput = fdopen(pfd[0], "r");
 		pthread_create(&putth, NULL, put_tags, fpput);
 		rtcopy = rtcopy_list;
+		wh = pfd + 1;
 	}
 	else {
 		rtcopy = rtcopy_write;
+		wh = fptag;
 	}
 	
 	while (recordnum) {
-		tagnum_file += rtcopy(fp, pfd[1]);
+		rtn->num += rtcopy(fp, wh);
 		recordnum--;
 	}
 	
@@ -190,13 +197,15 @@ void *retrieve_tags(void *fp_) {
 		exit(0);
 	}
 	
+	
 	len = fread(buf, 1, 1, fp);
-	if (O.edit != EDIT_LIST && len && (*buf & 1)) {
-		preserved_padding = tmpfile();
-		fwrite(buf, 1, 1, preserved_padding);
+	if (len && (*buf & 1)) {
+		rtn->padding = tmpfile();
+		fwrite(buf, 1, 1, rtn->padding);
+		check_tagpacket_length(1);
 		size_t n;
 		while ((n = fread(buf, 1, 512, fp))) {
-			fwrite(buf, 1, n, preserved_padding);
+			fwrite(buf, 1, n, rtn->padding);
 			check_tagpacket_length(n);
 		}
 	}
@@ -205,6 +214,6 @@ void *retrieve_tags(void *fp_) {
 		while ((n = fread(buf, 1, 512, fp))) {}
 	}
 	fclose(fp);
-	return NULL;
+	return rtn;
 }
 

@@ -16,3 +16,13 @@ iconv_t iconv_new(char const *to, char const *from);
 #include "ocutil.h"
 #include "limit.h"
 #include "error.h"
+
+struct rettag_st {
+	FILE *tag, *padding;
+	long tagbegin;
+	size_t num;
+};
+struct edit_st {
+	FILE *fp;
+	size_t num;
+};
