@@ -225,8 +225,8 @@ static void exit_without_sigpipe(void) {
 	signal(SIGPIPE, SIG_IGN);
 }
 
-void disconsecutive_page(int page) {
-	opuserror(err_opus_disconsecutive, page, opus_idx);
+void discontinuous_page(int page) {
+	opuserror(err_opus_discontinuous, page, opus_idx);
 }
 
 static int test_break(ogg_page *og) {
@@ -246,7 +246,7 @@ static void parse_header(ogg_page *og) {
 		opuserror(err_opus_bad_stream);
 	}
 	if (ogg_page_pageno(og) != 0) {
-		disconsecutive_page(ogg_page_pageno(og));
+		discontinuous_page(ogg_page_pageno(og));
 	}
 	if (test_break(og) < 0) {
 		opuserror(err_opus_border);
@@ -350,7 +350,7 @@ static void parse_header_border(ogg_page *og) {
 		opuserror(err_opus_multi);
 	}
 	if (ogg_page_pageno(og) != 1) {
-		disconsecutive_page(ogg_page_pageno(og));
+		discontinuous_page(ogg_page_pageno(og));
 	}
 	if (ogg_page_bos(og) || ogg_page_eos(og)) {
 		opuserror(err_opus_bad_stream);
@@ -413,7 +413,7 @@ static void parse_comment(ogg_page *og) {
 		opuserror(err_opus_multi);
 	}
 	if (ogg_page_pageno(og) != opus_idx) {
-		disconsecutive_page(ogg_page_pageno(og));
+		discontinuous_page(ogg_page_pageno(og));
 	}
 	if (ogg_page_bos(og) || ogg_page_bos(og) || !ogg_page_continued(og)) {
 		opuserror(err_opus_bad_stream);

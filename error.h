@@ -17,7 +17,7 @@ enum err_opus_ {
 	err_opus_multi = 7,
 	err_opus_utf8 = 8,
 	err_opus_long_tag = 9,
-	err_opus_disconsecutive = 10,
+	err_opus_discontinuous = 10,
 	err_opus_lost_tag = 11,
 	err_opus_bad_content = 12,
 };

@@ -37,7 +37,7 @@ void opuserror(int e, ...) {
 		LIST(  7, false, "not supported for multiple logical stream" )
 		LIST(  8, false, "invalid UTF-8 sequence in tag record #%d" )
 		LIST(  9, true,  "tag packet is too long (up to %u MiB)" )
-		LIST( 10, false, "disconsecutive page - encountered p. %u against expectation of p. %u" )
+		LIST( 10, false, "discontinuous page - encountered p. %u against expectation of p. %u" )
 		LIST( 11, false, "tag packet is incomplete" )
 		LIST( 12, true,  "invalid header content" )
 #undef LIST
