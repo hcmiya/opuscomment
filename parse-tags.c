@@ -106,50 +106,52 @@ static void toutf8(int fdu8) {
 }
 
 static FILE *record, *fpedit;
-static int recordfd;
-static void blank_record() {
-	rewind(record);
-	ftruncate(recordfd, 0);
-}
-
 static size_t editlen;
 static void write_record(void) {
-	uint32_t end = ftell(record);
+	uint32_t reclen = ftell(record);
 	rewind(record);
 	uint8_t buf[512];
 	size_t n;
 	
 	// 全部空白かどうか
+	// 注意: ファイル終端を脱出に使えないので読み込みの長さを数えている。以下同じ
 	bool blank = true;
-	while ((n = fread(buf, 1, 512, record))) {
+	size_t testleft = reclen;
+	while (testleft) {
+		size_t readlen = testleft > 512 ? 512 : testleft;
+		n = fread(buf, 1, readlen, record);
 		for (size_t i = 0; i < n; i++) {
 			if (!strchr("\x9\xa\xd\x20", buf[i])) {
 				blank = false;
 				goto END_BLANK_TEST;
 			}
 		}
+		testleft -= readlen;
 	}
 END_BLANK_TEST:
+	rewind(record);
 	if (blank) {
-		blank_record();
 		return;
 	}
 	// 空白じゃなかったら編集に採用
-	editlen += 4 + end;
+	editlen += 4 + reclen;
 	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
 	}
-	end = oi32(end);
-	fwrite(&end, 4, 1, fpedit);
-	rewind(record);
+	*(uint32_t*)buf = oi32(reclen);
+	fwrite(buf, 4, 1, fpedit);
 	
 	// 最初が = か
 	fread(buf, 1, 1, record);
 	if (*buf == 0x3d) err_empty();
-	rewind(record);
+	fseek(record, -1, SEEK_CUR);
 	
-	// 項目名がPCS印字文字範囲内か
-	while ((n = fread(buf, 1, 512, record))) {
+	// 項目名がPCS印字文字範囲内か、= があるか
+	testleft = reclen;
+	bool field = true;
+	while (testleft) {
+		size_t readlen = testleft > 512 ? 512 : testleft;
+		n = fread(buf, 1, readlen, record);
 		size_t i;
 		for (i = 0; i < n && buf[i] != 0x3d; i++) {
 			if (!(buf[i] >= 0x20 && buf[i] <= 0x7e)) {
@@ -160,12 +162,22 @@ END_BLANK_TEST:
 			}
 		}
 		fwrite(buf, 1, n, fpedit);
-		if (i < n) break;
+		testleft -= readlen;
+		if (i < n) {
+			field = false;
+			break;
+		}
 	}
-	while ((n = fread(buf, 1, 512, record))) {
+	if (field) {
+		err_nosep();
+	}
+	while (testleft) {
+		size_t readlen = testleft > 512 ? 512 : testleft;
+		n = fread(buf, 1, readlen, record);
 		fwrite(buf, 1, n, fpedit);
+		testleft -= readlen;
 	}
-	blank_record();
+	rewind(record);
 	tagnum++;
 }
 
@@ -269,7 +281,6 @@ void prepare_record(void) {
 		return;
 	}
 	record = tmpfile();
-	recordfd = fileno(record);
 }
 
 void *split(void *fp_) {
