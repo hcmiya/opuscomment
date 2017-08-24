@@ -17,7 +17,7 @@ $ option: ???fputs??????%??????????
     -e    Use escape sequence; \\\\, \\n, \\r and \\0\n\
     -g gain\n\
           Specify output gain in dB\n\
-    -s gain\n\
+    -s scale\n\
           Specify output gain in scale for PCM samples.\n\
           1 for same scale. 0.5 for half.\n\
     -n    Set output gain to 0\n\
