@@ -8,6 +8,5 @@ uint64_t oi64(uint64_t i);
 int page_breaks(ogg_page *og, size_t num, uint16_t *at);
 
 #if _POSIX_C_SOURCE < 200809L
-char *strndup(char const *src, size_t n);
 size_t strnlen(char const *src, size_t n);
 #endif

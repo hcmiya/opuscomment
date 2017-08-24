@@ -26,14 +26,6 @@ int page_breaks(ogg_page *og, size_t num, uint16_t *at) {
 }
 
 #if _POSIX_C_SOURCE < 200809L
-char *strndup(char const *src, size_t n) {
-	char *rtn = malloc(n + 1);
-	if (rtn) {
-		strncpy(rtn, src, n);
-		rtn[n] = '\0';
-	}
-	return rtn;
-}
 size_t strnlen(char const *src, size_t n) {
 	char const *endp = src + n, *p = src;
 	while (p < endp && *p) p++;
