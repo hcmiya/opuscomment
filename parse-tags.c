@@ -105,107 +105,141 @@ static void toutf8(int fdu8) {
 	close(fdu8);
 }
 
-static FILE *record, *fpedit;
+static FILE *strstore, *strcount;
 static size_t editlen;
-static void write_record(void) {
-	uint32_t reclen = ftell(record);
-	rewind(record);
-	uint8_t buf[512];
-	size_t n;
-	
-	// 全部空白かどうか
-	// 注意: ファイル終端を脱出に使えないので読み込みの長さを数えている。以下同じ
-	bool blank = true;
-	size_t testleft = reclen;
-	while (testleft) {
-		size_t readlen = testleft > 512 ? 512 : testleft;
-		n = fread(buf, 1, readlen, record);
-		for (size_t i = 0; i < n; i++) {
-			if (!strchr("\x9\xa\xd\x20", buf[i])) {
-				blank = false;
-				goto END_BLANK_TEST;
+
+static bool first_call = true;
+static uint32_t recordlen;
+static void finalize_record(void) {
+	fwrite(&recordlen, 4, 1, strcount);
+	tagnum++;
+	first_call = true;
+}
+
+static size_t wsplen;
+static bool on_field, keep_blank;
+static bool test_blank(uint8_t *line, size_t n, bool lf) {
+	if (first_call) {
+		// = で始まってたらすぐエラー(575)
+		if (*line == 0x3d) err_nosep();
+		first_call = false;
+		on_field = true;
+		keep_blank = true;
+		wsplen = 0;
+		recordlen = 0;
+	}
+	if (keep_blank) {
+		size_t i;
+		bool blank_with_ctrl = false;
+		for (i = 0; i < n; i++) {
+			switch (line[i]) {
+			case 0x9:
+			case 0xa:
+			case 0xd:
+				blank_with_ctrl = true;
+			case 0x20:
+				break;
+			default:
+				keep_blank = false;
+			}
+			if (!keep_blank) break;
+		}
+		if (keep_blank) {
+			// まだ先頭から空白が続いている時
+			if (lf) {
+				// 行が終わったが全て空白だったので飛ばして次の行へ
+				first_call = true;
+			}
+			else {
+				// 行が続いている
+				wsplen += n;
+			}
+			return true;
+		}
+		// 空白状態を抜けてフィールド判別状態にある
+		if (blank_with_ctrl) {
+			//空白がwsp以外を含んでいたらエラー
+			err_name();
+		}
+		editlen += 4 + wsplen;
+		if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
+			mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+		}
+		if (wsplen) {
+			// 空白と見做していた分を書き込み
+			uint8_t buf[512];
+			memset(buf, 0x20, 512);
+			recordlen = wsplen;
+			while (wsplen) {
+				size_t wlen = wsplen > 512 ? 512 : wsplen;
+				fwrite(buf, 1, wlen, strstore);
+				wsplen -= wlen;
 			}
 		}
-		testleft -= readlen;
 	}
-END_BLANK_TEST:
-	rewind(record);
-	if (blank) {
-		return;
+	return false;
+}
+
+static void test_field(uint8_t *line, size_t n) {
+	// フィールドの使用文字チェック・大文字化
+	size_t i;
+	for (i = 0; i < n && line[i] != 0x3d; i++) {
+		if (!(line[i] >= 0x20 && line[i] <= 0x7e)) {
+			err_name();
+		}
+		if (line[i] >= 0x61 && line[i] <= 0x7a) {
+			line[i] -= 32;
+		}
 	}
-	// 空白じゃなかったら編集に採用
-	editlen += 4 + reclen;
+	if (i < n) on_field = false;
+}
+
+static void append_buffer(uint8_t *line, size_t n) {
+	editlen += n;
 	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
 	}
-	*(uint32_t*)buf = oi32(reclen);
-	fwrite(buf, 4, 1, fpedit);
-	
-	// 最初が = か
-	fread(buf, 1, 1, record);
-	if (*buf == 0x3d) err_empty();
-	fseek(record, -1, SEEK_CUR);
-	
-	// 項目名がPCS印字文字範囲内か、= があるか
-	testleft = reclen;
-	bool field = true;
-	while (testleft) {
-		size_t readlen = testleft > 512 ? 512 : testleft;
-		n = fread(buf, 1, readlen, record);
-		size_t i;
-		for (i = 0; i < n && buf[i] != 0x3d; i++) {
-			if (!(buf[i] >= 0x20 && buf[i] <= 0x7e)) {
-				err_name();
-			}
-			if (buf[i] >= 0x61 && buf[i] <= 0x7a) {
-				buf[i] -= 32;
-			}
-		}
-		fwrite(buf, 1, n, fpedit);
-		testleft -= readlen;
-		if (i < n) {
-			field = false;
-			break;
-		}
-	}
-	if (field) {
-		err_nosep();
-	}
-	while (testleft) {
-		size_t readlen = testleft > 512 ? 512 : testleft;
-		n = fread(buf, 1, readlen, record);
-		fwrite(buf, 1, n, fpedit);
-		testleft -= readlen;
-	}
-	rewind(record);
-	tagnum++;
+	recordlen += n;
+	fwrite(line, 1, n, strstore);
 }
 
-static void r_line(uint8_t *line, size_t n) {
+static void line_oc(uint8_t *line, size_t n, bool lf) {
 	static bool afterlf = false;
 	
 	if (!line) {
-		write_record();
-		afterlf = false;
+		if (!first_call) {
+			if (!keep_blank) {
+				if (on_field) err_nosep();
+				finalize_record();
+			}
+			first_call = true;
+		}
 		return;
 	}
 	
-	bool lf = line[n - 1] == 0xa;
-	if (afterlf) {
+	if(test_blank(line, n, lf)) return;
+	
+	if (lf) n--;
+	if (on_field) {
+		test_field(line, n);
+		if (on_field && lf) err_name();
+	}
+	else if (afterlf) {
+		afterlf = false;
 		if (*line == 0x9) {
 			*line = 0xa;
 		}
 		else {
-			write_record();
+			// 新行が<tab>で始まってなかったら前の行のレコード確定作業をして再帰
+			finalize_record();
+			if (lf) n++;
+			line_oc(line, n, lf);
+			return;
 		}
-		afterlf = false;
 	}
-	fwrite(line, 1, n - lf, record);
+	append_buffer(line, n);
 	if (lf) {
 		afterlf = true;
-	}
-	else {
-		afterlf = false;
 	}
 }
 
@@ -229,65 +263,67 @@ static int esctab(int c) {
 	}
 	return c;
 }
-static void r_line_e(uint8_t *line, size_t n) {
-	static bool tagcont = false;
-	static bool escape = false;
+
+static void line_vc(uint8_t *line, size_t n, bool lf) {
+	static bool escape_pending = false;
 	
 	if (!line) {
-		if (escape) err_esc();
-		if (tagcont) write_record();
+		if (!first_call) {
+			if (!keep_blank) {
+				if (escape_pending) err_esc();
+				if (on_field) err_nosep();
+				finalize_record();
+			}
+			first_call = true;
+		}
 		return;
 	}
 	
-	if (escape) {
+	if(test_blank(line, n, lf)) return;
+	
+	if (escape_pending) {
 		*line = esctab(*line);
-		fwrite(line, 1, 1, record);
-		escape = false;
-		line++;
-		n--;
 	}
 	
-	uint8_t *p = line;
-	bool lf = n && line[n - 1] == 0x0a;
-	uint8_t *endp = line + n - lf;
-	for (; p < endp && *p != 0x5c; p++) {}
-	fwrite(line, 1, p - line, record);
-	if (p < endp) {
-		// '\\'があった時
-		uint8_t *escbegin = p;
-		uint8_t *advp = p;
-		for (; advp < endp; p++, advp++) {
-			char c;
-			if ((c = *advp) == 0x5c) {
-				if (++advp == endp) {
-					escape = true;
-					tagcont = true;
+	if (lf) n--;
+	uint8_t *bs = memchr(line + escape_pending, 0x5c, n - escape_pending);
+	escape_pending = false;
+	if (bs) {
+		uint8_t *unesc = bs, *end = line + n;
+		while (bs < end) {
+			uint8_t c = *bs++;
+			if (c == 0x5c) {
+				if (bs == end) {
+					if (lf) err_esc();
+					escape_pending = true;
+					n--;
 					break;
 				}
-				c = esctab(*advp);
+				c = esctab(*bs++);
+				n--;
 			}
-			*p = c;
+			*unesc++ = c;
 		}
-		fwrite(escbegin, 1, p - escbegin, record);
 	}
+	if (on_field) {
+		test_field(line, n);
+		if (on_field && lf) err_nosep();
+	}
+	append_buffer(line, n);
 	if (lf) {
-		write_record();
+		finalize_record();
 	}
-	tagcont = !lf;
 }
 
 void prepare_record(void) {
-	if (record) {
-		return;
-	}
-	record = tmpfile();
+	strstore = strstore ? strstore : tmpfile();
+	strcount = strcount ? strcount : tmpfile();
 }
 
 void *split(void *fp_) {
 	FILE *fp = fp_;
 	prepare_record();
-	fpedit = fpedit ? fpedit : tmpfile();
-	void (*line)(uint8_t *, size_t) = O.tag_escape ? r_line_e : r_line;
+	void (*line)(uint8_t *, size_t, bool) = O.tag_escape ? line_vc : line_oc;
 	
 	uint8_t tagbuf[512];
 	size_t tagbuflen, readlen;
@@ -300,15 +336,14 @@ void *split(void *fp_) {
 		p1 = tagbuf;
 		while ((p2 = memchr(p1, 0x0a, readlen - (p1 - tagbuf))) != NULL) {
 			p2++;
-			line(p1, p2 - p1);
+			line(p1, p2 - p1, true);
 			p1 = p2;
 		}
 		size_t left = readlen - (p1 - tagbuf);
-		if (left) line(p1, left);
+		if (left) line(p1, left, false);
 	}
 	fclose(fp);
-	line(NULL, 0);
-	fclose(record);
+	line(NULL, 0, false);
 }
 
 void *parse_tags(void* nouse_) {
@@ -332,7 +367,8 @@ void *parse_tags(void* nouse_) {
 	pthread_join(split_thread, NULL);
 	
 	struct edit_st *rtn = calloc(1, sizeof(*rtn));
-	rtn->fp = fpedit;
+	rtn->str = strstore;
+	rtn->len = strcount;
 	rtn->num = tagnum;
 	return rtn;
 }
@@ -353,7 +389,6 @@ void add_tag_from_opt(char const *arg) {
 	if (cd == (iconv_t)-1) {
 		cd = iconv_new("UTF-8", nl_langinfo(CODESET));
 	}
-	fpedit = fpedit ? fpedit : tmpfile();
 	prepare_record();
 	char u8buf[512];
 	size_t u8left;
@@ -369,7 +404,7 @@ void add_tag_from_opt(char const *arg) {
 				oserror();
 			}
 		}
-		r_line(u8buf, u8 - u8buf);
+		line_oc(u8buf, u8 - u8buf, false);
 	}
 	u8 = u8buf;
 	u8left = 512;
@@ -377,6 +412,6 @@ void add_tag_from_opt(char const *arg) {
 		oserror();
 	}
 	u8[0] = 0xa;
-	r_line(u8buf, u8 - u8buf + 1);
-	r_line(NULL, 0);
+	line_oc(u8buf, u8 - u8buf + 1, true);
+	line_oc(NULL, 0, false);
 }

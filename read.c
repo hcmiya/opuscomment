@@ -99,17 +99,25 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	fseek(fptag, 0, SEEK_END);
 	
 	// 編集入力書き込み
-	rewind(est->fp);
-	size_t len;
-	while ((len = fread(gbuf, 1, gbuflen, est->fp))) {
-		fwrite(gbuf, 1, len, fptag);
+	rewind(est->str); rewind(est->len);
+	while (fread(gbuf, 4, 1, est->len)) {
+		size_t reclen = *(uint32_t*)gbuf;
+		*(uint32_t*)gbuf = oi32(reclen);
+		fwrite(gbuf, 4, 1, fptag);
+		while (reclen) {
+			size_t readlen = reclen > gbuflen ? gbuflen : reclen;
+			fread(gbuf, 1, readlen, est->str);
+			fwrite(gbuf, 1, readlen, fptag);
+			reclen -= readlen;
+		}
 	}
-	fclose(est->fp);
+	fclose(est->str); fclose(est->len);
 	
 	// パディング書き込み
 	if (rst->padding) {
 		FILE *pfp = rst->padding;
 		rewind(pfp);
+		size_t len;
 		while ((len = fread(gbuf, 1, gbuflen, pfp))) {
 			fwrite(gbuf, 1, len, fptag);
 		}

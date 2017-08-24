@@ -23,6 +23,6 @@ struct rettag_st {
 	size_t num;
 };
 struct edit_st {
-	FILE *fp;
+	FILE *str, *len;
 	size_t num;
 };
