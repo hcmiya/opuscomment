@@ -42,7 +42,7 @@ static void usage(void) {
 "    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
 "    -g gain\n"
 "          Specify output gain in dB\n"
-"    -s gain\n"
+"    -s scale\n"
 "          Specify output gain in scale for PCM samples.\n"
 "          1 for same scale. 0.5 for half.\n"
 "    -n    Set output gain to 0\n"
@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
 	if (len < 4) {
 		opuserror(err_opus_non_ogg);
 	}
-	if (strncmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
+	if (memcmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
 		opuserror(err_opus_non_ogg);
 	}
 	ogg_sync_wrote(&oy, len);
