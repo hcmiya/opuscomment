@@ -291,15 +291,14 @@ static int test_break(ogg_page *og) {
 	opuserror(err_opus_border);
 }
 
+static bool leave_zero, non_opus_appeared;
 static bool parse_header(ogg_page *og) {
 	if (!ogg_page_bos(og) || ogg_page_eos(og)) {
-		opuserror(err_opus_bad_stream);
-	}
-	if (ogg_page_pageno(og) != 0) {
-		discontinuous_page(ogg_page_pageno(og));
+		opuserror(ogg_page_pageno(og) != 0 ? err_opus_non_opus : err_opus_bad_stream);
 	}
 	if (og->body_len < 8 || memcmp(og->body, OpusHead, 8) != 0) {
-		opuserror(err_opus_non_opus);
+		non_opus_appeared = true;
+		return false;
 	}
 	opus_sno = ogg_page_serialno(og);
 	if (test_break(og) < 0) {
@@ -360,16 +359,47 @@ static void copy_tag_packet(ogg_page *og) {
 	write(retriever_fd, og->body, og->body_len);
 }
 
+static bool test_non_opus(ogg_page *og) {
+	if (ogg_page_serialno(og) == opus_sno) return true;
+	non_opus_appeared = true;
+	
+	int pno = ogg_page_pageno(og);
+	if (pno == 0) {
+		if (leave_zero) {
+			opuserror(err_opus_bad_stream);
+		}
+		if (!ogg_page_bos(og) || ogg_page_eos(og)) {
+			opuserror(err_opus_bad_stream);
+		}
+	}
+	else if (pno == 1) {
+		// 複数論理ストリームの先頭は全て0で始まるため、何かが1ページ目を始めたら今後0ページ目は来ないはずである。
+		leave_zero = true;
+	}
+	else {
+		if (!leave_zero) {
+			// 他で1ページ目が始まってないのに2ページ目以上が来た場合
+			opuserror(err_opus_bad_stream);
+		}
+	}
+	
+	if (pno && ogg_page_bos(og)) {
+		// Opusが続いているストリーム途中でBOSが来るはずがない
+		opuserror(err_opus_bad_stream);
+	}
+	return false;
+}
+
 static pthread_t retriever_thread, parser_thread;
 void *retrieve_tags(void*);
 void *parse_tags(void*);
 static bool parse_header_border(ogg_page *og) {
-	if (ogg_page_serialno(og) != opus_sno) {
-		opuserror(err_opus_multi);
-	}
+	if (!test_non_opus(og)) return false;
+	
 	if (ogg_page_pageno(og) != 1) {
 		discontinuous_page(ogg_page_pageno(og));
 	}
+	leave_zero = true;
 	if (ogg_page_bos(og) || ogg_page_eos(og)) {
 		opuserror(err_opus_bad_stream);
 	}
@@ -378,8 +408,8 @@ static bool parse_header_border(ogg_page *og) {
 	}
 	if (/*O.gain_fix && */O.edit == EDIT_NONE) {
 		// 出力ゲイン編集のみの場合
-		if (O.out) {
-			// 出力指定が別にあれば残りをコピー
+		if (O.out || non_opus_appeared) {
+			// 出力指定が別にあるかストリームが多重化されていたら残りをコピー
 			seeked_len -= og->header_len + og->body_len;
 			put_left();
 		}
@@ -410,6 +440,7 @@ static bool parse_header_border(ogg_page *og) {
 		/* NOTREACHED */
 	}
 	
+	// スレッド間通信で使っているパイプがエラー後のexit内での始末にSIGPIPEを発するのでその対策
 	atexit(exit_without_sigpipe);
 	error_on_thread = true;
 	
@@ -433,9 +464,8 @@ static bool parse_header_border(ogg_page *og) {
 }
 
 static bool parse_comment(ogg_page *og) {
-	if (ogg_page_serialno(og) != opus_sno) {
-		opuserror(err_opus_multi);
-	}
+	if (!test_non_opus(og)) return false;
+	
 	if (ogg_page_pageno(og) != opus_idx) {
 		discontinuous_page(ogg_page_pageno(og));
 	}
@@ -449,7 +479,10 @@ static bool parse_comment(ogg_page *og) {
 }
 
 static bool parse_page_sound(ogg_page *og);
+
 static bool parse_comment_border(ogg_page *og) {
+	if (!test_non_opus(og)) return false;
+	
 	if (ogg_page_continued(og)) {
 		opuserror(err_opus_border);
 	}
