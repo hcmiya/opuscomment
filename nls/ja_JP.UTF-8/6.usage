@@ -5,8 +5,8 @@ $quote `
 
 $ usage: %1$s = プログラム名
 1 `使い方:\n\
-    %1$s [-l] [-DepRUvV] opusfile\n\
-    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGprRUvV] opusfile [output]\n`
+    %1$s [-l] [-DepQRUv] opusfile\n\
+    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGpQrRUv] opusfile [output]\n`
 
 $ option: これはfputsの引数なので%はそのまま出力される
 2 `オプション:\n\
@@ -24,12 +24,10 @@ $ option: これはfputsの引数なので%はそのまま出力される
     -n    出力ゲインを0にする\n\
     -r    出力ゲインの指定を内部の設定に対する相対値とする\n\
     -G    出力ゲインが内部形式にした時に0になる場合は±1/256 dBを設定する\n\
+    -v    出力ゲインの編集『前』の値を標準エラー出力に出力する\n\
+    -Q    出力ゲイン値にQ7.8形式を使う\n\
     -p    METADATA_BLOCK_PICTUREの出力または削除をしない\n\
     -U    Opusファイル内のタグの項目名を大文字に変換する\n\
-    -v    出力ゲインの編集『前』の値を以下の形式で標準エラー出力に出力する\n\
-          "%.8g\\n", <output gain in dB>\n\
-    -V    出力ゲインの編集『前』の値を以下の形式で標準エラー出力に出力する\n\
-          "%d\\n", <output gain in Q7.8>\n\
     -c tagfile\n\
           出力モード時、タグをtagfileに書き出す。\n\
           書き込み・追記モード時、tagfileからタグを読み出す\n\

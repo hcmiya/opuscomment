@@ -29,8 +29,8 @@ static void usage(void) {
 	fputc('\n', stderr);
 	fprintf(stderr, catgets(catd, 6, 1,
 "Synopsys:\n"
-"    %1$s [-l] [-epRUvV] opusfile\n"
-"    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n"
+"    %1$s [-l] [-DepQRUv] opusfile\n"
+"    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGQprRUv] opusfile [output]\n"
 	), program_name);
 	fputc('\n', stderr);
 	fputs(catgets(catd, 6, 2,
@@ -49,18 +49,18 @@ static void usage(void) {
 "    -r    Specify that the gain is relative to internal value\n"
 "    -G    When output gain becomes 0 by converting to internal representation,\n"
 "          set [+-]1/256 dB instead\n"
+"    -v    Put output gain of BEFORE editing to stderr\n"
+"    -Q    Use Q7.8 format for editing output gain\n"
 "    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
 "    -U    Convert field name in Opus file to uppercase\n"
-"    -v    Put output gain of BEFORE editing to stderr by following format:\n"
-"          \"%.8g\\n\", <output gain in dB>\n"
-"    -V    Put output gain of BEFORE editing to stderr by following format:\n"
-"          \"%d\\n\", <output gain in Q7.8>\n"
+// "    -V    Verify Tags in source Opus file\n"
 "    -c tagfile\n"
 "          In list mode, write tags to tagfile.\n"
 "          In append/write mode, read tags from tagfile\n"
 "    -t NAME=VALUE\n"
 "          add the argument as editing item\n"
 "    -D    Defer editing IO\n"
+//"    -D    Defer editing IO; implies -V in list mode\n"
 	), stderr);
 	exit(1);
 }
@@ -82,31 +82,26 @@ static void out_of_range(int c) {
 static void parse_args(int argc, char **argv) {
 	int c;
 	bool added_tag = false;
-	while ((c = getopt(argc, argv, "lwag:s:nrGpReUvVc:t:D")) != -1) {
+	int gainfmt;
+	double gv;
+	while ((c = getopt(argc, argv, "lwag:s:nrGvQpUc:t:D")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
+			gainfmt = c;
 			O.gain_fix = true;
 			{
-				double f;
 				char *endp;
-				f = strtod(optarg, &endp);
+				gv = strtod(optarg, &endp);
 				if (optarg == endp) {
 					opterror(c, catgets(catd, 2, 3, "failed to parse gain value"));
 				}
-				if (!isfinite(f)) {
+				if (!isfinite(gv)) {
 					out_of_range(c);
 				}
-				if (c == 's') {
-					if (f <= 0) {
-						out_of_range(c);
-					}
-					f = 20 * log10(f);
-				}
-				if (f > 128 || f < -128) {
+				if (gv > 65536 || gv < -65536) {
 					out_of_range(c);
 				}
-				O.gain_val = f;
 			}
 			break;
 			
@@ -124,6 +119,11 @@ static void parse_args(int argc, char **argv) {
 			O.gain_relative = false;
 			O.gain_val = 0;
 			O.gain_not_zero = false;
+			gainfmt = c;
+			break;
+			
+		case 'Q':
+			O.gain_q78 = true;
 			break;
 			
 		case 'G':
@@ -159,11 +159,7 @@ static void parse_args(int argc, char **argv) {
 			break;
 			
 		case 'v':
-			O.info_gain = 1;
-			break;
-			
-		case 'V':
-			O.info_gain = 2;
+			O.gain_put = true;
 			break;
 			
 		case 'c':
@@ -180,6 +176,7 @@ static void parse_args(int argc, char **argv) {
 			break;
 		}
 	}
+	// オプションループ抜け
 	if (added_tag && O.edit == EDIT_LIST) {
 		mainerror(catgets(catd, 2, 5, "can not use -t with list mode"));
 	}
@@ -190,6 +187,27 @@ static void parse_args(int argc, char **argv) {
 		O.edit = EDIT_LIST;
 	}
 	else if (O.gain_fix) {
+		switch (gainfmt) {
+		case 'g':
+			if (O.gain_q78) {
+				O.gain_val = (int)trunc(gv);
+			}
+			else {
+				O.gain_val = (int)trunc(gv * 256);
+			}
+			break;
+		case 's':
+			if (gv <= 0) {
+				out_of_range(gainfmt);
+			}
+			O.gain_val = (int)trunc(20 * log10(gv) * 256);
+			break;
+		}
+		O.gain_val_sign = signbit(gv);
+		if (!O.gain_relative && (O.gain_val > 32767 || O.gain_val < -32768)) {
+			out_of_range(gainfmt);
+		}
+		
 		if (O.edit == EDIT_LIST) {
 			mainerror(catgets(catd, 2, 7, "options of editing gain can not use with list mode"));
 		}

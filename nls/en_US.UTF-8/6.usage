@@ -5,8 +5,8 @@ $quote `
 
 $ usage: %1$s = プログラム名
 1 `Synopsys:\n\
-    %1$s [-l] [-DepRUvV] opusfile\n\
-    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGprRUvV] opusfile [output]\n`
+    %1$s [-l] [-DepQRUv] opusfile\n\
+    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGpQrRUv] opusfile [output]\n`
 
 $ option: これはfputsの引数なので%はそのまま出力される
 2 `Options:\n\
@@ -24,12 +24,10 @@ $ option: これはfputsの引数なので%はそのまま出力される
     -r    Specify that the gain is relative to internal value\n\
     -G    When output gain becomes 0 by converting to internal representation,\n\
           set ±1/256 dB instead\n\
+    -v    Put output gain of BEFORE editing to stderr\n\
+    -Q    Use Q7.8 format for editing output gain\n\
     -p    Supress editing for METADATA_BLOCK_PICTURE\n\
     -U    Convert field name in Opus file to uppercase\n\
-    -v    Put output gain of BEFORE editing to stderr by following format:\n\
-          \"%.8g\\n\", <output gain in dB>\n\
-    -V    Put output gain of BEFORE editing to stderr by following format:\n\
-          \"%d\\n\", <output gain in Q7.8>\n\
     -c tagfile\n\
           In list mode, write tags to tagfile.\n\
           In append/write mode, read tags from tagfile\n\

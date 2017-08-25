@@ -22,9 +22,10 @@ GLOBAL struct {
 	bool gain_fix;
 	bool gain_relative;
 	bool gain_not_zero;
-	double gain_val;
-	
-	int info_gain;
+	bool gain_q78;
+	int gain_val;
+	bool gain_val_sign;
+	bool gain_put;
 	
 	bool tag_ignore_picture;
 	bool tag_escape;

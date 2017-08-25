@@ -276,35 +276,32 @@ static void parse_header(ogg_page *og) {
 	if ((og->body[8] & 0xf0) != 0) {
 		opuserror(err_opus_version);
 	}
-	switch (O.info_gain) {
-		case 1:
-			fprintf(stderr, "%.8g\n", (int16_t)oi16(*(int16_t*)(&og->body[16])) / 256.0);
-			break;
-		case 2:
+	if (O.gain_put) {
+		if (O.gain_q78) {
 			fprintf(stderr, "%d\n", (int16_t)oi16(*(int16_t*)(&og->body[16])));
-			break;
+		}
+		else {
+			fprintf(stderr, "%.8g\n", (int16_t)oi16(*(int16_t*)(&og->body[16])) / 256.0);
+		}
 	}
 	if (O.gain_fix) {
 		int16_t gi;
-		bool sign;
 		if (O.gain_relative) {
-			double gain = (int16_t)oi16(*(int16_t*)(&og->body[16]));
-			gain += O.gain_val * 256;
+			int gain = (int16_t)oi16(*(int16_t*)(&og->body[16]));
+			gain += O.gain_val;
 			if (gain > 32767) {
 				gain = 32767;
 			}
 			else if (gain < -32768) {
 				gain = -32768;
 			}
-			gi = (int16_t)gain;
-			sign = signbit(gain);
+			gi = gain;
 		}
 		else {
-			gi = (int16_t)(O.gain_val * 256);
-			sign = signbit(O.gain_val);
+			gi = O.gain_val;
 		}
 		if (O.gain_not_zero && gi == 0) {
-			gi = sign ? -1 : 1;
+			gi = O.gain_val_sign ? -1 : 1;
 		}
 		
 		*(int16_t*)(&og->body[16]) = oi16(gi);
