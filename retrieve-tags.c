@@ -109,6 +109,7 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 		size_t rl = len > 512 ? 512 : len;
 		rtread(buf, rl, fp);
 		if (first) {
+			if (*buf == 0x3d) opuserror(err_opus_bad_tag, idx);
 			first = false;
 			copy = !O.tag_ignore_picture || !test_mbp(buf, len);
 			if (copy) {
