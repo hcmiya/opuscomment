@@ -339,9 +339,9 @@ static bool parse_header(ogg_page *og) {
 		}
 		
 		*(int16_t*)(&og->body[16]) = oi16(gi);
+		ogg_page_checksum_set(og);
 	}
 	if (O.edit != EDIT_LIST) {
-		ogg_page_checksum_set(og);
 		write_page(og);
 	}
 	opus_idx++;
