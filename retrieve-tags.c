@@ -116,7 +116,7 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 			}
 		}
 		if (copy) {
-			if (O.tag_verify) {
+			if (O.tag_verify && field) {
 				if(!test_tag_field(buf, rl, O.tag_toupper, &field)) {
 					opuserror(err_opus_bad_tag, idx);
 				}
