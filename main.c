@@ -47,7 +47,7 @@ static void usage(void) {
 "          1 for same scale. 0.5 for half.\n"
 "    -n    Set output gain to 0\n"
 "    -r    Specify that the gain is relative to internal value\n"
-"    -G    When output gain becomes 0 by converting to internal representation,\n"
+"    -1    When output gain becomes 0 by converting to internal representation,\n"
 "          set [+-]1/256 dB instead\n"
 "    -v    Put output gain of BEFORE editing to stderr\n"
 "    -Q    Use Q7.8 format for editing output gain\n"
@@ -125,7 +125,7 @@ static void parse_args(int argc, char **argv) {
 			O.gain_q78 = true;
 			break;
 			
-		case 'G':
+		case '1':
 			O.gain_not_zero = true;
 			break;
 			
