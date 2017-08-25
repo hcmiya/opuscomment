@@ -10,3 +10,4 @@ $set 2
 10 tag length exceeded the limit of storing (up to %u MiB)
 11 too long editing input. Haven’t you executed odd command?
 12 empty editing input
+13 editing input is not terminated by line feed

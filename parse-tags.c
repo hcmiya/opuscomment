@@ -51,6 +51,9 @@ static void err_esc(void) {
 static void err_utf8(void) {
 	tagerror(catgets(catd, 5, 6, "invalid UTF-8 sequence"));
 }
+static void err_noterm(void) {
+	mainerror(catgets(catd, 2, 13, "editing input is not terminated by line feed"));
+}
 
 static void toutf8(int fdu8) {
 	size_t const buflen = 512;
@@ -197,11 +200,15 @@ static void line_oc(uint8_t *line, size_t n, bool lf) {
 	
 	if (!line) {
 		if (!first_call) {
+			if (O.tag_check_line_term && !afterlf) {
+				err_noterm();
+			}
 			if (!keep_blank) {
 				if (on_field) err_nosep();
 				finalize_record();
 			}
 			first_call = true;
+			afterlf = false;
 		}
 		return;
 	}
@@ -258,6 +265,9 @@ static void line_vc(uint8_t *line, size_t n, bool lf) {
 	
 	if (!line) {
 		if (!first_call) {
+			if (O.tag_check_line_term) {
+				err_noterm();
+			}
 			if (!keep_blank) {
 				if (escape_pending) err_esc();
 				if (on_field) err_nosep();

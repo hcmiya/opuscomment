@@ -59,7 +59,8 @@ static void usage(void) {
 "    -t NAME=VALUE\n"
 "          add the argument as editing item\n"
 "    -V    Verify Tags in source Opus file\n"
-"    -D    Defer editing IO; implies -V in list mode\n"
+"    -T    Check whether editing input has been terminated by line feed.\n"
+"    -D    Defer editing IO; implies -V, -T\n"
 	), stderr);
 	exit(1);
 }
@@ -83,7 +84,7 @@ static void parse_args(int argc, char **argv) {
 	bool added_tag = false;
 	int gainfmt;
 	double gv;
-	while ((c = getopt(argc, argv, "lwag:s:nrGvQpUc:t:VD")) != -1) {
+	while ((c = getopt(argc, argv, "lwaReg:s:nr1vQpUc:t:VTD")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
@@ -172,7 +173,12 @@ static void parse_args(int argc, char **argv) {
 			
 		case 'D':
 			O.tag_deferred = true;
-			/* FALLTHROUGH */
+			O.tag_verify = true;
+			O.tag_check_line_term = true;
+			break;
+		case 'T':
+			O.tag_check_line_term = true;
+			break;
 		case 'V':
 			O.tag_verify = true;
 			break;

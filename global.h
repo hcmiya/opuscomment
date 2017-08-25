@@ -34,6 +34,7 @@ GLOBAL struct {
 	char *tag_filename;
 	bool tag_deferred;
 	bool tag_verify;
+	bool tag_check_line_term;
 	
 	char *in, *out;
 } O;
