@@ -79,7 +79,7 @@ static bool rtcopy_write(FILE *fp, void *fptag_) {
 		}
 		if (copy) {
 			if (O.tag_toupper && field) {
-				for (char *p = buf, *endp = buf + rl; p < endp; p++) {
+				for (uint8_t *p = buf, *endp = buf + rl; p < endp; p++) {
 					if (*p >= 0x61 && *p <= 0x7a) {
 						*p -= 32;
 					}
@@ -98,6 +98,7 @@ static bool rtcopy_write(FILE *fp, void *fptag_) {
 }
 
 static bool rtcopy_list(FILE *fp, void *listfd_) {
+	static size_t idx = 1;
 	int listfd = *(int*)listfd_;
 	uint32_t len = rtchunk(fp);
 	uint8_t buf[512];
@@ -115,7 +116,12 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 			}
 		}
 		if (copy) {
-			if (O.tag_toupper && field) {
+			if (O.tag_verify) {
+				if(!test_tag_field(buf, rl, O.tag_toupper, &field)) {
+					opuserror(err_opus_bad_tag, idx);
+				}
+			}
+			else if (O.tag_toupper && field) {
 				for (char *p = buf, *endp = buf + rl; p < endp; p++) {
 					if (*p >= 0x61 && *p <= 0x7a) {
 						*p -= 32;
@@ -130,6 +136,10 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 		}
 		len -= rl;
 	}
+	if (O.tag_verify && field) {
+		opuserror(err_opus_bad_tag, idx);
+	}
+	idx++;
 	return copy;
 }
 

@@ -20,4 +20,5 @@ enum err_opus_ {
 	err_opus_discontinuous = 10,
 	err_opus_lost_tag = 11,
 	err_opus_bad_content = 12,
+	err_opus_bad_tag = 13,
 };

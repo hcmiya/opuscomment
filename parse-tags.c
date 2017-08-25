@@ -183,20 +183,6 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 	return false;
 }
 
-static void test_field(uint8_t *line, size_t n) {
-	// フィールドの使用文字チェック・大文字化
-	size_t i;
-	for (i = 0; i < n && line[i] != 0x3d; i++) {
-		if (!(line[i] >= 0x20 && line[i] <= 0x7e)) {
-			err_name();
-		}
-		if (line[i] >= 0x61 && line[i] <= 0x7a) {
-			line[i] -= 32;
-		}
-	}
-	if (i < n) on_field = false;
-}
-
 static void append_buffer(uint8_t *line, size_t n) {
 	editlen += n;
 	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
@@ -224,7 +210,7 @@ static void line_oc(uint8_t *line, size_t n, bool lf) {
 	
 	if (lf) n--;
 	if (on_field) {
-		test_field(line, n);
+		if(!test_tag_field(line, n, true, &on_field)) err_name();
 		if (on_field && lf) err_name();
 	}
 	else if (afterlf) {
@@ -309,7 +295,7 @@ static void line_vc(uint8_t *line, size_t n, bool lf) {
 		}
 	}
 	if (on_field) {
-		test_field(line, n);
+		if(!test_tag_field(line, n, true, &on_field)) err_name();
 		if (on_field && lf) err_nosep();
 	}
 	append_buffer(line, n);

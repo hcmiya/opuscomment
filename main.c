@@ -53,14 +53,13 @@ static void usage(void) {
 "    -Q    Use Q7.8 format for editing output gain\n"
 "    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
 "    -U    Convert field name in Opus file to uppercase\n"
-// "    -V    Verify Tags in source Opus file\n"
 "    -c tagfile\n"
 "          In list mode, write tags to tagfile.\n"
 "          In append/write mode, read tags from tagfile\n"
 "    -t NAME=VALUE\n"
 "          add the argument as editing item\n"
-"    -D    Defer editing IO\n"
-//"    -D    Defer editing IO; implies -V in list mode\n"
+"    -V    Verify Tags in source Opus file\n"
+"    -D    Defer editing IO; implies -V in list mode\n"
 	), stderr);
 	exit(1);
 }
@@ -84,7 +83,7 @@ static void parse_args(int argc, char **argv) {
 	bool added_tag = false;
 	int gainfmt;
 	double gv;
-	while ((c = getopt(argc, argv, "lwag:s:nrGvQpUc:t:D")) != -1) {
+	while ((c = getopt(argc, argv, "lwag:s:nrGvQpUc:t:VD")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
@@ -173,6 +172,9 @@ static void parse_args(int argc, char **argv) {
 			
 		case 'D':
 			O.tag_deferred = true;
+			/* FALLTHROUGH */
+		case 'V':
+			O.tag_verify = true;
 			break;
 		}
 	}

@@ -33,6 +33,7 @@ GLOBAL struct {
 	bool tag_toupper;
 	char *tag_filename;
 	bool tag_deferred;
+	bool tag_verify;
 	
 	char *in, *out;
 } O;
