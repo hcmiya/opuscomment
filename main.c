@@ -60,6 +60,7 @@ static void usage(void) {
 "          In append/write mode, read tags from tagfile\n"
 "    -t NAME=VALUE\n"
 "          add the argument as editing item\n"
+"    -D    Defer editing IO\n"
 	), stderr);
 	exit(1);
 }
@@ -81,7 +82,7 @@ static void out_of_range(int c) {
 static void parse_args(int argc, char **argv) {
 	int c;
 	bool added_tag = false;
-	while ((c = getopt(argc, argv, "lwag:s:nrGpReUvVc:t:")) != -1) {
+	while ((c = getopt(argc, argv, "lwag:s:nrGpReUvVc:t:D")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
@@ -172,6 +173,10 @@ static void parse_args(int argc, char **argv) {
 		case 't':
 			add_tag_from_opt(optarg);
 			added_tag = true;
+			break;
+			
+		case 'D':
+			O.tag_deferred = true;
 			break;
 		}
 	}

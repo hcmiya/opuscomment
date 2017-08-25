@@ -5,8 +5,8 @@ $quote `
 
 $ usage: %1$s = プログラム名
 1 `Synopsys:\n\
-    %1$s [-l] [-epRUvV] opusfile\n\
-    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-eGprRUvV] opusfile [output]\n`
+    %1$s [-l] [-DepRUvV] opusfile\n\
+    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGprRUvV] opusfile [output]\n`
 
 $ option: これはfputsの引数なので%はそのまま出力される
 2 `Options:\n\
@@ -34,7 +34,8 @@ $ option: これはfputsの引数なので%はそのまま出力される
           In list mode, write tags to tagfile.\n\
           In append/write mode, read tags from tagfile\n\
     -t NAME=VALUE\n\
-          add the argument as editing item\n`
+          add the argument as editing item\n\
+    -D    Defer editing IO\n`
 
 $ version: %1$s = バージョン番号 (x.y.z), %2$s = 更新日 strftimeで"%x"で出力された文字列が入る
 3 `Version: %s (rev. %s)\n`

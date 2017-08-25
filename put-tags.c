@@ -24,12 +24,19 @@ static void u8error(int nth) {
 	opuserror(err_opus_utf8, nth);
 }
 
+static FILE *putdest;
 static void put_bin(char const *buf, size_t len) {
-	size_t ret = fwrite(buf, 1, len, stdout);
+	size_t ret = fwrite(buf, 1, len, putdest);
 	if (ret != len) {
 		puterror();
 	}
 }
+static void put_ls(char const *ls) {
+	if (fputs(ls, putdest) == EOF) {
+		puterror();
+	}
+}
+
 static char *esc_oc(char *src, char *dest, size_t len) {
 	char *end = src + len;
 	while(src < end) {
@@ -81,6 +88,8 @@ void *put_tags(void *fp_) {
 		}
 	}
 	
+	putdest = O.tag_deferred ? tmpfile() : stdout;
+	
 	iconv_t cd;
 	char charsetname[128];
 	
@@ -125,9 +134,7 @@ void *put_tags(void *fp_) {
 					*lsend = '\0';
 					// WONTFIX
 					// ロケール文字列に \0 が含まれていてもそのままそこで途切れさせる
-					if (fputs(ls, stdout) == EOF) {
-						puterror();
-					}
+					put_ls(ls);
 					if (iconvret != (size_t)-1 || ie == EINVAL) {
 						remain = tagleft;
 						if (remain) {
@@ -151,13 +158,21 @@ void *put_tags(void *fp_) {
 			if (iconv(cd, &u8, &left, &ls, &remain) == (size_t)-1) {
 				oserror();
 			}
-			if (fputs(u8, stdout) == EOF) {
-				puterror();
-			}
+			put_ls(u8);
 		}
 		nth++;
 	}
 	fclose(fp);
+	
+	if (O.tag_deferred) {
+		FILE *deferred = putdest;
+		putdest = stdout;
+		rewind(deferred);
+		while(fgets(buf, buflen, deferred)) {
+			put_ls(buf);
+		}
+		fclose(deferred);
+	}
 	
 	if (fclose(stdout) == EOF) {
 		puterror();

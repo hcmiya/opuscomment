@@ -103,6 +103,9 @@ static void toutf8(int fdu8) {
 	iconv_close(cd);
 	write(fdu8, ubuf, up - ubuf);
 	close(fdu8);
+	if (O.edit == EDIT_WRITE && !total && O.tag_deferred) {
+		mainerror(catgets(catd, 2, 12, "empty editing input"));
+	}
 }
 
 static FILE *strstore, *strcount;

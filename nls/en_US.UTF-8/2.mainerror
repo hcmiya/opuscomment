@@ -9,3 +9,4 @@ $set 2
 9 too many arguments
 10 tag length exceeded the limit of storing (up to %u MiB)
 11 too long editing input. Haven’t you executed odd command?
+12 empty editing input
