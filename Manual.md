@@ -4,8 +4,8 @@
 
 ## 書式
 
-    opuscomment [-l] [-epRvV] opusfile
-    opuscomment -a|-w [-g gain|-s gain|-n] [-c tagfile|-t NAME=VALUE ...] [-eGprRvV] opusfile [output]
+    opuscomment [-l] [-epQRv] opusfile
+    opuscomment -a|-w [-g gain|-s gain|-n] [-c tagfile|-t NAME=VALUE ...] [-eGpQrRv] opusfile [output]
 
 ## 説明
 
@@ -37,23 +37,21 @@
 <dt>-r</dt>
 <dd>出力ゲインの指定を内部の設定に対する相対値とする</dd>
 <dt>-G</dt>
-<dd>出力ゲインが内部形式にした時に0になる場合は[-+]1/256 dBを設定する</dd>
+<dd>出力ゲインが内部形式にした時に0になる場合は±1/256 dBを設定する</dd>
+<dt>-v</dt>
+<dd>出力ゲインの編集<strong>前</strong>の値を標準エラー出力に出力する</dd>
+<dt>-Q</dt>
+<dd>出力ゲイン値にQ7.8形式を使う</dd>
 <dt>-p</dt>
 <dd>METADATA_BLOCK_PICTUREの出力または削除をしない</dd>
 <dt>-U</dt>
 <dd>Opusファイル内のタグの項目名に小文字が含まれていた場合、大文字に変換する。他のソフトウェアで編集されたファイルのために用意されているオプションであり、opuscommentは編集入力のタグの項目名を常に大文字に変換する。</dd>
-<dt>-v</dt>
-<dd>出力ゲインの編集<strong>前</strong>の値を以下の形式で標準エラー出力に出力する<br/>
-     <code>"%.8g\n", &lt;output gain in dB&gt;</code>
-</dd>
-<dt>-V</dt>
-<dd>出力ゲインの編集<strong>前</strong>の値を以下の形式で標準エラー出力に出力する<br/>
-     <code>"%d\n", &lt;output gain in Q7.8&gt;</code>
-</dd>
 <dt>-c tagfile</dt>
 <dd>出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す</dd>
 <dt>-t NAME=VALUE</dt>
 <dd>引数をタグとして追加する</dd>
+<dt>-D</dt>
+<dd>出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。書き込みモード時、空の編集入力をエラーとする。</dd>
 </dl>
 
 ## 環境変数
