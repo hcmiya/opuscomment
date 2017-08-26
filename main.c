@@ -12,6 +12,8 @@
 #include <langinfo.h>
 #include <time.h>
 #include <signal.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "opuscomment.h"
 #define GLOBAL_MAIN
@@ -29,8 +31,8 @@ static void usage(void) {
 	fputc('\n', stderr);
 	fprintf(stderr, catgets(catd, 6, 1,
 "Synopsys:\n"
-"    %1$s [-l] [-DepQRUv] opusfile\n"
-"    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGQprRUv] opusfile [output]\n"
+"    %1$s [-l] [-i idx] [-DepQRUv] opusfile\n"
+"    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-1DeQprRUv] opusfile [output]\n"
 	), program_name);
 	fputc('\n', stderr);
 	fputs(catgets(catd, 6, 2,
@@ -61,6 +63,9 @@ static void usage(void) {
 "    -V    Verify Tags in source Opus file\n"
 "    -T    Check whether editing input has been terminated by line feed.\n"
 "    -D    Defer editing IO; implies -V, -T\n"
+"    -i idx\n"
+"          Specify Opus index for editing in multiplexed Ogg stream\n"
+"          (1-origin, without non-Opus stream)\n"
 	), stderr);
 	exit(1);
 }
@@ -75,8 +80,12 @@ void opterror(int c, char const *e, ...) {
 	exit(1);
 }
 
+static void fail_to_parse(int c) {
+	opterror(c, catgets(catd, 2, 3, "failed to parse value"));
+}
+
 static void out_of_range(int c) {
-	opterror(c, catgets(catd, 2, 3, "gain value is out of range"));
+	opterror(c, catgets(catd, 2, 4, "the value is out of range"));
 }
 
 static void parse_args(int argc, char **argv) {
@@ -84,7 +93,7 @@ static void parse_args(int argc, char **argv) {
 	bool added_tag = false;
 	int gainfmt;
 	double gv;
-	while ((c = getopt(argc, argv, "lwaReg:s:nr1vQpUc:t:VTD")) != -1) {
+	while ((c = getopt(argc, argv, "lwaReg:s:0r1vQpUc:t:VTDi:")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
@@ -94,7 +103,7 @@ static void parse_args(int argc, char **argv) {
 				char *endp;
 				gv = strtod(optarg, &endp);
 				if (optarg == endp) {
-					opterror(c, catgets(catd, 2, 3, "failed to parse gain value"));
+					fail_to_parse(c);
 				}
 				if (!isfinite(gv)) {
 					out_of_range(c);
@@ -181,6 +190,19 @@ static void parse_args(int argc, char **argv) {
 			break;
 		case 'V':
 			O.tag_verify = true;
+			break;
+		case 'i':
+			{
+				char *endp;
+				unsigned long val = strtoul(optarg, &endp, 10);
+				if (endp == optarg || *endp != '\0') {
+					fail_to_parse(c);
+				}
+				if (errno == ERANGE || val == 0 || val > INT_MAX) {
+					out_of_range(c);
+				}
+				O.target_idx = (int)val;
+			}
 			break;
 		}
 	}

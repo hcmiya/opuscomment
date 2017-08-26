@@ -36,6 +36,8 @@ GLOBAL struct {
 	bool tag_verify;
 	bool tag_check_line_term;
 	
+	int target_idx;
+	
 	char *in, *out;
 } O;
 

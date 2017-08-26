@@ -1,7 +1,7 @@
 $set 2
 
-3 failed to parse gain value
-4 gain value is out of range
+3 failed to parse value
+4 the value is out of range
 5 can not use -t with list mode
 6 use -a|-w with editing tag
 7 options of editing gain can not use with list mode

@@ -13,3 +13,4 @@ $set 3
 11 tag packet is incomplete
 12 invalid header content
 13 invalid tag format at #%d
+14 no target Opus stream

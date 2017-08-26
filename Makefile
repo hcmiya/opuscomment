@@ -15,12 +15,12 @@ CC=c99
 
 all: opuscomment ;
 
-opuscomment: $(HEADER) $(SRC)
+opuscomment: $(HEADER) $(SRC) opuserror.tab
 	$(CC) -o opuscomment -O2 $(CFLAGS) $(LDFLAGS) -DNDEBUG $(LIBS) $(SRC)
 
 debug: ocd ;
 
-ocd: $(HEADER) $(SRC)
+ocd: $(HEADER) $(SRC) opuserror.tab
 	$(CC) -g -o ocd $(CFLAGS) $(LDFLAGS) $(LIBS) $(SRC)
 
 endianness.c: endianness-check.sh

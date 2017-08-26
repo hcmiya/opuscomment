@@ -5,8 +5,8 @@ $quote `
 
 $ usage: %1$s = プログラム名
 1 `使い方:\n\
-    %1$s [-l] [-DepQRUv] opusfile\n\
-    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGpQrRUv] opusfile [output]\n`
+    %1$s [-l] [-i idx] [-DepQRUv] opusfile\n\
+    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-1DeQprRUv] opusfile [output]\n`
 
 $ option: これはfputsの引数なので%はそのまま出力される
 2 `オプション:\n\
@@ -35,7 +35,11 @@ $ option: これはfputsの引数なので%はそのまま出力される
           引数をタグとして追加する\n\
     -V    Opusファイル内のタグに対して書式の正当性を検証する\n\
     -T    編集入力が改行で終わっているか確認する\n\
-    -D    編集入出力を遅延させる。-V、-Tを暗黙的に指定する\n`
+    -D    編集入出力を遅延させる。-V、-Tを暗黙的に指定する\n\
+    -i idx\n\
+          多重化されたOggストリーム中の編集対象のOpusストリームを、\n\
+          Opus以外のものを除いた1起点の順番で指定する。\n\
+`
 
 $ version: %1$s = バージョン番号 (x.y.z), %2$s = 更新日 strftimeで"%x"で出力された文字列が入る
 3 `バージョン: %s (%s更新)\n`

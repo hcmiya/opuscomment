@@ -282,11 +282,26 @@ void discontinuous_page(int page) {
 
 static bool leave_zero, non_opus_appeared;
 static bool parse_header(ogg_page *og) {
+	static int osidx = 0;
 	if (!ogg_page_bos(og) || ogg_page_eos(og)) {
-		opuserror(ogg_page_pageno(og) != 0 ? err_opus_non_opus : err_opus_bad_stream);
+		if (ogg_page_pageno(og) == 0) {
+			opuserror(err_opus_bad_stream);
+		}
+		
+		if (osidx) {
+			opuserror(err_opus_no_target, O.target_idx);
+		}
+		else {
+			opuserror(err_opus_non_opus);
+		}
 	}
 	if (og->body_len < 8 || memcmp(og->body, OpusHead, 8) != 0) {
 		non_opus_appeared = true;
+		return false;
+	}
+	osidx++;
+	if (O.target_idx && O.target_idx != osidx) {
+		non_opus_appeared = true; // ゲイン上書き処理で使う
 		return false;
 	}
 	opus_sno = ogg_page_serialno(og);

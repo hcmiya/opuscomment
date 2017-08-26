@@ -5,8 +5,8 @@ $quote `
 
 $ usage: %1$s = プログラム名
 1 `Synopsys:\n\
-    %1$s [-l] [-DepQRUv] opusfile\n\
-    %1$s -a|-w [-g gain|-s scale|-n] [-c tagfile] [-t NAME=VALUE ...] [-DeGpQrRUv] opusfile [output]\n`
+    %1$s [-l] [-i idx] [-DepQRUv] opusfile\n\
+    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-1DeQprRUv] opusfile [output]\n`
 
 $ option: これはfputsの引数なので%はそのまま出力される
 2 `Options:\n\
@@ -35,7 +35,11 @@ $ option: これはfputsの引数なので%はそのまま出力される
           add the argument as editing item\n\
     -V    Verify Tags in source Opus file\n\
     -T    Check whether editing input has been terminated by line feed.\n\
-    -D    Defer editing IO; implies -V, -T\n`
+    -D    Defer editing IO; implies -V, -T\n\
+    -i idx\n\
+          Specify Opus index for editing in multiplexed Ogg stream\n\
+          (1-origin, without non-Opus stream)\n\
+`
 
 $ version: %1$s = バージョン番号 (x.y.z), %2$s = 更新日 strftimeで"%x"で出力された文字列が入る
 3 `Version: %s (rev. %s)\n`
