@@ -208,10 +208,10 @@ static void parse_args(int argc, char **argv) {
 	}
 	// オプションループ抜け
 	if (added_tag && O.edit == EDIT_LIST) {
-		mainerror(catgets(catd, 2, 5, "can not use -t with list mode"));
+		mainerror(err_main_tag_with_l);
 	}
 	if (added_tag && !O.edit) {
-		mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
+		mainerror(err_main_tag_without_aw);
 	}
 	if (!O.gain_fix && !O.edit) {
 		O.edit = EDIT_LIST;
@@ -239,11 +239,11 @@ static void parse_args(int argc, char **argv) {
 		}
 		
 		if (O.edit == EDIT_LIST) {
-			mainerror(catgets(catd, 2, 7, "options of editing gain can not use with list mode"));
+			mainerror(err_main_gain_with_l);
 		}
 		else if (!O.edit) {
 			if (O.tag_filename/* || added_tag*/) {
-				mainerror(catgets(catd, 2, 6, "use -a|-w with editing tag"));
+				mainerror(err_main_tag_without_aw);
 			}
 		}
 	}
@@ -284,14 +284,14 @@ int main(int argc, char **argv) {
 	
 	parse_args(argc, argv);
 	if (!argv[optind]) {
-		mainerror(catgets(catd, 2, 8, "no file specified"));
+		mainerror(err_main_no_file);
 	}
 	if (argv[optind + 1]) {
 		if (O.edit == EDIT_LIST) {
-			mainerror(catgets(catd, 2, 9, "too many arguments"));
+			mainerror(err_main_many_args);
 		}
 		if (argv[optind + 2]) {
-			mainerror(catgets(catd, 2, 9, "too many arguments"));
+			mainerror(err_main_many_args);
 		}
 		O.out = argv[optind + 1];
 	}

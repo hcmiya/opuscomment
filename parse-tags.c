@@ -52,7 +52,7 @@ static void err_utf8(void) {
 	tagerror(catgets(catd, 5, 6, "invalid UTF-8 sequence"));
 }
 static void err_noterm(void) {
-	mainerror(catgets(catd, 2, 13, "editing input is not terminated by line feed"));
+	mainerror(err_main_no_term);
 }
 
 static void toutf8(int fdu8) {
@@ -66,7 +66,7 @@ static void toutf8(int fdu8) {
 	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
 		total += readlen;
 		if (total > TAG_LENGTH_LIMIT__INPUT) {
-			mainerror(catgets(catd, 2, 11, "too long editing input. Haven't you executed odd command?"));
+			mainerror(err_main_long_input);
 		}
 		if (strnlen(&lbuf[remain], readlen) != readlen) {
 			err_bin();
@@ -107,7 +107,7 @@ static void toutf8(int fdu8) {
 	write(fdu8, ubuf, up - ubuf);
 	close(fdu8);
 	if (O.edit == EDIT_WRITE && !total && O.tag_deferred) {
-		mainerror(catgets(catd, 2, 12, "empty editing input"));
+		mainerror(err_main_no_input);
 	}
 }
 
@@ -169,7 +169,7 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 		}
 		editlen += 4 + wsplen;
 		if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
-			mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+			exceed_output_limit();
 		}
 		if (wsplen) {
 			// 空白と見做していた分を書き込み
@@ -189,7 +189,7 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 static void append_buffer(uint8_t *line, size_t n) {
 	editlen += n;
 	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
-		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+		exceed_output_limit();
 	}
 	recordlen += n;
 	fwrite(line, 1, n, strstore);

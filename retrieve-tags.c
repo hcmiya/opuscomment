@@ -45,7 +45,7 @@ static size_t tagpacket_total = 0;
 void check_tagpacket_length(size_t len) {
 	tagpacket_total += len;
 	if (tagpacket_total > TAG_LENGTH_LIMIT__OUTPUT) {
-		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+		exceed_output_limit();
 	}
 }
 

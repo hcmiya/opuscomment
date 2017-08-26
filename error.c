@@ -3,16 +3,23 @@
 #include <stdarg.h>
 
 #include "global.h"
+#include "error.h"
+#include "limit.h"
 
 void errorprefix(void) {
 	fprintf(stderr, catgets(catd, 1, 3, "%s: "), program_name);
 }
 
-void mainerror(char const *e, ...) {
+void mainerror(int e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
-	vfprintf(stderr, e, ap);
+	char const *msg[] = {
+#define LIST(I, E, S) S,
+#include "mainerror.tab"
+#undef LIST
+	};
+	vfprintf(stderr, catgets(catd, 2, e, msg[e]), ap);
 	fputc('\n', stderr);
 	exit(1);
 }
@@ -57,7 +64,12 @@ void oserror_fmt(char const *e, ...) {
 
 void fileerror(char const *file) {
 	errorprefix();
-	fprintf(stderr, catgets(catd, 1, 5, "%s: "), program_name, file);
+	fprintf(stderr, catgets(catd, 1, 5, "%s: "), file);
 	perror(NULL);
 	exit(3);
+}
+
+
+void exceed_output_limit(void) {
+	mainerror(err_main_output_limit, TAG_LENGTH_LIMIT__OUTPUT >> 20);
 }

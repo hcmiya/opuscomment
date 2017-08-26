@@ -126,7 +126,7 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	
 	long commentlen = ftell(fptag);
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
-		mainerror(catgets(catd, 2, 10, "tag length exceeded the limit of storing (up to %u MiB)"), TAG_LENGTH_LIMIT__OUTPUT >> 20);
+		exceed_output_limit();
 	}
 	
 	rewind(fptag); 
