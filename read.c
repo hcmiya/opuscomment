@@ -168,7 +168,7 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	write_page(&og);
 	fclose(fptag);
 	
-	if (!rst->padding && idx < opus_idx) {
+	if (idx < opus_idx) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 		// 空のページを生成して開始ページ番号を合わせる
 		og.header[5] = 1;
