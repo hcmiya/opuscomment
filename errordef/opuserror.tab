@@ -1,3 +1,9 @@
+/*
+LIST( NUM, REPORT_PAGE, ENUM,
+	"STR" )
+LIST( , , ,
+	"" )
+*/
 LIST(  0, false, unused_0,
 	NULL )
 LIST(  1, false, non_ogg,

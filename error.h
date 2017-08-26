@@ -9,13 +9,13 @@ void fileerror(char const*);
 
 enum err_opus_ {
 #define LIST(I, B, E, S) err_opus_##E = I,
-#include "opuserror.tab"
+#include "errordef/opuserror.tab"
 #undef LIST
 };
 
 enum err_main_ {
 #define LIST(I, E, S) err_main_##E = I,
-#include "mainerror.tab"
+#include "errordef/mainerror.tab"
 #undef LIST
 };
 

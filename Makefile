@@ -7,6 +7,7 @@
 
 SRC=main.c put-tags.c parse-tags.c read.c error.c ocutil.c endianness.c retrieve-tags.c
 HEADER=global.h ocutil.h limit.h version.h error.h
+ERRORDEF=errordef/opuserror.tab errordef/mainerror.tab
 CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
 #CFLAGS=-D_XOPEN_SOURCE=600 -DNLS
 LDFLAGS=
@@ -15,12 +16,12 @@ CC=c99
 
 all: opuscomment ;
 
-opuscomment: $(HEADER) $(SRC) opuserror.tab
+opuscomment: $(HEADER) $(SRC) $(ERRORDEF)
 	$(CC) -o opuscomment -O2 $(CFLAGS) $(LDFLAGS) -DNDEBUG $(LIBS) $(SRC)
 
 debug: ocd ;
 
-ocd: $(HEADER) $(SRC) opuserror.tab
+ocd: $(HEADER) $(SRC) $(ERRORDEF)
 	$(CC) -g -o ocd $(CFLAGS) $(LDFLAGS) $(LIBS) $(SRC)
 
 endianness.c: endianness-check.sh
