@@ -6,7 +6,6 @@
 uint16_t oi16(uint16_t i);
 uint32_t oi32(uint32_t i);
 uint64_t oi64(uint64_t i);
-int page_breaks(ogg_page *og, size_t num, uint16_t *at);
 bool test_tag_field(uint8_t *line, size_t n, bool upcase, bool *on_field);
 
 #if _POSIX_C_SOURCE < 200809L

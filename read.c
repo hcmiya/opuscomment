@@ -280,17 +280,6 @@ void discontinuous_page(int page) {
 	opuserror(err_opus_discontinuous, page, opus_idx);
 }
 
-static int test_break(ogg_page *og) {
-	uint16_t plen;
-	switch (page_breaks(og, 1, &plen)) {
-	case 0:
-		return -1;
-	case 1:
-		if (plen == og->body_len) return plen;
-	}
-	opuserror(err_opus_border);
-}
-
 static bool leave_zero, non_opus_appeared;
 static bool parse_header(ogg_page *og) {
 	if (!ogg_page_bos(og) || ogg_page_eos(og)) {
@@ -301,9 +290,6 @@ static bool parse_header(ogg_page *og) {
 		return false;
 	}
 	opus_sno = ogg_page_serialno(og);
-	if (test_break(og) < 0) {
-		opuserror(err_opus_border);
-	}
 	if (og->body_len < 19) {
 		opuserror(err_opus_bad_content);
 	}
@@ -390,9 +376,10 @@ static bool test_non_opus(ogg_page *og) {
 	return false;
 }
 
-static pthread_t retriever_thread, parser_thread;
 void *retrieve_tags(void*);
 void *parse_tags(void*);
+
+static pthread_t retriever_thread, parser_thread;
 static bool parse_header_border(ogg_page *og) {
 	if (!test_non_opus(og)) return false;
 	
@@ -457,35 +444,33 @@ static bool parse_header_border(ogg_page *og) {
 	pthread_create(&retriever_thread, NULL, retrieve_tags, retriever);
 	
 	// 本スレッドはOpusTagsのパケットを構築する
-	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
-	copy_tag_packet(og);
-	opus_idx++;
-	return true;
-}
-
-static bool parse_comment(ogg_page *og) {
-	if (!test_non_opus(og)) return false;
-	
-	if (ogg_page_pageno(og) != opus_idx) {
-		discontinuous_page(ogg_page_pageno(og));
-	}
-	if (ogg_page_bos(og) || ogg_page_bos(og) || !ogg_page_continued(og)) {
-		opuserror(err_opus_bad_stream);
-	}
-	opst = test_break(og) < 0 ? OPUS_COMMENT : OPUS_COMMENT_BORDER;
+	opst = OPUS_COMMENT;
 	copy_tag_packet(og);
 	opus_idx++;
 	return true;
 }
 
 static bool parse_page_sound(ogg_page *og);
+static bool parse_comment_term(ogg_page *og);
 
-static bool parse_comment_border(ogg_page *og) {
+static bool parse_comment(ogg_page *og) {
 	if (!test_non_opus(og)) return false;
-	
-	if (ogg_page_continued(og)) {
-		opuserror(err_opus_border);
+	if (!ogg_page_continued(og)) {
+		return parse_comment_term(og);
 	}
+	
+	if (ogg_page_bos(og) || ogg_page_eos(og)) {
+		opuserror(err_opus_bad_stream);
+	}
+	if (ogg_page_pageno(og) != opus_idx) {
+		discontinuous_page(ogg_page_pageno(og));
+	}
+	copy_tag_packet(og);
+	opus_idx++;
+	return true;
+}
+
+static bool parse_comment_term(ogg_page *og) {
 	// タグパケットのパース処理のスレッドを合流
 	struct rettag_st *rst;
 	struct edit_st *est;
@@ -502,9 +487,10 @@ static bool parse_comment_border(ogg_page *og) {
 		// タグ入力、ゲイン調整、大文字化適用が全て無い場合はすぐ終了する
 		exit(0);
 	}
-	else if (O.edit == EDIT_LIST) {
-		exit(0);
-	}
+//	来ない
+// 	else if (O.edit == EDIT_LIST) {
+// 		exit(0);
+// 	}
 	else {
 		store_tags(og->header_len + og->body_len, rst, est);
 		free(rst);
@@ -541,10 +527,6 @@ static void parse_page(ogg_page *og) {
 		
 	case OPUS_COMMENT:
 		isopus = parse_comment(og);
-		break;
-		
-	case OPUS_COMMENT_BORDER:
-		isopus = parse_comment_border(og);
 		break;
 		
 	case OPUS_SOUND:
