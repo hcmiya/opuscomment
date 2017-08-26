@@ -7,7 +7,7 @@
 
 SRC=main.c put-tags.c parse-tags.c read.c error.c ocutil.c endianness.c retrieve-tags.c
 HEADER=global.h ocutil.h limit.h version.h error.h
-ERRORDEF=errordef/opuserror.tab errordef/mainerror.tab
+ERRORDEF=errordef/opus.tab errordef/main.tab
 CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
 #CFLAGS=-D_XOPEN_SOURCE=600 -DNLS
 LDFLAGS=

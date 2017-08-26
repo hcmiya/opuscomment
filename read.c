@@ -148,77 +148,43 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	
 	uint32_t idx = 1;
 	while (commentlen >= 255 * 255) {
+		og.header[5] = idx != 1;
 		fread(og.body, 1, 255 * 255, fptag);
-		*(uint32_t*)&og.header[18] = oi32(idx++);
+		*(uint32_t*)&og.header[18] = oi32(idx);
 		ogg_page_checksum_set(&og);
 		write_page(&og);
-		og.header[5] = 1;
 		commentlen -= 255 * 255;
+		idx++;
 	}
 	
+	og.header[5] = idx != 1;
 	*(uint32_t*)&og.header[18] = oi32(idx++);
 	og.header[26] = commentlen / 255 + 1;
 	og.header[26 + og.header[26]] = commentlen % 255;
 	fread(og.body, 1, commentlen, fptag);
-	fclose(fptag);
 	og.header_len = 27 + og.header[26];
 	og.body_len = commentlen;
+	ogg_page_checksum_set(&og);
+	write_page(&og);
+	fclose(fptag);
 	
 	if (!rst->padding && idx < opus_idx) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
-		// 無を含むページを生成して開始ページ番号を合わせる
-		// 余談: ページ番号を埋めるだけなら長さ0のページを作るのも合法だが
-		// そうするとエラーになるアプリケーションが多かったので無の生成方式に落ち着いた
-		uint8_t segnum = og.header[26];
-		uint8_t lastseglen = og.header[26 + segnum];
-		uint8_t lastseg[255];
-		
-		if (segnum == 1) {
-			og.header[27] = 255;
-			memcpy(lastseg, og.body, lastseglen);
-			lastseg[lastseglen] = 0;
-			og.body = lastseg;
-			og.body_len = 255;
-			ogg_page_checksum_set(&og);
-			write_page(&og);
-			memset(lastseg, 0, 255);
-		}
-		else {
-			og.header[26]--;
-			og.header_len--;
-			og.body_len -= lastseglen;
-			ogg_page_checksum_set(&og);
-			write_page(&og);
-			memcpy(og.body, &og.body[og.body_len], lastseglen);
-			og.body[lastseglen] = 0;
-		}
-		
+		// 空のページを生成して開始ページ番号を合わせる
 		og.header[5] = 1;
-		og.header[26] = 1;
-		og.header[27] = 255;
-		og.header_len = 28;
-		og.body_len = 255;
-		for (uint32_t m = opus_idx - 1; idx < m; idx++) {
-			*(uint32_t*)&og.header[18] = oi32(idx);
+		og.header[26] = 0;
+		og.header_len = 27;
+		og.body_len = 0;
+		while (idx < opus_idx) {
+			*(uint32_t*)&og.header[18] = oi32(idx++);
 			ogg_page_checksum_set(&og);
 			write_page(&og);
 		}
-		*(uint32_t*)&og.header[18] = oi32(idx);
-		og.header[26] = 1;
-		og.header[27] = lastseglen;
-		og.header_len = 28;
-		og.body_len = lastseglen;
-		ogg_page_checksum_set(&og);
-		write_page(&og);
-		
 		seeked_len -= lastpagelen;
 		put_left();
 		/* NOTREACHED */
 	}
 	else {
-		ogg_page_checksum_set(&og);
-		write_page(&og);
-		
 		if (idx == opus_idx) {
 			seeked_len -= lastpagelen;
 			put_left();

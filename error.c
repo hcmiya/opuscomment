@@ -16,7 +16,7 @@ void mainerror(int e, ...) {
 	errorprefix();
 	char const *msg[] = {
 #define LIST(I, E, S) S,
-#include "errordef/mainerror.tab"
+#include "errordef/main.tab"
 #undef LIST
 	};
 	vfprintf(stderr, catgets(catd, 2, e, msg[e]), ap);
@@ -34,7 +34,7 @@ void opuserror(int e, ...) {
 		char const *default_message;
 	} msg[] = {
 #define LIST(I, B, E, S) {B, S},
-#include "errordef/opuserror.tab"
+#include "errordef/opus.tab"
 #undef LIST
 	};
 	if (msg[e].report_page) {
