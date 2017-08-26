@@ -45,7 +45,7 @@ static void usage(void) {
 "    -s scale\n"
 "          Specify output gain in scale for PCM samples.\n"
 "          1 for same scale. 0.5 for half.\n"
-"    -n    Set output gain to 0\n"
+"    -0    Set output gain to 0\n"
 "    -r    Specify that the gain is relative to internal value\n"
 "    -1    When output gain becomes 0 by converting to internal representation,\n"
 "          set [+-]1/256 dB instead\n"
@@ -114,7 +114,7 @@ static void parse_args(int argc, char **argv) {
 			O.gain_relative = true;
 			break;
 			
-		case 'n':
+		case '0':
 			O.gain_fix = true;
 			O.gain_relative = false;
 			O.gain_val = 0;
