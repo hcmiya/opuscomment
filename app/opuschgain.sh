@@ -26,6 +26,18 @@ E() {
 	exit $eno
 }
 
+if [ -n "$LC_MESSAGES" ] ;then :
+elif [ -n "$LC_ALL" ] ;then LC_MESSAGES="$LC_ALL"
+elif [ -n "$LANG" ] ;then LC_MESSAGES="$LANG"
+fi
+if [ -n "$LC_NUMERIC" ] ;then :
+elif [ -n "$LC_ALL" ] ;then orig_numeric="$LC_ALL"
+elif [ -n "$LANG" ] ;then orig_numeric="$LANG"
+else orig_numeric=C
+fi
+orig_lang="$LANG"
+export LANG=C LC_NUMERIC=C LC_MESSAGES
+
 mode= q78= val= relative= not0= idx=
 while getopts i:g:s:rQ01 sw
 do
@@ -99,7 +111,15 @@ cleanup() {
 trap cleanup EXIT
 
 tags="$tmp/tags"
-pregain=$("$OC" -VvQURe -- "$src" 2>&1 >"$tags")
+if env LANG="$orig_lang" "$OC" -VvQURe -- "$src" 2>"$tmp/gval" >"$tags"
+then :
+else
+	e=$?
+	sed '/^-\{0,1\}[0-9]/d' <"$tmp/gval" >&2
+	exit $e
+fi
+	
+pregain=$(cat "$tmp/gval")
 
 get_gain_tag() {
 	name=R128_${1}_GAIN
@@ -118,12 +138,12 @@ albumgain=$(get_gain_tag ALBUM)
 
 if [ -z "$trackgain" -a -z "$albumgain" ]
 then
-	exec "$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" ${dest:+"$dest"}
+	exec env LANG="$orig_lang" LC_NUMERIC="$orig_numeric" "$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" ${dest:+"$dest"}
 	exit 1
 fi
 
 mod="$tmp/mod"
-"$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
+env LANG="$orig_lang" "$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
 [ $out = overwrite ] && dest="$src" || :
 postgain=$("$OC" -vQ -- "$mod" 2>&1 >/dev/null)
 
@@ -138,5 +158,5 @@ diff=$((pregain - postgain))
 sedscr="${trackgain:+"s/^R128_TRACK_GAIN=.*/R128_TRACK_GAIN=$((trackgain + diff))/"}
 ${albumgain:+"s/^R128_ALBUM_GAIN=.*/R128_ALBUM_GAIN=$((albumgain + diff))/"}"
 
-# BUG sedを8bit-cleanと仮定して良いのか?
-env LANG=C sed -e "$sedscr" <"$tags" |"$OC" -wRe ${idx:+-i "$idx"} ${add1:+-Qg1} -- "$mod" "$dest"
+# POSIX.1-2008 2016 edition A.6.2によればPOSIXロケールなら文字をを8bit-cleanと仮定して良さそう
+sed -e "$sedscr" <"$tags" |env LANG="$orig_lang" "$OC" -wRe ${idx:+-i "$idx"} ${add1:+-Qg1} -- "$mod" "$dest"
