@@ -97,6 +97,96 @@ static bool rtcopy_write(FILE *fp, void *fptag_) {
 	return copy;
 }
 
+static FILE *rtcd_src, *dellist_str, *dellist_len;
+static bool rtcopy_delete(FILE *fp, void *fptag_) {
+	static int idx = 1;
+	FILE *fptag = fptag_;
+	FILE *src = rtcd_src, *dstr = dellist_str, *dlen = dellist_len;
+	
+	// 一旦レコードを全て一時ファイルsrcに保存し、-dの引数と一つずつ比較していく
+	rewind(src);
+	uint32_t srclen = rtchunk(fp);
+	uint8_t buf[STACK_BUF_LEN];
+	size_t len = srclen;
+	while (len) {
+		// フィールド名にいる間のループ
+		bool field = true;
+		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
+		rtread(buf, rl, fp);
+		test_tag_field(buf, rl, true, &field);
+		fwrite(buf, 1, rl, src);
+		len -= rl;
+		if (!field) break;
+	}
+	while (len) {
+		// フィールド名を抜けた後のループ
+		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
+		rtread(buf, rl, fp);
+		fwrite(buf, 1, rl, src);
+		len -= rl;
+	}
+	
+	// 削除リストのループ
+	rewind(dstr); rewind(dlen);
+	bool copy = true;
+	bool matched = false;
+	while (fread(buf, 1, 5, dlen)) {
+		uint32_t cmplen = *(uint32_t*)buf;
+		bool field_only = buf[4];
+		
+		size_t const bufhalf = STACK_BUF_LEN / 2;
+		uint8_t *cmp = buf + bufhalf;
+		rewind(src);
+		// 比較
+		if (field_only && srclen > cmplen || cmplen == srclen) {
+			// フィールド名のみ比較でソースが削除指定より長い または
+			// 全比較でソースと削除の長さが一致する時
+			matched = true;
+			while (cmplen) {
+				size_t rl = cmplen > bufhalf ? bufhalf : cmplen;
+				fread(buf, 1, rl, src);
+				fread(cmp, 1, rl, dstr);
+				cmplen -= rl;
+				if (memcmp(buf, cmp, rl) != 0) {
+					matched = false;
+					break;
+				}
+			}
+			if (matched) {
+				if (field_only) {
+					fread(buf, 1, 1, src);
+					if (*buf == 0x3d) {
+						goto MATCHED;
+					}
+					matched = false;
+				}
+				else {
+					goto MATCHED;
+				}
+			}
+		}
+		// 次の削除チャンクに進む
+		while (cmplen) {
+			size_t rl = cmplen > STACK_BUF_LEN ? STACK_BUF_LEN : cmplen;
+			fread(buf, 1, rl, dstr);
+			cmplen -= rl;
+		}
+	}
+	// 削除するものと一致しなかったらfptagにコピー
+	rewind(src);
+	*(uint32_t*)buf = oi32(srclen);
+	fwrite(buf, 4, 1, fptag);
+	while (srclen) {
+		size_t rl = srclen > STACK_BUF_LEN ? STACK_BUF_LEN : srclen;
+		fread(buf, 1, rl, src);
+		fwrite(buf, 1, rl, fptag);
+		srclen -= rl;
+	}
+	idx++;
+MATCHED:
+	return !matched;
+}
+
 static bool rtcopy_list(FILE *fp, void *listfd_) {
 	static size_t idx = 1;
 	int listfd = *(int*)listfd_;
@@ -176,7 +266,7 @@ void *retrieve_tags(void *fp_) {
 	rtn->tagbegin = tagpacket_total;
 	
 	// レコード数
-	size_t recordnum = rtchunk(fp);
+	size_t recordnum = rtn->del = rtchunk(fp);
 	fwrite(buf, 4, 1, fptag); // レコード数埋め(後でstore_tags()で書き換え)
 	check_tagpacket_length(4);
 	bool (*rtcopy)(FILE*, void*);
@@ -191,6 +281,11 @@ void *retrieve_tags(void *fp_) {
 		rtcopy = rtcopy_list;
 		wh = pfd + 1;
 	}
+	else if (dellist_str) {
+		rtcopy = rtcopy_delete;
+		wh = fptag;
+		rtcd_src = tmpfile();
+	}
 	else {
 		rtcopy = rtcopy_write;
 		wh = fptag;
@@ -200,6 +295,7 @@ void *retrieve_tags(void *fp_) {
 		rtn->num += rtcopy(fp, wh);
 		recordnum--;
 	}
+	rtn->del -= rtn->num;
 	
 	if (O.edit == EDIT_LIST) {
 		// タグ出力スレッド合流
@@ -207,7 +303,9 @@ void *retrieve_tags(void *fp_) {
 		pthread_join(putth, NULL);
 		exit(0);
 	}
-	
+	if (rtcd_src) {
+		fclose(rtcd_src); fclose(dellist_str); fclose(dellist_len);
+	}
 	
 	len = fread(buf, 1, 1, fp);
 	if (len && (*buf & 1)) {
@@ -228,3 +326,29 @@ void *retrieve_tags(void *fp_) {
 	return rtn;
 }
 
+
+void rt_del_args(uint8_t *buf, size_t len, bool term) {
+	static uint32_t recordlen = 0;
+	static bool field = true;
+	if (!buf) {
+		if (!recordlen) {
+			opterror('d', catgets(catd, 7, 3, "invalid tag format"));
+		}
+		recordlen = oi32(recordlen);
+		fwrite(&recordlen, 4, 1, dellist_len);
+		uint8_t f = field;
+		fwrite(&f, 1, 1, dellist_len);
+		recordlen = 0;
+		field = true;
+		return;
+	}
+	dellist_len = dellist_len ? dellist_len : tmpfile();
+	dellist_str = dellist_str ? dellist_str : tmpfile();
+	
+	len -= term;
+	recordlen += len;
+	if (field && !test_tag_field(buf, len, true, &field)) {
+		opterror('d', catgets(catd, 7, 3, "invalid tag format"));
+	}
+	fwrite(buf, 1, len, dellist_str);
+}

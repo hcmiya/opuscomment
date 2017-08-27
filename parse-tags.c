@@ -371,30 +371,33 @@ void *parse_tags(void* nouse_) {
 	return rtn;
 }
 
-void add_tag_from_opt(char const *arg) {
-	static iconv_t cd = (iconv_t)-1;
-	
-	if (!arg) {
-		if (cd == (iconv_t)-1) return;
-		iconv_close(cd);
-		cd = (iconv_t)-1;
-		return;
-	}
-	
+void rt_del_args(uint8_t *buf, size_t len, bool term);
+
+static iconv_t optcd = (iconv_t)-1;
+void parse_opt_tag(int opt, char const *arg) {
 	char *ls = (char*)arg;
 	size_t l = strlen(ls);
 	
-	if (cd == (iconv_t)-1) {
-		cd = iconv_new("UTF-8", nl_langinfo(CODESET));
+	if (optcd == (iconv_t)-1) {
+		optcd = iconv_new("UTF-8", nl_langinfo(CODESET));
 	}
-	prepare_record();
+	void (*addbuf)(uint8_t *, size_t, bool);
+	switch (opt) {
+	case 't':
+		prepare_record();
+		addbuf = line_oc;
+		break;
+	case 'd':
+		addbuf = rt_del_args;
+		break;
+	}
 	char u8buf[STACK_BUF_LEN];
 	size_t u8left;
 	char *u8;
 	while (l) {
 		u8left = STACK_BUF_LEN;
 		u8 = u8buf;
-		size_t ret = iconv(cd, &ls, &l, &u8, &u8left);
+		size_t ret = iconv(optcd, &ls, &l, &u8, &u8left);
 		
 		if (ret == (size_t)-1) {
 			// 引数処理なのでEINVAL時のバッファ持ち越しは考慮しない
@@ -402,14 +405,18 @@ void add_tag_from_opt(char const *arg) {
 				oserror();
 			}
 		}
-		line_oc(u8buf, u8 - u8buf, false);
+		addbuf(u8buf, u8 - u8buf, false);
 	}
 	u8 = u8buf;
 	u8left = STACK_BUF_LEN;
-	if (iconv(cd, NULL, NULL, &u8, &u8left) == (size_t)-1) {
+	if (iconv(optcd, NULL, NULL, &u8, &u8left) == (size_t)-1) {
 		oserror();
 	}
 	u8[0] = 0xa;
-	line_oc(u8buf, u8 - u8buf + 1, true);
-	line_oc(NULL, 0, false);
+	addbuf(u8buf, u8 - u8buf + 1, true);
+	addbuf(NULL, 0, false);
+}
+
+void pticonv_close(void) {
+	iconv_close(optcd);
 }

@@ -69,6 +69,16 @@ void fileerror(char const *file) {
 	exit(3);
 }
 
+void opterror(int c, char const *e, ...) {
+	va_list ap;
+	va_start(ap, e);
+	errorprefix();
+	fprintf(stderr, catgets(catd, 1, 7, "-%c: "), c);
+	vfprintf(stderr, e, ap);
+	fputc('\n', stderr);
+	exit(1);
+}
+
 
 void exceed_output_limit(void) {
 	mainerror(err_main_output_limit, TAG_LENGTH_LIMIT__OUTPUT >> 20);

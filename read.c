@@ -463,9 +463,9 @@ static bool parse_comment_term(ogg_page *og) {
 	}
 	error_on_thread = false;
 	
-	if (O.edit == EDIT_APPEND && !est->num && !O.out && !O.gain_fix && !toupper_applied) {
+	if (O.edit == EDIT_APPEND && !rst->del && !est->num && !O.out && !O.gain_fix && !toupper_applied) {
 		// タグ追記モードで出力が上書き且つ
-		// タグ入力、ゲイン調整、大文字化適用が全て無い場合はすぐ終了する
+		// タグ入力、ゲイン調整、タグ削除、大文字化適用が全て無い場合はすぐ終了する
 		exit(0);
 	}
 //	来ない

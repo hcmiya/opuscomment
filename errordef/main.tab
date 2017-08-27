@@ -32,3 +32,5 @@ LIST( 12, no_input,
 	"empty editing input" )
 LIST( 13, no_term,
 	"editing input is not terminated by line feed" )
+LIST( 14, del_without_a,
+	"use -a with deleting tag" )

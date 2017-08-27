@@ -2,7 +2,8 @@
 #include <stdbool.h>
 #include <iconv.h>
 
-void add_tag_from_opt(char const*);
+void parse_opt_tag(int, char const*);
+void pticonv_close(void);
 void read_page(ogg_sync_state*);
 void move_file(void);
 iconv_t iconv_new(char const *to, char const *from);
@@ -21,7 +22,7 @@ void open_output_file(void);
 struct rettag_st {
 	FILE *tag, *padding;
 	long tagbegin;
-	size_t num;
+	size_t num, del;
 };
 struct edit_st {
 	FILE *str, *len;

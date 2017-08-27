@@ -6,6 +6,7 @@ void opuserror(int, ...);
 void oserror(void);
 void oserror_fmt(char const*, ...);
 void fileerror(char const*);
+void opterror(int, char const*, ...);
 
 enum err_opus_ {
 #define LIST(I, B, E, S) err_opus_##E = I,

@@ -32,7 +32,7 @@ static void usage(void) {
 	fprintf(stderr, catgets(catd, 6, 1,
 "Synopsys:\n"
 "    %1$s [-l] [-i idx] [-DepQRUv] opusfile\n"
-"    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-1DeQprRUv] opusfile [output]\n"
+"    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] opusfile [output]\n"
 	), program_name);
 	fputc('\n', stderr);
 	fputs(catgets(catd, 6, 2,
@@ -57,11 +57,14 @@ static void usage(void) {
 "    -U    Convert field name in Opus file to uppercase\n"
 "    -c tagfile\n"
 "          In list mode, write tags to tagfile.\n"
-"          In append/write mode, read tags from tagfile\n"
+"          In append/write mode, read tags from tagfile.\n"
 "    -t NAME=VALUE\n"
-"          add the argument as editing item\n"
+"          Add the argument as editing item\n"
+"    -d NAME[=VALUE]\n"
+"          Delete tags in Opus file matched with the argument.\n"
+"          When VALUE is omitted, All of NAME is removed. Implies -U\n"
 "    -V    Verify Tags in source Opus file\n"
-"    -T    Check whether editing input has been terminated by line feed.\n"
+"    -T    Check whether editing input has been terminated by line feed\n"
 "    -D    Defer editing IO; implies -V, -T\n"
 "    -i idx\n"
 "          Specify Opus index for editing in multiplexed Ogg stream\n"
@@ -70,30 +73,20 @@ static void usage(void) {
 	exit(1);
 }
 
-void opterror(int c, char const *e, ...) {
-	va_list ap;
-	va_start(ap, e);
-	errorprefix();
-	fprintf(stderr, catgets(catd, 1, 7, "-%c: "), c);
-	vfprintf(stderr, e, ap);
-	fputc('\n', stderr);
-	exit(1);
-}
-
 static void fail_to_parse(int c) {
-	opterror(c, catgets(catd, 2, 3, "failed to parse value"));
+	opterror(c, catgets(catd, 7, 1, "failed to parse value"));
 }
 
 static void out_of_range(int c) {
-	opterror(c, catgets(catd, 2, 4, "the value is out of range"));
+	opterror(c, catgets(catd, 7, 2, "the value is out of range"));
 }
 
 static void parse_args(int argc, char **argv) {
 	int c;
-	bool added_tag = false;
+	bool added_tag = false, del_tag = false;
 	int gainfmt;
 	double gv;
-	while ((c = getopt(argc, argv, "lwaReg:s:0r1vQpUc:t:VTDi:")) != -1) {
+	while ((c = getopt(argc, argv, "lwaReg:s:0r1vQpUc:t:d:VTDi:")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
@@ -176,8 +169,13 @@ static void parse_args(int argc, char **argv) {
 			break;
 		
 		case 't':
-			add_tag_from_opt(optarg);
+			parse_opt_tag(c, optarg);
 			added_tag = true;
+			break;
+			
+		case 'd':
+			parse_opt_tag(c, optarg);
+			del_tag = true;
 			break;
 			
 		case 'D':
@@ -207,6 +205,20 @@ static void parse_args(int argc, char **argv) {
 		}
 	}
 	// オプションループ抜け
+	if (del_tag || added_tag) {
+		pticonv_close();
+	}
+	if (del_tag) {
+		switch (O.edit) {
+		case EDIT_NONE:
+			O.edit = EDIT_APPEND;
+			break;
+		case EDIT_APPEND:
+			break;
+		default:
+			mainerror(err_main_del_without_a);
+		}
+	}
 	if (added_tag && O.edit == EDIT_LIST) {
 		mainerror(err_main_tag_with_l);
 	}

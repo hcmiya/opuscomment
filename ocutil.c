@@ -7,13 +7,14 @@
 
 static bool test_tag_field_keepcase(uint8_t *line, size_t n, bool *on_field) {
 	size_t i;
+	bool valid = true;
 	for (i = 0; i < n && line[i] != 0x3d; i++) {
 		if (!(line[i] >= 0x20 && line[i] <= 0x7e)) {
-			return false;
+			valid = false;
 		}
 	}
 	if (i < n) *on_field = false;
-	return true;
+	return valid;
 }
 bool test_tag_field(uint8_t *line, size_t n, bool upcase, bool *on_field) {
 	// フィールドの使用文字チェック・大文字化
@@ -21,16 +22,17 @@ bool test_tag_field(uint8_t *line, size_t n, bool upcase, bool *on_field) {
 		return test_tag_field_keepcase(line, n, on_field);
 	}
 	size_t i;
+	bool valid = true;
 	for (i = 0; i < n && line[i] != 0x3d; i++) {
 		if (!(line[i] >= 0x20 && line[i] <= 0x7e)) {
-			return false;
+			valid = false;
 		}
 		if (line[i] >= 0x61 && line[i] <= 0x7a) {
 			line[i] -= 32;
 		}
 	}
 	if (i < n) *on_field = false;
-	return true;
+	return valid;
 }
 
 
