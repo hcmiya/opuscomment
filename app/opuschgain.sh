@@ -1,9 +1,5 @@
 #!/bin/sh
 
-# CAUTION
-# DO NOT run this script in ASCII incompatible locale, or Opus tags will be lost.
-# But you don't have to care about it on most system, like Linux, *BSD, Mac OS X, Solaris, etc...
-
 OC=opuscomment
 progname="${0##*/}"
 
@@ -25,18 +21,6 @@ E() {
 	printf '%s: %s\n' "$progname" "$*" >&2
 	exit $eno
 }
-
-if [ -n "$LC_MESSAGES" ] ;then :
-elif [ -n "$LC_ALL" ] ;then LC_MESSAGES="$LC_ALL"
-elif [ -n "$LANG" ] ;then LC_MESSAGES="$LANG"
-fi
-if [ -n "$LC_NUMERIC" ] ;then :
-elif [ -n "$LC_ALL" ] ;then orig_numeric="$LC_ALL"
-elif [ -n "$LANG" ] ;then orig_numeric="$LANG"
-else orig_numeric=C
-fi
-orig_lang="$LANG"
-export LANG=C LC_NUMERIC=C LC_MESSAGES
 
 mode= q78= val= relative= not0= idx=
 while getopts i:g:s:rQ01 sw
@@ -111,7 +95,7 @@ cleanup() {
 trap cleanup EXIT
 
 tags="$tmp/tags"
-if env LANG="$orig_lang" "$OC" -VvQURe -- "$src" 2>"$tmp/gval" >"$tags"
+if "$OC" -VvQUe -- "$src" 2>"$tmp/gval" >"$tags"
 then :
 else
 	e=$?
@@ -138,12 +122,12 @@ albumgain=$(get_gain_tag ALBUM)
 
 if [ -z "$trackgain" -a -z "$albumgain" ]
 then
-	exec env LANG="$orig_lang" LC_NUMERIC="$orig_numeric" "$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" ${dest:+"$dest"}
+	exec "$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" ${dest:+"$dest"}
 	exit 1
 fi
 
 mod="$tmp/mod"
-env LANG="$orig_lang" "$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
+"$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
 [ $out = overwrite ] && dest="$src" || :
 postgain=$("$OC" -vQ -- "$mod" 2>&1 >/dev/null)
 
@@ -155,8 +139,7 @@ then
 fi
 
 diff=$((pregain - postgain))
-sedscr="${trackgain:+"s/^R128_TRACK_GAIN=.*/R128_TRACK_GAIN=$((trackgain + diff))/"}
-${albumgain:+"s/^R128_ALBUM_GAIN=.*/R128_ALBUM_GAIN=$((albumgain + diff))/"}"
+echo "${trackgain:+"R128_TRACK_GAIN=$((trackgain + diff))"}
+${albumgain:+"R128_ALBUM_GAIN=$((albumgain + diff))"}" |"$OC" -a -d R128_TRACK_GAIN -d R128_ALBUM_GAIN ${idx:+-i "$idx"} ${add1:+-Qg1} -- "$mod" "$dest"
 
-# POSIX.1-2008 2016 edition A.6.2によればPOSIXロケールなら文字をを8bit-cleanと仮定して良さそう
-sed -e "$sedscr" <"$tags" |env LANG="$orig_lang" "$OC" -wRe ${idx:+-i "$idx"} ${add1:+-Qg1} -- "$mod" "$dest"
+
