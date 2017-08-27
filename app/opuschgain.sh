@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# CAUTION
+# DO NOT run this script in ASCII incompatible locale, or Opus tags will be lost.
+# But you don't have to care about it on most system, like Linux, *BSD, Mac OS X, Solaris, etc...
+
 OC=opuscomment
 progname="${0##*/}"
 
@@ -85,11 +89,21 @@ esac
 
 set -e
 
-pregain=$("$OC" -VvQ -- "$src" 2>&1 >/dev/null)
+tmp="$(mktemp -d)"
+# mktemp(1) is not in POSIX
+# tmp=/tmp/opuschgain.$$
+# mkdir /tmp/opuschgain.$$
+cleanup() {
+	rm -rf "$tmp"
+}
+trap cleanup EXIT
+
+tags="$tmp/tags"
+pregain=$("$OC" -VvQURe -- "$src" 2>&1 >"$tags")
 
 get_gain_tag() {
 	name=R128_${1}_GAIN
-	tag="$("$OC" -eU -- "$src" |sed -n /^$name=/p)"
+	tag="$(sed -n /^$name=/p <"$tags")"
 	if [ -n "$tag" ]
 	then
 		[ $(printf "%s\n" "$tag" |wc -l) -eq 1 ] || E 1 $name appears many times
@@ -108,9 +122,10 @@ then
 	exit 1
 fi
 
-"$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${q78:+-Q} ${relative:+-r} -- "$src" ${dest:+"$dest"}
-[ $out = other ] && src="$dest" || :
-postgain=$("$OC" -vQ -- "$src" 2>&1 >/dev/null)
+mod="$tmp/mod"
+"$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
+[ $out = overwrite ] && dest="$src" || :
+postgain=$("$OC" -vQ -- "$mod" 2>&1 >/dev/null)
 
 add1=
 if [ $postgain = 0 -a -n "$not0" ]
@@ -123,4 +138,5 @@ diff=$((pregain - postgain))
 sedscr="${trackgain:+"s/^R128_TRACK_GAIN=.*/R128_TRACK_GAIN=$((trackgain + diff))/"}
 ${albumgain:+"s/^R128_ALBUM_GAIN=.*/R128_ALBUM_GAIN=$((albumgain + diff))/"}"
 
-"$OC" -U -- "$src" |sed "$sedscr" |"$OC" -w ${add1:+-Qg1}-- "$src"
+# BUG sedを8bit-cleanと仮定して良いのか?
+env LANG=C sed -e "$sedscr" <"$tags" |"$OC" -wRe ${idx:+-i "$idx"} ${add1:+-Qg1} -- "$mod" "$dest"
