@@ -4,8 +4,8 @@
 
 ## 書式
 
-    opuscomment [-l] [-epQRv] opusfile
-    opuscomment -a|-w [-g gain|-s gain|-n] [-c tagfile|-t NAME=VALUE ...] [-eGpQrRv] opusfile [output]
+    opuscomment [-l] [-i idx] [-epQRv] opusfile
+    opuscomment -a|-w [-i idx] [-g gain|-s gain|-0] [-c tagfile|-t NAME=VALUE ...] [-1epQrRv] opusfile [output]
 
 ## 説明
 
@@ -56,6 +56,8 @@
 <dd>編集入力が改行で終わっているか確認する</dd>
 <dt>-D</dt>
 <dd>出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また-Vを暗黙的に指定する。書き込みモード時、空の編集入力をエラーとする。また-Tを暗黙的に指定する。</dd>
+<dt>-i idx</dt>
+<dd>多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している。</dd>
 </dl>
 
 ## 環境変数
