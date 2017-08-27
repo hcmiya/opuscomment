@@ -56,7 +56,7 @@ static void err_noterm(void) {
 }
 
 static void toutf8(int fdu8) {
-	size_t const buflen = 512;
+	size_t const buflen = STACK_BUF_LEN;
 	char ubuf[buflen];
 	char lbuf[buflen];
 	
@@ -173,11 +173,11 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 		}
 		if (wsplen) {
 			// 空白と見做していた分を書き込み
-			uint8_t buf[512];
-			memset(buf, 0x20, 512);
+			uint8_t buf[STACK_BUF_LEN];
+			memset(buf, 0x20, STACK_BUF_LEN);
 			recordlen = wsplen;
 			while (wsplen) {
-				size_t wlen = wsplen > 512 ? 512 : wsplen;
+				size_t wlen = wsplen > STACK_BUF_LEN ? STACK_BUF_LEN : wsplen;
 				fwrite(buf, 1, wlen, strstore);
 				wsplen -= wlen;
 			}
@@ -324,10 +324,9 @@ void *split(void *fp_) {
 	prepare_record();
 	void (*line)(uint8_t *, size_t, bool) = O.tag_escape ? line_vc : line_oc;
 	
-	uint8_t tagbuf[512];
-	size_t tagbuflen, readlen;
-	tagbuflen = 512;
-	while ((readlen = fread(tagbuf, 1, tagbuflen, fp)) != 0) {
+	uint8_t tagbuf[STACK_BUF_LEN];
+	size_t readlen;
+	while ((readlen = fread(tagbuf, 1, STACK_BUF_LEN, fp)) != 0) {
 		uint8_t *p1, *p2;
 		if (memchr(tagbuf, 0, readlen) != NULL) {
 			err_bin();
@@ -389,11 +388,11 @@ void add_tag_from_opt(char const *arg) {
 		cd = iconv_new("UTF-8", nl_langinfo(CODESET));
 	}
 	prepare_record();
-	char u8buf[512];
+	char u8buf[STACK_BUF_LEN];
 	size_t u8left;
 	char *u8;
 	while (l) {
-		u8left = 512;
+		u8left = STACK_BUF_LEN;
 		u8 = u8buf;
 		size_t ret = iconv(cd, &ls, &l, &u8, &u8left);
 		
@@ -406,7 +405,7 @@ void add_tag_from_opt(char const *arg) {
 		line_oc(u8buf, u8 - u8buf, false);
 	}
 	u8 = u8buf;
-	u8left = 512;
+	u8left = STACK_BUF_LEN;
 	if (iconv(cd, NULL, NULL, &u8, &u8left) == (size_t)-1) {
 		oserror();
 	}

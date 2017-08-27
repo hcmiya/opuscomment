@@ -52,12 +52,12 @@ void check_tagpacket_length(size_t len) {
 static bool rtcopy_write(FILE *fp, void *fptag_) {
 	FILE *fptag = fptag_;
 	uint32_t len = rtchunk(fp);
-	uint8_t buf[512];
+	uint8_t buf[STACK_BUF_LEN];
 	bool first = true;
 	bool field = true;
 	bool copy;
 	while (len) {
-		size_t rl = len > 512 ? 512 : len;
+		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
 		rtread(buf, rl, fp);
 		if (first) {
 			first = false;
@@ -101,12 +101,12 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 	static size_t idx = 1;
 	int listfd = *(int*)listfd_;
 	uint32_t len = rtchunk(fp);
-	uint8_t buf[512];
+	uint8_t buf[STACK_BUF_LEN];
 	bool first = true;
 	bool field = true;
 	bool copy;
 	while (len) {
-		size_t rl = len > 512 ? 512 : len;
+		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
 		rtread(buf, rl, fp);
 		if (first) {
 			if (*buf == 0x3d) opuserror(err_opus_bad_tag, idx);
@@ -149,7 +149,7 @@ void *retrieve_tags(void *fp_) {
 	// parse_header_border() からスレッド化された
 	// fp はタグパケットの読み込みパイプ
 	FILE *fp = fp_;
-	uint8_t buf[512];
+	uint8_t buf[STACK_BUF_LEN];
 	
 	struct rettag_st *rtn = calloc(1, sizeof(*rtn));
 	
@@ -167,7 +167,7 @@ void *retrieve_tags(void *fp_) {
 	fwrite(buf, 4, 1, fptag);
 	check_tagpacket_length(12);
 	while (len) {
-		size_t rl = len > 512 ? 512 : len;
+		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
 		rtread(buf, rl, fp);
 		fwrite(buf, 1, rl, fptag);
 		check_tagpacket_length(rl);
@@ -215,14 +215,14 @@ void *retrieve_tags(void *fp_) {
 		fwrite(buf, 1, 1, rtn->padding);
 		check_tagpacket_length(1);
 		size_t n;
-		while ((n = fread(buf, 1, 512, fp))) {
+		while ((n = fread(buf, 1, STACK_BUF_LEN, fp))) {
 			fwrite(buf, 1, n, rtn->padding);
 			check_tagpacket_length(n);
 		}
 	}
 	else {
 		size_t n;
-		while ((n = fread(buf, 1, 512, fp))) {}
+		while ((n = fread(buf, 1, STACK_BUF_LEN, fp))) {}
 	}
 	fclose(fp);
 	return rtn;
