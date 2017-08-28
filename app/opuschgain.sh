@@ -127,19 +127,12 @@ then
 fi
 
 mod="$tmp/mod"
-"$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
+"$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
 [ $out = overwrite ] && dest="$src" || :
 postgain=$("$OC" -vQ -- "$mod" 2>&1 >/dev/null)
 
-add1=
-if [ $postgain = 0 -a -n "$not0" ]
-then
-	add1=y
-	postgain=1
-fi
-
 diff=$((pregain - postgain))
 echo "${trackgain:+"R128_TRACK_GAIN=$((trackgain + diff))"}
-${albumgain:+"R128_ALBUM_GAIN=$((albumgain + diff))"}" |"$OC" -a -d R128_TRACK_GAIN -d R128_ALBUM_GAIN ${idx:+-i "$idx"} ${add1:+-Qg1} -- "$mod" "$dest"
+${albumgain:+"R128_ALBUM_GAIN=$((albumgain + diff))"}" |"$OC" -a -d R128_TRACK_GAIN -d R128_ALBUM_GAIN ${idx:+-i "$idx"} -- "$mod" "$dest"
 
 
