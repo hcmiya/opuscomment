@@ -105,8 +105,7 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 		*(uint32_t*)gbuf = oi32(reclen);
 		fwrite(gbuf, 4, 1, fptag);
 		while (reclen) {
-			size_t readlen = reclen > gbuflen ? gbuflen : reclen;
-			fread(gbuf, 1, readlen, est->str);
+			size_t readlen = fill_buffer(gbuf, reclen, gbuflen, est->str);
 			fwrite(gbuf, 1, readlen, fptag);
 			reclen -= readlen;
 		}

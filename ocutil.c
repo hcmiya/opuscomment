@@ -35,6 +35,11 @@ bool test_tag_field(uint8_t *line, size_t n, bool upcase, bool *on_field) {
 	return valid;
 }
 
+size_t fill_buffer(void *buf, size_t left, size_t buflen, FILE *fp) {
+	size_t filllen = left > buflen ? buflen : left;
+	size_t readlen = fread(buf, 1, filllen, fp);
+	return filllen;
+}
 
 #if _POSIX_C_SOURCE < 200809L
 size_t strnlen(char const *src, size_t n) {

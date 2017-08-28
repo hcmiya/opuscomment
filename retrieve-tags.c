@@ -21,6 +21,12 @@ static uint32_t rtchunk(FILE *fp) {
 	return oi32(rtn);
 }
 
+static size_t rtfill(void *buf, size_t left, size_t buflen, FILE *fp) {
+	size_t rl = left > buflen ? buflen : left;
+	rtread(buf, rl, fp);
+	return rl;
+}
+
 static bool test_mbp(uint8_t *buf, size_t len) {
 	// "METADATA_BLOCK_PICTURE=" in ASCII
 	uint8_t const *mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d";
@@ -49,6 +55,7 @@ void check_tagpacket_length(size_t len) {
 	}
 }
 
+
 static bool rtcopy_write(FILE *fp, void *fptag_) {
 	FILE *fptag = fptag_;
 	uint32_t len = rtchunk(fp);
@@ -57,8 +64,7 @@ static bool rtcopy_write(FILE *fp, void *fptag_) {
 	bool field = true;
 	bool copy;
 	while (len) {
-		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
-		rtread(buf, rl, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
 		if (first) {
 			first = false;
 			
@@ -111,8 +117,7 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 	while (len) {
 		// フィールド名にいる間のループ
 		bool field = true;
-		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
-		rtread(buf, rl, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
 		test_tag_field(buf, rl, true, &field);
 		fwrite(buf, 1, rl, src);
 		len -= rl;
@@ -120,8 +125,7 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 	}
 	while (len) {
 		// フィールド名を抜けた後のループ
-		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
-		rtread(buf, rl, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
 		fwrite(buf, 1, rl, src);
 		len -= rl;
 	}
@@ -143,8 +147,7 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 			// 全比較でソースと削除の長さが一致する時
 			matched = true;
 			while (cmplen) {
-				size_t rl = cmplen > bufhalf ? bufhalf : cmplen;
-				fread(buf, 1, rl, src);
+				size_t rl = fill_buffer(buf, cmplen, bufhalf, src);
 				fread(cmp, 1, rl, dstr);
 				cmplen -= rl;
 				if (memcmp(buf, cmp, rl) != 0) {
@@ -167,9 +170,7 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 		}
 		// 次の削除チャンクに進む
 		while (cmplen) {
-			size_t rl = cmplen > STACK_BUF_LEN ? STACK_BUF_LEN : cmplen;
-			fread(buf, 1, rl, dstr);
-			cmplen -= rl;
+			cmplen -= fill_buffer(buf, cmplen, STACK_BUF_LEN, dstr);
 		}
 	}
 	// 削除するものと一致しなかったらfptagにコピー
@@ -177,8 +178,7 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 	*(uint32_t*)buf = oi32(srclen);
 	fwrite(buf, 4, 1, fptag);
 	while (srclen) {
-		size_t rl = srclen > STACK_BUF_LEN ? STACK_BUF_LEN : srclen;
-		fread(buf, 1, rl, src);
+		size_t rl = fill_buffer(buf, srclen, STACK_BUF_LEN, src);
 		fwrite(buf, 1, rl, fptag);
 		srclen -= rl;
 	}
@@ -196,8 +196,7 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 	bool field = true;
 	bool copy;
 	while (len) {
-		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
-		rtread(buf, rl, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
 		if (first) {
 			if (*buf == 0x3d) opuserror(err_opus_bad_tag, idx);
 			first = false;
@@ -257,8 +256,7 @@ void *retrieve_tags(void *fp_) {
 	fwrite(buf, 4, 1, fptag);
 	check_tagpacket_length(12);
 	while (len) {
-		size_t rl = len > STACK_BUF_LEN ? STACK_BUF_LEN : len;
-		rtread(buf, rl, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
 		fwrite(buf, 1, rl, fptag);
 		check_tagpacket_length(rl);
 		len -= rl;

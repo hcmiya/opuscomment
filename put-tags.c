@@ -109,9 +109,7 @@ void *put_tags(void *fp_) {
 		if (!fread(&len, 4, 1, fp)) break;
 		size_t left = len, remain = 0;
 		while (left) {
-			size_t readmax = buflenunit - remain;
-			size_t readlen = left > readmax ? readmax : left;
-			fread(raw, 1, readlen, fp);
+			size_t readlen = fill_buffer(raw, left, buflenunit - remain, fp);
 			left -= readlen;
 			
 			size_t tagleft = esc(raw, buf + remain, readlen) - (char*)buf;
