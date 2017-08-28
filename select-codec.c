@@ -27,10 +27,10 @@ static void opus_parse(ogg_page *og) {
 	}
 	if (O.gain_put) {
 		if (O.gain_q78) {
-			fprintf(stderr, "%d\n", (int16_t)oi16(*(int16_t*)(&og->body[16])));
+			fprintf(stderr, "%d", (int16_t)oi16(*(int16_t*)(&og->body[16])));
 		}
 		else {
-			fprintf(stderr, "%.8g\n", (int16_t)oi16(*(int16_t*)(&og->body[16])) / 256.0);
+			fprintf(stderr, "%.8g", (int16_t)oi16(*(int16_t*)(&og->body[16])) / 256.0);
 		}
 	}
 	if (O.gain_fix) {
@@ -55,6 +55,18 @@ static void opus_parse(ogg_page *og) {
 		
 		*(int16_t*)(&og->body[16]) = oi16(gi);
 		ogg_page_checksum_set(og);
+		
+		if (O.gain_put) {
+			if (O.gain_q78) {
+				fprintf(stderr, "\t%d", (int)gi);
+			}
+			else {
+				fprintf(stderr, "\t%.8g", gi / 256.0);
+			}
+		}
+	}
+	if (O.gain_put) {
+		fputc('\n', stderr);
 	}
 }
 

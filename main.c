@@ -53,7 +53,7 @@ static void usage(void) {
 "    -r    Specify that the gain is relative to internal value\n"
 "    -1    When output gain becomes 0 by converting to internal representation,\n"
 "          set [+-]1/256 dB instead\n"
-"    -v    Put output gain of BEFORE editing to stderr\n"
+"    -v    Put output gain to stderr\n"
 "    -Q    Use Q7.8 format for editing output gain\n"
 "    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
 "    -U    Convert field name in opusfile to uppercase\n"
@@ -297,7 +297,7 @@ static void parse_args(int argc, char **argv) {
 	if (O.edit == EDIT_APPEND) {
 		O.tag_ignore_picture = false;
 	}
-	if (!codec->prog) {
+	if (codec->prog) {
 		O.gain_fix = false;
 		O.gain_put = false;
 	}
