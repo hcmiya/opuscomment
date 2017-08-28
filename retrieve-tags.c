@@ -178,10 +178,12 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 	rewind(src);
 	*(uint32_t*)buf = oi32(srclen);
 	fwrite(buf, 4, 1, fptag);
+	check_tagpacket_length(4);
 	while (srclen) {
 		size_t rl = fill_buffer(buf, srclen, STACK_BUF_LEN, src);
 		fwrite(buf, 1, rl, fptag);
 		srclen -= rl;
+		check_tagpacket_length(rl);
 	}
 	idx++;
 MATCHED:
@@ -244,7 +246,7 @@ void *retrieve_tags(void *fp_) {
 	uint32_t len = rtchunk(fp);
 	*(uint32_t*)buf = oi32(len);
 	fwrite(buf, 4, 1, fptag);
-	check_tagpacket_length(12);
+	check_tagpacket_length(codec->commagic_len + 4);
 	while (len) {
 		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
 		fwrite(buf, 1, rl, fptag);
