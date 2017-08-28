@@ -56,9 +56,9 @@ static void err_noterm(void) {
 }
 
 static void toutf8(int fdu8) {
-	size_t const buflen = STACK_BUF_LEN;
-	char ubuf[buflen];
-	char lbuf[buflen];
+	size_t const buflen = STACK_BUF_LEN / 2;
+	char ubuf[STACK_BUF_LEN];
+	char *lbuf = ubuf + buflen;
 	
 	iconv_t cd = iconv_new("UTF-8", O.tag_raw ? "UTF-8" : nl_langinfo(CODESET));
 	size_t readlen, remain, total;
@@ -217,7 +217,7 @@ static void line_oc(uint8_t *line, size_t n, bool lf) {
 	
 	if (lf) n--;
 	if (on_field) {
-		if(!test_tag_field(line, n, true, &on_field)) err_name();
+		if(!test_tag_field(line, n, true, &on_field, NULL)) err_name();
 		if (on_field && lf) err_name();
 	}
 	else if (afterlf) {
@@ -305,7 +305,7 @@ static void line_vc(uint8_t *line, size_t n, bool lf) {
 		}
 	}
 	if (on_field) {
-		if(!test_tag_field(line, n, true, &on_field)) err_name();
+		if(!test_tag_field(line, n, true, &on_field, NULL)) err_name();
 		if (on_field && lf) err_nosep();
 	}
 	append_buffer(line, n);

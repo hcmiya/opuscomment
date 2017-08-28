@@ -16,7 +16,7 @@
 
 static size_t seeked_len;
 static char *outtmp;
-static bool remove_tmp, toupper_applied;
+static bool remove_tmp;
 static uint32_t opus_sno;
 static FILE *fpout;
 
@@ -462,7 +462,7 @@ static bool parse_comment_term(ogg_page *og) {
 	}
 	error_on_thread = false;
 	
-	if (O.edit == EDIT_APPEND && !rst->del && !est->num && !O.out && !O.gain_fix && !toupper_applied) {
+	if (O.edit == EDIT_APPEND && !rst->del && !est->num && !O.out && !O.gain_fix && !rst->upcase) {
 		// タグ追記モードで出力が上書き且つ
 		// タグ入力、ゲイン調整、タグ削除、大文字化適用が全て無い場合はすぐ終了する
 		exit(0);

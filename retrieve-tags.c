@@ -104,6 +104,7 @@ static bool rtcopy_write(FILE *fp, void *fptag_) {
 }
 
 static FILE *rtcd_src, *dellist_str, *dellist_len;
+static bool upcase_applied;
 static bool rtcopy_delete(FILE *fp, void *fptag_) {
 	static int idx = 1;
 	FILE *fptag = fptag_;
@@ -118,7 +119,7 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 		// フィールド名にいる間のループ
 		bool field = true;
 		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
-		test_tag_field(buf, rl, true, &field);
+		test_tag_field(buf, rl, true, &field, &upcase_applied);
 		fwrite(buf, 1, rl, src);
 		len -= rl;
 		if (!field) break;
@@ -206,20 +207,9 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 			}
 		}
 		if (copy) {
-			if (O.tag_verify && field) {
-				if(!test_tag_field(buf, rl, O.tag_toupper, &field)) {
+			if (field) {
+				if(!test_tag_field(buf, rl, O.tag_toupper, &field, &upcase_applied) && O.tag_verify) {
 					opuserror(err_opus_bad_tag, idx);
-				}
-			}
-			else if (O.tag_toupper && field) {
-				for (char *p = buf, *endp = buf + rl; p < endp; p++) {
-					if (*p >= 0x61 && *p <= 0x7a) {
-						*p -= 32;
-					}
-					if (*p == 0x3d) {
-						field = false;
-						break;
-					}
 				}
 			}
 			write(listfd, buf, rl);
@@ -321,6 +311,7 @@ void *retrieve_tags(void *fp_) {
 		while ((n = fread(buf, 1, STACK_BUF_LEN, fp))) {}
 	}
 	fclose(fp);
+	rtn->upcase = upcase_applied;
 	return rtn;
 }
 
@@ -345,7 +336,7 @@ void rt_del_args(uint8_t *buf, size_t len, bool term) {
 	
 	len -= term;
 	recordlen += len;
-	if (field && !test_tag_field(buf, len, true, &field)) {
+	if (field && !test_tag_field(buf, len, true, &field, &upcase_applied)) {
 		opterror('d', catgets(catd, 7, 3, "invalid tag format"));
 	}
 	fwrite(buf, 1, len, dellist_str);

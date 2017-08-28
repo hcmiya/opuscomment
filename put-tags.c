@@ -37,16 +37,16 @@ static void put_ls(char const *ls) {
 	}
 }
 
-static char *esc_oc(char *src, char *dest, size_t len) {
-	char *end = src + len;
+static uint8_t *esc_oc(uint8_t *src, uint8_t *dest, size_t len) {
+	uint8_t *end = src + len;
 	while(src < end) {
 		*dest++ = *src++;
 		if (src[-1] == 0xa) *dest++ = 0x9;
 	}
 	return dest;
 }
-static char *esc_vc(char *src, char *dest, size_t len) {
-	char *end = src + len;
+static uint8_t *esc_vc(uint8_t *src, uint8_t *dest, size_t len) {
+	uint8_t *end = src + len;
 	for (; src < end; src++) {
 		switch (*src) {
 		case 0x00:
@@ -100,11 +100,12 @@ void *put_tags(void *fp_) {
 	size_t buflen = buflenunit * 3;
 	uint8_t *buf = malloc(buflen);
 	int nth = 1;
-	char* (*esc)(char*, char*, size_t) = O.tag_escape ? esc_vc : esc_oc;
-	char *raw = buf + buflenunit * 2;
+	uint8_t* (*esc)(uint8_t*, uint8_t*, size_t) = O.tag_escape ? esc_vc : esc_oc;
+	uint8_t *raw = buf + buflenunit * 2;
 	
 	for (;;) {
-		char *u8, *ls;
+		uint8_t *u8;
+		char *ls;
 		uint32_t len;
 		if (!fread(&len, 4, 1, fp)) break;
 		size_t left = len, remain = 0;
@@ -112,7 +113,7 @@ void *put_tags(void *fp_) {
 			size_t readlen = fill_buffer(raw, left, buflenunit - remain, fp);
 			left -= readlen;
 			
-			size_t tagleft = esc(raw, buf + remain, readlen) - (char*)buf;
+			size_t tagleft = esc(raw, buf + remain, readlen) - buf;
 			
 			if (O.tag_raw) {
 				put_bin(buf, tagleft);
@@ -122,8 +123,8 @@ void *put_tags(void *fp_) {
 				ls = buf + tagleft;
 				for (;;) {
 					char *lsend = ls;
-					size_t bufleft = buflen - (ls - (char*)buf) - 1;
-					size_t iconvret = iconv(cd, &u8, &tagleft, &lsend, &bufleft);
+					size_t bufleft = buflen - ((uint8_t*)ls - buf) - 1;
+					size_t iconvret = iconv(cd, (char**)&u8, &tagleft, &lsend, &bufleft);
 					int ie = errno;
 					errno = 0;
 					if (iconvret == (size_t)-1 && ie == EILSEQ) {
@@ -153,7 +154,7 @@ void *put_tags(void *fp_) {
 			strcpy(buf, "\x0a");
 			left = 2, remain = 200;
 			u8 = buf, ls = buf + 2;
-			if (iconv(cd, &u8, &left, &ls, &remain) == (size_t)-1) {
+			if (iconv(cd, (char**)&u8, &left, &ls, &remain) == (size_t)-1) {
 				oserror();
 			}
 			put_ls(u8);

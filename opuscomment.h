@@ -23,6 +23,7 @@ struct rettag_st {
 	FILE *tag, *padding;
 	long tagbegin;
 	size_t num, del;
+	bool upcase;
 };
 struct edit_st {
 	FILE *str, *len;
