@@ -9,4 +9,4 @@
 #define TAG_LENGTH_LIMIT__OUTPUT (40 * (1 << 20))
 
 // スタック上で小さい入出力バッファを使う時のサイズ指定
-#define STACK_BUF_LEN 512
+#define STACK_BUF_LEN 4096
