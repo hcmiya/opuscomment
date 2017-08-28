@@ -108,17 +108,12 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	}
 	fclose(est->str); fclose(est->len);
 	
-	// パディング書き込み
 	if (rst->padding) {
-		FILE *pfp = rst->padding;
-		rewind(pfp);
-		size_t len;
-		while ((len = fread(gbuf, 1, gbuflen, pfp))) {
-			fwrite(gbuf, 1, len, fptag);
-		}
-		fclose(pfp);
+		// パディングがある時は先頭をfptagの後ろに移す(Vorbis対策)
+		rewind(rst->padding);
+		fread(gbuf, 1, 1, rst->padding);
+		fwrite(gbuf, 1, 1, fptag);
 	}
-	
 	long commentlen = ftell(fptag);
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		exceed_output_limit();
@@ -157,11 +152,53 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	og.header[26] = commentlen / 255 + 1;
 	og.header[26 + og.header[26]] = commentlen % 255;
 	fread(og.body, 1, commentlen, fptag);
+	fclose(fptag);
 	og.header_len = 27 + og.header[26];
 	og.body_len = commentlen;
+	if (og.header[26] != 255 && rst->padding) {
+		// vorbis commentの最後のページにパディングを付け足す処理
+		// vorbisはタグとパディングの間でlacing valueを分けないとおかしくなるっぽい
+		size_t len;
+		size_t laceleft = (255 - og.header[26]) * 255;
+		len = fread(og.body + og.body_len, 1, laceleft, rst->padding);
+		if (laceleft == len) {
+			og.header_len = 282;
+			og.header[26] = 255;
+			og.body_len += len;
+		}
+		else {
+			fclose(rst->padding);
+			rst->padding = NULL;
+			int seg = len / 255 + 1;
+			int lastseg = len % 255;
+			og.header_len += seg;
+			og.header[26] += seg;
+			og.header[26 + og.header[26]] = lastseg;
+			og.body_len += len;
+		}
+	}
 	ogg_page_checksum_set(&og);
 	write_page(&og);
-	fclose(fptag);
+	
+	if (rst->padding) {
+		memset(og.header + 26, 0xff, 256);
+		og.header[5] = 1;
+		size_t readlen;
+		while ((readlen = fread(og.body, 1, 255 * 255, rst->padding))) {
+			*(uint32_t*)&og.header[18] = oi32(idx++);
+			if (readlen != 255 * 255) break;
+			ogg_page_checksum_set(&og);
+			write_page(&og);
+		}
+		fclose(rst->padding);
+		
+		og.header[26] = readlen / 255 + 1;
+		og.header[26 + og.header[26]] = readlen % 255;
+		og.header_len = 27 + og.header[26];
+		og.body_len = readlen;
+		ogg_page_checksum_set(&og);
+		write_page(&og);
+	}
 	
 	if (idx < opus_idx) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
