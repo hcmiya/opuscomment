@@ -4,8 +4,8 @@
 
 ## 書式
 
-    opuscomment [-l] [-i idx] [-epQRv] opusfile
-    opuscomment -a|-w [-i idx] [-g gain|-s gain|-0] [-c tagfile|-t NAME=VALUE ...] [-1epQrRv] opusfile [output]
+    opuscomment [-l] [-i idx] [-DepQRUv] opusfile
+    opuscomment -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] opusfile [output]
 
 ## 説明
 
@@ -45,19 +45,21 @@
 <dt>-p</dt>
 <dd>METADATA_BLOCK_PICTUREの出力または削除をしない</dd>
 <dt>-U</dt>
-<dd>Opusファイル内のタグの項目名に小文字が含まれていた場合、大文字に変換する。他のソフトウェアで編集されたファイルのために用意されているオプションであり、opuscommentは編集入力のタグの項目名を常に大文字に変換する。</dd>
+<dd>Opusファイル内のタグの項目名に小文字が含まれていた場合、大文字に変換する。他のソフトウェアで編集されたファイルのために用意されているオプションであり、opuscommentは編集入力のタグの項目名を常に大文字に変換する</dd>
 <dt>-c tagfile</dt>
 <dd>出力モード時、タグをtagfileに書き出す。書き込み・追記モード時、tagfileからタグを読み出す</dd>
 <dt>-t NAME=VALUE</dt>
 <dd>引数をタグとして追加する</dd>
+<dt>-d NAME[=VALUE]</dt>
+<dd>引数に一致するOpusファイル内のタグを削除する。VALUEが省略された場合、NAMEが一致する全てのタグが削除される。-Uが暗黙的に指定される</dd>
 <dt>-V</dt>
 <dd>出力モード時、Opusファイル内のタグに対して書式の正当性を検証する</dd>
 <dt>-T</dt>
 <dd>編集入力が改行で終わっているか確認する</dd>
 <dt>-D</dt>
-<dd>出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また-Vを暗黙的に指定する。書き込みモード時、空の編集入力をエラーとする。また-Tを暗黙的に指定する。</dd>
+<dd>出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また-Vを暗黙的に指定する。書き込みモード時、空の編集入力をエラーとする。また-Tを暗黙的に指定する</dd>
 <dt>-i idx</dt>
-<dd>多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している。</dd>
+<dd>多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している</dd>
 </dl>
 
 ## 環境変数
@@ -173,13 +175,13 @@ Ogg VorbisとOgg Opusはタグの内部形式が同じで、またopuscommentは
 
 ### NULの扱い
 
-opuscommentは文字「NUL」が入力された場合は一切エラーとする。もしOpus内のタグがNULを含んでいた場合、出力モードで文字が途切れるだろう。これはvorbis commentがUTF-8テキストを格納するものでバイナリを受け入れるべきではないという設計に基いており、初版作者はその設計思想を受け継いでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。この動作は初版作者によって修正されない。しかし必要ならば-Rか-eいずれかのオプションを指定することで回避できる。
+opuscommentは文字「NUL」が入力された場合は一切エラーとする。もしOpus内のタグがNULを含んでいた場合、出力モードで文字が途切れるだろう。これはvorbis commentがあくまでUTF-8テキストを格納するものなのでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。しかし必要ならば-Rか-eいずれかのオプションを指定することで回避できる。
 
 ### 出力ゲインとR128_TRACK_GAIN、R128_ALBUM_GAINの編集
 
-Opus仕様を定めた[RFC 7845](https://tools.ietf.org/html/rfc7845)によれば、出力ゲインを編集した場合、併せて`R128_TRACK_GAIN`、`R128_ALBUM_GAIN`の更新ないし削除をしなければならない(MUST)、とある。しかし、opuscommentは今の所その規定に基く処理は未実装である。opuscommentの利用者はこの規定を念頭に置いてゲイン調整の編集をスクリプトに組み込む必要がある。
+Opus仕様を定めた[RFC 7845](https://tools.ietf.org/html/rfc7845)によれば、出力ゲインを編集した場合、併せて`R128_TRACK_GAIN`、`R128_ALBUM_GAIN`の更新ないし削除をしなければならない(MUST)、とある。しかし、opuscommentはこの仕様に基く処理を実装しない。opuscommentの利用者はこの仕様を念頭に置いてゲイン調整の編集をスクリプトに組み込む必要がある。
 
 ## 関連項目
 
-`opusenc(1)`, `opusinfo(1)`, `vorbiscomment(1)`, `metaflac(1)`, `op_set_gain_offset(3)`
+`opusenc(1)`, `opusinfo(1)`, `opuschgain(1)`, `vorbiscomment(1)`, `metaflac(1)`, `op_set_gain_offset(3)`
 
