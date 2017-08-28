@@ -30,20 +30,36 @@ static void usage(void) {
 	fprintf(stderr, catgets(catd, 6, 3, "Version: %s (rev. %s)\n"), OPUSCOMMENT_VERSION, revision);
 	fputc('\n', stderr);
 	
-	if (!codec->prog) {
-		fprintf(stderr, catgets(catd, 6, 1,
+	fprintf(stderr, catgets(catd, 6, 4,
 "Synopsys:\n"
-"    %1$s [-l] [-i idx] [-DepQRUv] opusfile\n"
-"    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] opusfile [output]\n"
-		), program_name);
-		fputc('\n', stderr);
-		fprintf(stderr, catgets(catd, 6, 2,
+"    %1$s [-l] [-i idx] [-DepQRUv] srcfile\n"
+"    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
+"\n"
 "Options:\n"
 "    -l    List mode\n"
 "    -a    Append mode\n"
 "    -w    Write mode\n"
 "    -R    Assume editing IO to be encoded in UTF-8\n"
 "    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
+"    -t NAME=VALUE\n"
+"          Add the argument as editing item\n"
+"    -c tagfile\n"
+"          In list mode, write tags to tagfile.\n"
+"          In append/write mode, read tags from tagfile.\n"
+"    -d NAME[=VALUE]\n"
+"          Delete tags in srcfile matched with the argument.\n"
+"          When VALUE is omitted, All of NAME is removed. Implies -U\n"
+"    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
+"    -U    Convert field name in srcfile to uppercase\n"
+"    -V    Verify Tags in srcfile\n"
+"    -T    Check whether editing input has been terminated by line feed\n"
+"    -D    Defer editing IO; implies -V, -T\n"
+"    -i idx\n"
+"          Specify %2$s index for editing in multiplexed Ogg stream\n"
+"          (1-origin, without non-%2$s stream)\n"
+	), program_name, codec->name);
+	if (!codec->prog) {
+		fprintf(stderr, catgets(catd, 6, 5,
 "    -g gain\n"
 "          Specify output gain in dB\n"
 "    -s scale\n"
@@ -55,54 +71,6 @@ static void usage(void) {
 "          set [+-]1/256 dB instead\n"
 "    -v    Put output gain to stderr\n"
 "    -Q    Use Q7.8 format for editing output gain\n"
-"    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
-"    -U    Convert field name in opusfile to uppercase\n"
-"    -c tagfile\n"
-"          In list mode, write tags to tagfile.\n"
-"          In append/write mode, read tags from tagfile.\n"
-"    -t NAME=VALUE\n"
-"          Add the argument as editing item\n"
-"    -d NAME[=VALUE]\n"
-"          Delete tags in srcfile matched with the argument.\n"
-"          When VALUE is omitted, All of NAME is removed. Implies -U\n"
-"    -V    Verify Tags in srcfile\n"
-"    -T    Check whether editing input has been terminated by line feed\n"
-"    -D    Defer editing IO; implies -V, -T\n"
-"    -i idx\n"
-"          Specify Opus index for editing in multiplexed Ogg stream\n"
-"          (1-origin, without non-Opus stream)\n"
-		));
-	}
-	else {
-		fprintf(stderr, catgets(catd, 6, 4,
-"Synopsys:\n"
-"    %1$s [-l] [-i idx] [-DepQRUv] srcfile\n"
-"    %1$s -a|-w [-i idx] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-DepRU] srcfile [output]\n"
-		), program_name);
-		fputc('\n', stderr);
-		fprintf(stderr, catgets(catd, 6, 5,
-"Options:\n"
-"    -l    List mode\n"
-"    -a    Append mode\n"
-"    -w    Write mode\n"
-"    -R    Assume editing IO to be encoded in UTF-8\n"
-"    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
-"    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
-"    -U    Convert field name in opusfile to uppercase\n"
-"    -c tagfile\n"
-"          In list mode, write tags to tagfile.\n"
-"          In append/write mode, read tags from tagfile.\n"
-"    -t NAME=VALUE\n"
-"          Add the argument as editing item\n"
-"    -d NAME[=VALUE]\n"
-"          Delete tags in srcfile matched with the argument.\n"
-"          When VALUE is omitted, All of NAME is removed. Implies -U\n"
-"    -V    Verify Tags in srcfile\n"
-"    -T    Check whether editing input has been terminated by line feed\n"
-"    -D    Defer editing IO; implies -V, -T\n"
-"    -i idx\n"
-"          Specify %1$s index for editing in multiplexed Ogg stream\n"
-"          (1-origin, without non-%1$s stream)\n"
 		), codec->name);
 	}
 	exit(1);
