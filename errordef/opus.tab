@@ -13,7 +13,7 @@ LIST(  2, true,  interrupted,
 LIST(  3, true,  border,
 	"unexpected page break" )
 LIST(  4, false, non_opus,
-	"not an Opus" )
+	"stream doesn't contain the codec" )
 LIST(  5, true,  bad_stream,
 	"invalid Ogg stream" )
 LIST(  6, false, version,
@@ -33,4 +33,4 @@ LIST( 12, true,  bad_content,
 LIST( 13, false, bad_tag,
 	"invalid tag format at #%d" )
 LIST( 14, false, no_target,
-	"no target Opus stream" )
+	"no target stream" )

@@ -38,10 +38,10 @@ void opuserror(int e, ...) {
 #undef LIST
 	};
 	if (msg[e].report_page) {
-		fprintf(stderr, catgets(catd, 1, 4, "Opus format error: page %u: "), opus_idx);
+		fprintf(stderr, catgets(catd, 1, 4, "%s format error: page %u: "), codec->name, opus_idx);
 	}
 	else {
-		fprintf(stderr, catgets(catd, 1, 8, "Opus format error: "));
+		fprintf(stderr, catgets(catd, 1, 8, "%s format error: "), codec->name);
 	}
 	vfprintf(stderr, catgets(catd, 3, e, msg[e].default_message), ap);
 	fputc('\n', stderr);

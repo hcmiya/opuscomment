@@ -297,10 +297,11 @@ void *retrieve_tags(void *fp_) {
 	}
 	
 	len = fread(buf, 1, 1, fp);
-	if (len && (*buf & 1)) {
+	if (codec->prog || len && (*buf & 1)) {
+		// codec->prog ← opuscomment 以外は全部パディングを保存
 		rtn->padding = tmpfile();
-		fwrite(buf, 1, 1, rtn->padding);
-		check_tagpacket_length(1);
+		fwrite(buf, 1, len, rtn->padding);
+		check_tagpacket_length(len);
 		size_t n;
 		while ((n = fread(buf, 1, STACK_BUF_LEN, fp))) {
 			fwrite(buf, 1, n, rtn->padding);
