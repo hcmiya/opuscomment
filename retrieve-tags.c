@@ -234,13 +234,12 @@ void *retrieve_tags(void *fp_) {
 	
 	struct rettag_st *rtn = calloc(1, sizeof(*rtn));
 	
-	rtread(buf, 8, fp);
-	char const *OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73";
-	if (memcmp(buf, OpusTags, 8) != 0) {
+	rtread(buf, codec->commagic_len, fp);
+	if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
 		opuserror(err_opus_bad_content);
 	}
 	FILE *fptag = rtn->tag = tmpfile();
-	fwrite(buf, 1, 8, fptag);
+	fwrite(buf, 1, codec->commagic_len, fptag);
 	
 	// ベンダ文字列
 	uint32_t len = rtchunk(fp);

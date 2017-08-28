@@ -262,6 +262,9 @@ static void parse_args(int argc, char **argv) {
 	if (O.edit == EDIT_APPEND) {
 		O.tag_ignore_picture = false;
 	}
+	if (!codec->prog) {
+		O.gain_fix = false;
+	}
 }
 
 static void interrupted(int sig) {
@@ -289,6 +292,8 @@ int main(int argc, char **argv) {
 	else {
 		program_name = program_name_default;
 	}
+	select_codec();
+	
 #ifdef NLS
 	catd = catopen("opuscomment.cat", NL_CAT_LOCALE);
 #endif

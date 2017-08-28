@@ -48,6 +48,15 @@ GLOBAL enum {
 	OPUS_SOUND,
 } opst;
 
+GLOBAL struct codec_parser {
+	char const *prog, *name;
+	size_t headmagic_len;
+	char const *headmagic;
+	void (*parse)(ogg_page*);
+	size_t commagic_len;
+	char const *commagic;
+} *codec;
+
 GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 

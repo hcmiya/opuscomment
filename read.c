@@ -20,10 +20,6 @@ static bool remove_tmp;
 static uint32_t opus_sno;
 static FILE *fpout;
 
-static char const
-	*OpusHead = "\x4f\x70\x75\x73\x48\x65\x61\x64",
-	*OpusTags = "\x4f\x70\x75\x73\x54\x61\x67\x73";
-
 void move_file(void) {
 	if (fclose(fpout) == EOF) {
 		fileerror(O.out ? O.out : outtmp);
@@ -260,7 +256,7 @@ static bool parse_header(ogg_page *og) {
 			opuserror(err_opus_non_opus);
 		}
 	}
-	if (og->body_len < 8 || memcmp(og->body, OpusHead, 8) != 0) {
+	if (og->header_len < codec->headmagic_len || memcmp(og->body, codec->headmagic, codec->headmagic_len) != 0) {
 		non_opus_appeared = true;
 		return false;
 	}
@@ -270,43 +266,7 @@ static bool parse_header(ogg_page *og) {
 		return false;
 	}
 	opus_sno = ogg_page_serialno(og);
-	if (og->body_len < 19) {
-		opuserror(err_opus_bad_content);
-	}
-	if ((og->body[8] & 0xf0) != 0) {
-		opuserror(err_opus_version);
-	}
-	if (O.gain_put) {
-		if (O.gain_q78) {
-			fprintf(stderr, "%d\n", (int16_t)oi16(*(int16_t*)(&og->body[16])));
-		}
-		else {
-			fprintf(stderr, "%.8g\n", (int16_t)oi16(*(int16_t*)(&og->body[16])) / 256.0);
-		}
-	}
-	if (O.gain_fix) {
-		int16_t gi;
-		if (O.gain_relative) {
-			int gain = (int16_t)oi16(*(int16_t*)(&og->body[16]));
-			gain += O.gain_val;
-			if (gain > 32767) {
-				gain = 32767;
-			}
-			else if (gain < -32768) {
-				gain = -32768;
-			}
-			gi = gain;
-		}
-		else {
-			gi = O.gain_val;
-		}
-		if (O.gain_not_zero && gi == 0) {
-			gi = O.gain_val_sign ? -1 : 1;
-		}
-		
-		*(int16_t*)(&og->body[16]) = oi16(gi);
-		ogg_page_checksum_set(og);
-	}
+	codec->parse(og);
 	if (O.edit != EDIT_LIST) {
 		write_page(og);
 	}

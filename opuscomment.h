@@ -8,6 +8,7 @@ void read_page(ogg_sync_state*);
 void move_file(void);
 iconv_t iconv_new(char const *to, char const *from);
 void open_output_file(void);
+void select_codec(void);
 
 #ifdef NLS
 #include <nl_types.h>
