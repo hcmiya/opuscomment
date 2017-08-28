@@ -8,7 +8,7 @@ $ errorprefix: %s = ??????
 3 "%s: "
 
 $ opuserror: 
-4 "Opus format error: page %u: "
+4 "%s format error: page %u: "
 
 $ fileerror: %1$s = file name
 5 "%s: "
@@ -20,5 +20,5 @@ $ opterror: %c = opt
 7 "-%c: "
 
 $ opuserror:
-8 "Opus format error: "
+8 "%s format error: "
 
