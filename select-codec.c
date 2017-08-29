@@ -74,7 +74,7 @@ static void theora_parse(ogg_page *og) {
 	if (og->body_len != 42) {
 		opuserror(err_opus_bad_content);
 	}
-	// major 3, minor 2, revision not 0
+	// major 3, minor 2
 	if (og->body[7] != 3 || og->body[8] != 2) {
 		opuserror(err_opus_version);
 	}
