@@ -297,7 +297,7 @@ void *retrieve_tags(void *fp_) {
 	}
 	
 	len = fread(buf, 1, 1, fp);
-	if (codec->prog || len && (*buf & 1)) {
+	if (len && (codec->prog || (*buf & 1))) {
 		// codec->prog ← opuscomment 以外は全部パディングを保存
 		rtn->padding = tmpfile();
 		fwrite(buf, 1, len, rtn->padding);

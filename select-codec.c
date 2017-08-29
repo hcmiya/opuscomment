@@ -103,12 +103,17 @@ static void daala_parse(ogg_page *og) {
 // TODO
 // Daalaの仕様文書がないのでマジックナンバー読むぐらいしかしてない
 }
+static void speex_parse(ogg_page *og) {
+	if (og->body_len != 80) opuserror(err_opus_bad_content);
+	if (oi32(*(uint32_t*)&og->body[28]) != 1) opuserror(err_opus_version);
+}
 
 static struct codec_parser set[] = {
 	{NULL, "Opus", 8, "\x4f\x70\x75\x73\x48\x65\x61\x64", opus_parse, 8, "\x4f\x70\x75\x73\x54\x61\x67\x73"},
 	{"theoracomment", "Theora", 7, "\x80" "\x74\x68\x65\x6F\x72\x61", theora_parse, 7, "\x81" "\x74\x68\x65\x6F\x72\x61"},
 	{"vorbiscomment", "Vorbis", 7, "\x1" "\x76\x6f\x72\x62\x69\x73", vorbis_parse, 7, "\x3" "\x76\x6f\x72\x62\x69\x73"},
 	{"daalacomment", "Daala", 6, "\x80" "\x64\x61\x61\x6c\x61", daala_parse, 6, "\x81" "\x64\x61\x61\x6c\x61"},
+	{"speexcomment", "Speex", 8, "\x53\x70\x65\x65\x78\x20\x20\x20", speex_parse, 0, NULL},
 	{NULL, NULL, 0, NULL, NULL, 0, NULL},
 };
 
