@@ -260,6 +260,14 @@ static bool parse_header(ogg_page *og) {
 			opuserror(err_opus_non_opus);
 		}
 	}
+	if (ogg_page_pageno(og) != 0) {
+		// BOSがあるのにページが0でない
+		opuserror(err_opus_bad_stream);
+	}
+	if (ogg_page_granulepos(og) != 0) {
+		// ヘッダのgranuleposは必ず0
+		opuserror(err_opus_bad_stream);
+	}
 	if (og->body_len < 8 || memcmp(og->body, OpusHead, 8) != 0) {
 		non_opus_appeared = true;
 		return false;
