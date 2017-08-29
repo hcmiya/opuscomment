@@ -74,4 +74,4 @@ MITライセンス
 
 ### libogg
 
-LICENSE.liboggを参照
+[libogg](https://www.xiph.org/ogg/)は[Xiph.Org Foundation](https://www.xiph.org/)の著作物です。ライセンスはLICENSE.liboggを参照下さい。
