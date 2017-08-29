@@ -4,21 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <getopt.h>
-#include <math.h>
-#include <locale.h>
-#include <stdarg.h>
-#include <iconv.h>
-#include <langinfo.h>
-#include <time.h>
-#include <signal.h>
 #include <errno.h>
 #include <limits.h>
+#include <arpa/inet.h>
 
 #include "opuscomment.h"
 #include "global.h"
 
-static void opus_parse(ogg_page *og) {
+static void check_opus(ogg_page *og) {
 	if (og->body_len < 19) {
 		opuserror(err_opus_bad_content);
 	}
@@ -70,7 +63,7 @@ static void opus_parse(ogg_page *og) {
 	}
 }
 
-static void theora_parse(ogg_page *og) {
+static void check_theora(ogg_page *og) {
 	if (og->body_len != 42) {
 		opuserror(err_opus_bad_content);
 	}
@@ -80,7 +73,7 @@ static void theora_parse(ogg_page *og) {
 	}
 }
 
-static void vorbis_parse(ogg_page *og) {
+static void check_vorbis(ogg_page *og) {
 // 0-6 "\x1" "\x76\x6f\x72\x62\x69\x73" 
 /*7-10   1) [vorbis_version] = read 32 bits as unsigned integer
 11   2) [audio_channels] = read 8 bit integer as unsigned
@@ -99,21 +92,45 @@ static void vorbis_parse(ogg_page *og) {
 	if (!og->body[29]) opuserror(err_opus_bad_content);
 }
 
-static void daala_parse(ogg_page *og) {
+static void check_daala(ogg_page *og) {
 // TODO
 // Daalaの仕様文書がないのでマジックナンバー読むぐらいしかしてない
 }
-static void speex_parse(ogg_page *og) {
+
+static void check_speex(ogg_page *og) {
 	if (og->body_len != 80) opuserror(err_opus_bad_content);
 	if (oi32(*(uint32_t*)&og->body[28]) != 1) opuserror(err_opus_version);
 }
 
+static void check_pcm(ogg_page *og) {
+	if (og->body_len != 28) opuserror(err_opus_bad_content);
+	if (htons(*(uint16_t*)&og->body[8]) != 0 || htons(*(uint16_t*)&og->body[10]) != 0) {
+		opuserror(err_opus_version);
+	}
+}
+
+static void check_uvs(ogg_page *og) {
+	if (og->body_len != 48) opuserror(err_opus_bad_content);
+	if (htons(*(uint16_t*)&og->body[8]) != 0 || htons(*(uint16_t*)&og->body[10]) != 0) {
+		opuserror(err_opus_version);
+	}
+}
+
 static struct codec_parser set[] = {
-	{NULL, "Opus", 8, "\x4f\x70\x75\x73\x48\x65\x61\x64", opus_parse, 8, "\x4f\x70\x75\x73\x54\x61\x67\x73"},
-	{"theoracomment", "Theora", 7, "\x80" "\x74\x68\x65\x6F\x72\x61", theora_parse, 7, "\x81" "\x74\x68\x65\x6F\x72\x61"},
-	{"vorbiscomment", "Vorbis", 7, "\x1" "\x76\x6f\x72\x62\x69\x73", vorbis_parse, 7, "\x3" "\x76\x6f\x72\x62\x69\x73"},
-	{"daalacomment", "Daala", 6, "\x80" "\x64\x61\x61\x6c\x61", daala_parse, 6, "\x81" "\x64\x61\x61\x6c\x61"},
-	{"speexcomment", "Speex", 8, "\x53\x70\x65\x65\x78\x20\x20\x20", speex_parse, 0, NULL},
+	// "OpusHead", "OpusTags"
+	{NULL, "Opus", 8, "\x4f\x70\x75\x73\x48\x65\x61\x64", check_opus, 8, "\x4f\x70\x75\x73\x54\x61\x67\x73"},
+	// "\x80" "theora", "\x81" "theora"
+	{"theoracomment", "Theora", 7, "\x80" "\x74\x68\x65\x6F\x72\x61", check_theora, 7, "\x81" "\x74\x68\x65\x6F\x72\x61"},
+	// "\x1" "vorbis", "\x3" "vorbis"
+	{"vorbiscomment", "Vorbis", 7, "\x1" "\x76\x6f\x72\x62\x69\x73", check_vorbis, 7, "\x3" "\x76\x6f\x72\x62\x69\x73"},
+	// "\x80" "daala", "\x81" "daala"
+	{"daalacomment", "Daala", 6, "\x80" "\x64\x61\x61\x6c\x61", check_daala, 6, "\x81" "\x64\x61\x61\x6c\x61"},
+	// "Speex   ", NULL
+	{"speexcomment", "Speex", 8, "\x53\x70\x65\x65\x78\x20\x20\x20", check_speex, 0, NULL},
+	// "PCM     ", NULL
+	{"oggpcmcomment", "PCM", 8, "\x50\x43\x4d\x20\x20\x20\x20\x20", check_pcm, 0, NULL},
+	// "UVS     ", NULL
+	{"ogguvscomment", "UVS", 8, "\x55\x56\x53\x20\x20\x20\x20\x20", check_uvs, 0, NULL},
 	{NULL, NULL, 0, NULL, NULL, 0, NULL},
 };
 
