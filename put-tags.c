@@ -25,7 +25,7 @@ static void u8error(int nth) {
 }
 
 static FILE *putdest;
-static void put_bin(char const *buf, size_t len) {
+static void put_bin(uint8_t const *buf, size_t len) {
 	size_t ret = fwrite(buf, 1, len, putdest);
 	if (ret != len) {
 		puterror();
@@ -96,9 +96,9 @@ void *put_tags(void *fp_) {
 	if (!O.tag_raw) {
 		cd = iconv_new(nl_langinfo(CODESET), "UTF-8");
 	}
-	size_t buflenunit = (1 << 13);
-	size_t buflen = buflenunit * 3;
-	uint8_t *buf = malloc(buflen);
+	size_t buflenunit = STACK_BUF_LEN / 3;
+	size_t buflen = STACK_BUF_LEN;
+	uint8_t buf[STACK_BUF_LEN];
 	int nth = 1;
 	uint8_t* (*esc)(uint8_t*, uint8_t*, size_t) = O.tag_escape ? esc_vc : esc_oc;
 	uint8_t *raw = buf + buflenunit * 2;
@@ -151,8 +151,8 @@ void *put_tags(void *fp_) {
 			put_bin("\x0a", 1);
 		}
 		else {
-			strcpy(buf, "\x0a");
-			left = 2, remain = 200;
+			memcpy(buf, "\x0a", 2);
+			left = 2, remain = 128;
 			u8 = buf, ls = buf + 2;
 			if (iconv(cd, (char**)&u8, &left, &ls, &remain) == (size_t)-1) {
 				oserror();
