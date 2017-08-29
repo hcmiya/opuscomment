@@ -342,7 +342,7 @@ static bool test_non_opus(ogg_page *og) {
 		if (leave_zero) {
 			opuserror(err_opus_bad_stream);
 		}
-		if (!ogg_page_bos(og) || ogg_page_eos(og)) {
+		if (!ogg_page_bos(og) || ogg_page_eos(og) || ogg_page_granulepos(og) != 0) {
 			opuserror(err_opus_bad_stream);
 		}
 	}
