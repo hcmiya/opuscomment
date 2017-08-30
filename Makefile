@@ -29,3 +29,8 @@ endianness.c: endianness-check.sh
 
 clean:
 	rm endianness.c opuscomment ocd 2>/dev/null || :
+
+updoc: doc/opuscomment.ja.1 doc/opuschgain.ja.1 ;
+
+doc/opuscomment.ja.1 doc/opuschgain.ja.1: ../ocdoc/opuscomment-current.ja.sgml
+	../ocdoc/tr.sh

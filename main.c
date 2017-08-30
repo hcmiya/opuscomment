@@ -39,6 +39,9 @@ static void usage(void) {
 "    -l    List mode\n"
 "    -a    Append mode\n"
 "    -w    Write mode\n"
+"    -i idx\n"
+"          Specify %2$s index for editing in multiplexed Ogg stream\n"
+"          (1-origin, without non-%2$s stream)\n"
 "    -R    Assume editing IO to be encoded in UTF-8\n"
 "    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
 "    -t NAME=VALUE\n"
@@ -54,9 +57,6 @@ static void usage(void) {
 "    -V    Verify Tags in srcfile\n"
 "    -T    Check whether editing input has been terminated by line feed\n"
 "    -D    Defer editing IO; implies -V, -T\n"
-"    -i idx\n"
-"          Specify %2$s index for editing in multiplexed Ogg stream\n"
-"          (1-origin, without non-%2$s stream)\n"
 	), program_name, codec->name);
 	if (!codec->prog) {
 		fprintf(stderr, catgets(catd, 6, 5,
@@ -69,8 +69,8 @@ static void usage(void) {
 "    -r    Specify that the gain is relative to internal value\n"
 "    -1    When output gain becomes 0 by converting to internal representation,\n"
 "          set [+-]1/256 dB instead\n"
-"    -v    Put output gain to stderr\n"
 "    -Q    Use Q7.8 format for editing output gain\n"
+"    -v    Put output gain to stderr\n"
 		), codec->name);
 	}
 	exit(1);
