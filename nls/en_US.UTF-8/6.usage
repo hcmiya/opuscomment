@@ -13,6 +13,7 @@ $ option: これはfputsの引数なので%はそのまま出力される
     -l    List mode\n\
     -a    Append mode\n\
     -w    Write mode\n\
+    -h    Print this message and exit\n\
     -R    Assume editing IO to be encoded in UTF-8\n\
     -e    Use escape sequence; \\\\, \\n, \\r and \\0\n\
     -g gain\n\

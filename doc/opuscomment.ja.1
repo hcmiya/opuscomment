@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2017-09-01" "1.3.4" "opuscomment 1.3マニュアル"
+.TH "OPUSCOMMENT" "1" "2017-09-01" "1.3.6" "opuscomment 1.3マニュアル"
 
 .SH 名前
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
@@ -31,6 +31,9 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 .TP
 \fB-w\fR
 タグ書き込みモード
+.TP
+\fB-h\fR
+使い方を表示して終了する
 .TP
 \fB-i \fIidx\fB\fR
 多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している
@@ -89,6 +92,8 @@ vorbis commentは一定の形式が定められているが、Opusの内部構�
 .TP
 \fB-D\fR
 出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また\fB-V\fRを暗黙的に指定する。書き込みモード時、空の編集入力をエラーとする。また\fB-T\fRを暗黙的に指定する
+\fB-q\fR
+何の効力も持たない。指定してもエラーにさせないために存在している。(\fBvorbiscomment\fR(1)互換)
 .SH "環境変数"
 .TP
 \fBLANG\fR

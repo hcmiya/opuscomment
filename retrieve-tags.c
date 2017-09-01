@@ -246,7 +246,7 @@ void *retrieve_tags(void *fp_) {
 	uint32_t len = rtchunk(fp);
 	*(uint32_t*)buf = oi32(len);
 	fwrite(buf, 4, 1, fptag);
-	check_tagpacket_length(codec->commagic_len + 4);
+	check_tagpacket_length(12);
 	while (len) {
 		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
 		fwrite(buf, 1, rl, fptag);
