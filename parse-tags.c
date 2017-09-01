@@ -345,24 +345,34 @@ void *split(void *fp_) {
 }
 
 void *parse_tags(void* nouse_) {
-	from_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
-	if (from_file) {
+	bool do_read = true;
+	if (tagnum) {
+		// -tでタグを追加した場合、-cが無ければstdinを使わない
+		if (!O.tag_filename) {
+			do_read = false;
+		}
+	}
+	if (O.tag_filename && strcmp(O.tag_filename, "-") != 0) {
+		from_file = true;
 		FILE *tmp = freopen(O.tag_filename, "r", stdin);
 		if (!tmp) {
 			fileerror(O.tag_filename);
 		}
 	}
 	
-	// UTF-8化された文字列をチャンク化する処理をスレッド化(化が多い)
-	int pfd[2];
-	pipe(pfd);
-	FILE *fpu8 = fdopen(pfd[0], "r");
-	pthread_t split_thread;
-	pthread_create(&split_thread, NULL, split, fpu8);
-	
-	// 本スレッドはstdinをUTF-8化する
-	toutf8(pfd[1]);
-	pthread_join(split_thread, NULL);
+	if (do_read) {
+		// UTF-8化された文字列をチャンク化する処理をスレッド化(化が多い)
+		int pfd[2];
+		pipe(pfd);
+		FILE *fpu8 = fdopen(pfd[0], "r");
+		pthread_t split_thread;
+		pthread_create(&split_thread, NULL, split, fpu8);
+		
+		// 本スレッドはstdinをUTF-8化する
+		toutf8(pfd[1]);
+		pthread_join(split_thread, NULL);
+	}
+	fclose(stdin);
 	
 	struct edit_st *rtn = calloc(1, sizeof(*rtn));
 	rtn->str = strstore;
