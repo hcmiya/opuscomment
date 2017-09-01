@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2017-09-01" "1.4.2" "opuscomment 1.4マニュアル"
+.TH "OPUSCOMMENT" "1" "2017-09-02" "1.4.3" "opuscomment 1.4マニュアル"
 
 .SH 名前
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
@@ -31,6 +31,9 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 .TP
 \fB-w\fR
 タグ書き込みモード
+.TP
+\fB-h\fR
+使い方を表示して終了する
 .TP
 \fB-i \fIidx\fB\fR
 多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している
@@ -61,7 +64,7 @@ Opusファイル内のタグの項目名に小文字が含まれていた場合�
 \fB-V\fR
 出力モード時、Opusファイル内のタグに対して書式の正当性を検証する
 
-vorbis commentは一定の形式が定められているが、Opusの内部構造的には任意のバイナリ列を保存することが出来るようになっている。このオプションが無い場合は、内部に保存されたレコードがUTF-8として妥当であればvorbis commentの形式を満たさなくてもそれを尊重してそのまま出力しようとする。しかしこの動作は\fBopuscomment\fRをはじめ他のフィルタとの連携に支障をきたしてしまうだろう。これを防ぐために信頼できないOpusファイルに対して編集を行う際は\fB-V\fRを使うのが望ましい。\fB-D\fRも参照のこと。
+vorbis commentは一定の書式が定められているが、Opusの内部構造としては任意のバイナリ列を保存することが出来る。このオプションが無い場合は、内部に保存されたレコードがUTF-8として妥当であればvorbis commentの形式を満たさなくてもそれを尊重してそのまま出力しようとする。しかしこの動作は\fBopuscomment\fRをはじめ他のフィルタとの連携に支障を来す可能性が高い。そのためそこでのエラーを防ぐ・あるいはエラー検出をさせるために信頼できないOpusファイルに対して編集を行う際に\fB-V\fRを使うと便利である。\fB-D\fRも参照のこと。
 .TP
 \fB-T\fR
 編集入力が改行で終わっているか確認する
@@ -89,6 +92,9 @@ vorbis commentは一定の形式が定められているが、Opusの内部構�
 .TP
 \fB-v\fR
 出力ゲインの値を標準エラー出力に出力する
+.TP
+\fB-q\fR
+何の効力も持たない。指定してもエラーにさせないために存在している。(\fBvorbiscomment\fR(1)互換)
 .SH "環境変数"
 .TP
 \fBLANG\fR

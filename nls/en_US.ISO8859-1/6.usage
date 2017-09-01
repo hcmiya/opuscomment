@@ -10,12 +10,14 @@ $ %1$s = program name %2$s = codec name, e.g. Opus, Theora, ...
 4 `\
 Synopsys:\n\
     %1$s [-l] [-i idx] [-DepQRUv] srcfile\n\
-    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n\
+    %1$s {-a|-w} [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n\
+    %1$s [-h]\n\
 \n\
 Options:\n\
     -l    List mode\n\
     -a    Append mode\n\
     -w    Write mode\n\
+    -h    Print this message and exit\n\
     -i idx\n\
           Specify %2$s index for editing in multiplexed Ogg stream\n\
           (1-origin, without non-%2$s stream)\n\

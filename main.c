@@ -33,12 +33,14 @@ static void usage(void) {
 	fprintf(stderr, catgets(catd, 6, 4,
 "Synopsys:\n"
 "    %1$s [-l] [-i idx] [-DepQRUv] srcfile\n"
-"    %1$s -a|-w [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
+"    %1$s {-a|-w} [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
+"    %1$s [-h]\n"
 "\n"
 "Options:\n"
 "    -l    List mode\n"
 "    -a    Append mode\n"
 "    -w    Write mode\n"
+"    -h    Print this message and exit\n"
 "    -i idx\n"
 "          Specify %2$s index for editing in multiplexed Ogg stream\n"
 "          (1-origin, without non-%2$s stream)\n"
@@ -89,7 +91,7 @@ static void parse_args(int argc, char **argv) {
 	bool added_tag = false, del_tag = false;
 	int gainfmt;
 	double gv;
-	while ((c = getopt(argc, argv, "lwaReg:s:0r1vQpUc:t:d:VTDi:")) != -1) {
+	while ((c = getopt(argc, argv, "lwaReg:s:0r1vQpUc:t:d:VTDi:hq")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
@@ -110,10 +112,15 @@ static void parse_args(int argc, char **argv) {
 			}
 			break;
 			
+		case 'h':
+			usage();
+			break;
+			
 		case '?':
 			exit(1);
 			break;
 		}
+		
 		switch (c) {
 		case 'r':
 			O.gain_relative = true;
@@ -204,6 +211,10 @@ static void parse_args(int argc, char **argv) {
 				}
 				O.target_idx = (int)val;
 			}
+			break;
+			
+		case 'q':
+			// 何もしない
 			break;
 		}
 	}
