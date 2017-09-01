@@ -66,6 +66,22 @@ opuscommentはX/Open NLSを使った地域化を実装しています。`nls/`�
     heredoc
     chmod +x $PREFIX/bin/opuscomment
 
+### バイナリの別名
+
+`opuscomment`はバイナリの名前で編集する対象のコーデックを変更する機能があります。対応コーデックは以下の表の通りです。インストールの際はopuscommentにリンクを張ると良いでしょう。
+
+| arvg[0] | コーデック |
+|--|--|
+| (下記以外の全て) | Opus |
+| theoracomment | Theora |
+| vorbiscomment | Vorbis |
+| daalacomment | Daala |
+| speexcomment | Speex |
+| oggpcmcomment | PCM |
+| ogguvscomment | UVS |
+
+上記のいずれも編集が出来るのはOggに含まれている場合のみです。
+
 ## ライセンス
 
 ### opuscomment
