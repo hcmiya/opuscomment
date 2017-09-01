@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2017-08-30" "1.4.2" "opuscomment 1.4マニュアル"
+.TH "OPUSCOMMENT" "1" "2017-09-01" "1.4.2" "opuscomment 1.4マニュアル"
 
 .SH 名前
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
@@ -102,52 +102,6 @@ vorbis commentは一定の形式が定められているが、Opusの内部構�
 .SH "終了ステータス"
 .PP
 Opusファイルの編集に成功した場合は0、オプションや編集タグ入力の文法に誤りがあった場合は1、Opusファイルのフォーマットに誤りがあった場合は2、ファイル入出力などシステム起因のエラーが発生した場合は3を返す。
-.SH "文法"
-.PP
-\fBopuscomment\fRで扱うタグ入出力の文法について、個々のレコードはvorbis commentの内部形式と同じで\fINAME=VALUE\fRのようにキー名と値が=で繋がれていて、レコード同士は改行で区切られている。例えば
-.PP
-
-.nf
-TITLE=インターネット
-ARTIST=荒川智則
-.fi
-.PP
-但し、\fIVALUE\fRはそれ自体に改行を含む可能性があり、\fBopuscomment\fRは2つの方法で改行をエスケープする。
-.TP
-\fB1. opuscommentが定義する方法\fR
-改行の次にタブが続いた場合、改行後の行は先頭のタブを除き前の行の値の続きとして扱う
-.TP
-\fB2. -eを用いた時のvorbiscommentとの互換のある方法\fR
-バックスラッシュを使ったエスケープシーケンスで改行を表す
-.PP
-\fBopuscomment\fRではこのいずれかの改行のエスケープが常に適用されており、適切なオプション指定と編集があれば改行が欠落することはない。具体的に、次の内容を持つレコード:
-.PP
-.TP
-\fB項目名\fR
-COMMENT
-.TP
-\fB内容\fR
-.nf
-荒川智則のライブ
-2017-08-12録音
-.fi
-.PP
-これは1つ目の\fBopuscomment\fRの方法だと
-.PP
-
-.nf
-COMMENT=荒川智則のライブ<newline>
-<tab>2017-08-12録音
-.fi
-.PP
-2つ目のvorbiscomment互換形式だと
-.PP
-
-.nf
-COMMENT=荒川智則のライブ\\n2017-08-12録音
-.fi
-.PP
-となる。
 .SH "例"
 .SS "基本"
 .PP
@@ -195,6 +149,52 @@ mv -f animal.txt.1 animal.txt
 # 一時ファイルを作らなくてもsome.opusからDISCTOTALとDISCNUMBERタグを消す編集が意図通り適用される。
 opuscomment -e some.opus |grep -vE '^DISC(TOTAL|NUMBER)=' |opuscomment -we some.opus
 .fi
+.SH "文法"
+.PP
+\fBopuscomment\fRで扱うタグ入出力の文法について、個々のレコードはvorbis commentの内部形式と同じで\fINAME=VALUE\fRのようにキー名と値が=で繋がれていて、レコード同士は改行で区切られている。例えば
+.PP
+
+.nf
+TITLE=インターネット
+ARTIST=荒川智則
+.fi
+.PP
+但し、\fIVALUE\fRはそれ自体に改行を含む可能性があり、\fBopuscomment\fRは2つの方法で改行をエスケープする。
+.TP
+\fB1. opuscommentが定義する方法\fR
+改行の次にタブが続いた場合、改行後の行は先頭のタブを除き前の行の値の続きとして扱う
+.TP
+\fB2. -eを用いた時のvorbiscommentとの互換のある方法\fR
+バックスラッシュを使ったエスケープシーケンスで改行を表す
+.PP
+\fBopuscomment\fRではこのいずれかの改行のエスケープが常に適用されており、適切なオプション指定と編集があれば改行が欠落することはない。具体的に、次の内容を持つレコード:
+.PP
+.TP
+\fB項目名\fR
+COMMENT
+.TP
+\fB内容\fR
+.nf
+荒川智則のライブ
+2017-08-12録音
+.fi
+.PP
+これは1つ目の\fBopuscomment\fRの方法だと
+.PP
+
+.nf
+COMMENT=荒川智則のライブ<newline>
+<tab>2017-08-12録音
+.fi
+.PP
+2つ目のvorbiscomment互換形式だと
+.PP
+
+.nf
+COMMENT=荒川智則のライブ\\n2017-08-12録音
+.fi
+.PP
+となる。
 .SH "注意"
 .SS "OPUSCOMMENT方式のエスケープで編集する場合"
 .PP
