@@ -114,25 +114,30 @@ static void toutf8(int fdu8) {
 static FILE *strstore, *strcount;
 static size_t editlen;
 
-static bool first_call = true;
+static bool first_call = true, ignore_picture = false;
 static uint32_t recordlen;
 static void finalize_record(void) {
-	fwrite(&recordlen, 4, 1, strcount);
-	tagnum++;
+	if (!ignore_picture) {
+		fwrite(&recordlen, 4, 1, strcount);
+		tagnum++;
+	}
 	first_call = true;
 }
 
-static size_t wsplen;
+static size_t wsplen, fieldlen;
 static bool on_field, keep_blank;
+static uint8_t field_pending[22];
 static bool test_blank(uint8_t *line, size_t n, bool lf) {
 	if (first_call) {
 		// = で始まってたらすぐエラー(575)
 		if (*line == 0x3d) err_nosep();
 		first_call = false;
 		on_field = true;
+		fieldlen = 0;
 		keep_blank = true;
 		wsplen = 0;
 		recordlen = 0;
+		ignore_picture = false;
 	}
 	if (keep_blank) {
 		size_t i;
@@ -171,11 +176,14 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 		if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
 			exceed_output_limit();
 		}
-		if (wsplen) {
+		fieldlen = recordlen = wsplen;
+		if (wsplen <= 22) {
+			memset(field_pending, 0x20, wsplen);
+		}
+		else {
 			// 空白と見做していた分を書き込み
 			uint8_t buf[STACK_BUF_LEN];
 			memset(buf, 0x20, STACK_BUF_LEN);
-			recordlen = wsplen;
 			while (wsplen) {
 				size_t wlen = wsplen > STACK_BUF_LEN ? STACK_BUF_LEN : wsplen;
 				fwrite(buf, 1, wlen, strstore);
@@ -187,12 +195,79 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 }
 
 static void append_buffer(uint8_t *line, size_t n) {
+	if (ignore_picture) return;
 	editlen += n;
 	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		exceed_output_limit();
 	}
 	recordlen += n;
 	fwrite(line, 1, n, strstore);
+}
+
+static bool count_field_len(uint8_t *line, size_t n) {
+	uint8_t *p = field_pending + fieldlen;
+	size_t add;
+	bool filled;
+	if (on_field) {
+		add = n - fieldlen;
+	}
+	else {
+		size_t preeq = (uint8_t*)memchr(line, 0x3d, n) - line;
+		add = preeq - fieldlen;
+		filled = true;
+	}
+	if (fieldlen + add <= 22) {
+		memcpy(&field_pending[fieldlen], line, add);
+		filled = !on_field;
+	}
+	else {
+		memcpy(&field_pending[fieldlen], line, 22 - fieldlen);
+		filled = true;
+	}
+	fieldlen += add;
+	return filled;
+}
+
+static void test_mbp(uint8_t **line, size_t *n) {
+	if (fieldlen > 22) {
+		append_buffer(*line, *n);
+	}
+	else {
+		bool filled;
+		size_t before = fieldlen;
+		filled = count_field_len(*line, *n);
+		size_t add = fieldlen - before;
+		if (filled) {
+			size_t w;
+			// M_B_Pを比較する分のバッファが埋まったか項目名が決まった場合
+			if (fieldlen > 22) {
+				if (add + before > 22) {
+					add = 22 - before;
+				}
+				w = 22;
+			}
+			else if (fieldlen == 22 && !on_field) {
+				uint8_t const *mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d";
+				if (codec->type == CODEC_FLAC &&
+					memcmp(field_pending, mbp, 22) == 0) {
+					// FLACでM_B_Pを入力した時は今の処無視しておく
+					ignore_picture = true;
+					editlen -= 4;
+					w = 0;
+				}
+				else {
+					w = 22;
+				}
+			}
+			else {
+				w = fieldlen;
+			}
+			append_buffer(field_pending, w);
+			*line += add;
+			*n -= add;
+			append_buffer(*line, *n);
+		}
+	}
 }
 
 static void line_oc(uint8_t *line, size_t n, bool lf) {
@@ -219,21 +294,24 @@ static void line_oc(uint8_t *line, size_t n, bool lf) {
 	if (on_field) {
 		if(!test_tag_field(line, n, true, &on_field, NULL)) err_name();
 		if (on_field && lf) err_name();
+		test_mbp(&line, &n);
 	}
-	else if (afterlf) {
-		afterlf = false;
-		if (*line == 0x9) {
-			*line = 0xa;
+	else {
+		if (afterlf) {
+			afterlf = false;
+			if (*line == 0x9) {
+				*line = 0xa;
+			}
+			else {
+				// 新行が<tab>で始まってなかったら前の行のレコード確定作業をして再帰
+				finalize_record();
+				if (lf) n++;
+				line_oc(line, n, lf);
+				return;
+			}
 		}
-		else {
-			// 新行が<tab>で始まってなかったら前の行のレコード確定作業をして再帰
-			finalize_record();
-			if (lf) n++;
-			line_oc(line, n, lf);
-			return;
-		}
+		append_buffer(line, n);
 	}
-	append_buffer(line, n);
 	if (lf) {
 		afterlf = true;
 	}
@@ -307,8 +385,8 @@ static void line_vc(uint8_t *line, size_t n, bool lf) {
 	if (on_field) {
 		if(!test_tag_field(line, n, true, &on_field, NULL)) err_name();
 		if (on_field && lf) err_nosep();
+		test_mbp(&line, &n);
 	}
-	append_buffer(line, n);
 	if (lf) {
 		finalize_record();
 	}

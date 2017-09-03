@@ -226,6 +226,7 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 }
 
 void *put_tags(void*);
+void flac_next_is_audio(void);
 void *retrieve_tags(void *fp_) {
 	// parse_header_border() からスレッド化された
 	// fp はタグパケットの読み込みパイプ
@@ -234,12 +235,25 @@ void *retrieve_tags(void *fp_) {
 	
 	struct rettag_st *rtn = calloc(1, sizeof(*rtn));
 	
-	rtread(buf, codec->commagic_len, fp);
-	if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
-		opuserror(err_opus_bad_content);
-	}
 	FILE *fptag = rtn->tag = tmpfile();
-	fwrite(buf, 1, codec->commagic_len, fptag);
+	if (codec->type == CODEC_FLAC) {
+		rtread(buf, 4, fp);
+		if (buf[0] & 0x7f != 4) {
+			opuserror(err_opus_bad_content);
+		}
+		if (buf[0] & 0x80) {
+			flac_next_is_audio();
+		}
+		// 1-3バイト目はネイティブFLACによるヘッダのバイト数が格納されるが
+		// Oggパケットを代わりに使うので無視
+	}
+	else {
+		rtread(buf, codec->commagic_len, fp);
+		if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
+			opuserror(err_opus_bad_content);
+		}
+		fwrite(buf, 1, codec->commagic_len, fptag);
+	}
 	
 	// ベンダ文字列
 	uint32_t len = rtchunk(fp);

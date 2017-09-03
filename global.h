@@ -42,13 +42,18 @@ GLOBAL struct {
 } O;
 
 GLOBAL enum {
-	OPUS_HEADER,
-	OPUS_HEADER_BORDER,
-	OPUS_COMMENT,
-	OPUS_SOUND,
+	PAGE_INFO,
+	PAGE_INFO_BORDER,
+	PAGE_COMMENT,
+	PAGE_SOUND,
 } opst;
 
 GLOBAL struct codec_parser {
+	enum {
+		CODEC_OPUS,
+		CODEC_COMMON,
+		CODEC_FLAC,
+	} type;
 	char const *prog, *name;
 	size_t headmagic_len;
 	char const *headmagic;
@@ -60,7 +65,8 @@ GLOBAL struct codec_parser {
 GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
-GLOBAL uint32_t opus_idx;
+GLOBAL uint32_t opus_idx, opus_sno;
+GLOBAL bool leave_zero, non_opus_appeared;
 GLOBAL bool error_on_thread;
 
 GLOBAL FILE *fpopus;

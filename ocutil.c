@@ -5,6 +5,9 @@
 #include <ogg/ogg.h>
 #include <stdbool.h>
 
+#include "global.h"
+#include "error.h"
+
 static bool test_tag_field_keepcase(uint8_t *line, size_t n, bool *on_field) {
 	size_t i;
 	bool valid = true;
@@ -45,6 +48,55 @@ size_t fill_buffer(void *buf, size_t left, size_t buflen, FILE *fp) {
 	size_t readlen = fread(buf, 1, filllen, fp);
 	return filllen;
 }
+
+bool test_non_opus(ogg_page *og) {
+	if (ogg_page_serialno(og) == opus_sno) {
+		if (ogg_page_pageno(og) != opus_idx) {
+			opuserror(err_opus_discontinuous, ogg_page_pageno(og), opus_idx);
+		}
+		return true;
+	}
+	non_opus_appeared = true;
+	
+	int pno = ogg_page_pageno(og);
+	if (pno == 0) {
+		if (leave_zero) {
+			opuserror(err_opus_bad_stream);
+		}
+		if (!ogg_page_bos(og) || ogg_page_eos(og) || ogg_page_granulepos(og) != 0) {
+			opuserror(err_opus_bad_stream);
+		}
+	}
+	else if (pno == 1) {
+		// 複数論理ストリームの先頭は全て0で始まるため、何かが1ページ目を始めたら今後0ページ目は来ないはずである。
+		leave_zero = true;
+	}
+	else {
+		if (!leave_zero) {
+			// 他で1ページ目が始まってないのに2ページ目以上が来た場合
+			opuserror(err_opus_bad_stream);
+		}
+	}
+	
+	if (pno && ogg_page_bos(og)) {
+		// Opusが続いているストリーム途中でBOSが来るはずがない
+		opuserror(err_opus_bad_stream);
+	}
+	return false;
+}
+
+void write_page_g(ogg_page *og, FILE *fp) {
+	size_t ret;
+	ret = fwrite(og->header, 1, og->header_len, fp);
+	if (ret != og->header_len) {
+		oserror();
+	}
+	ret = fwrite(og->body, 1, og->body_len, fp);
+	if (ret != og->body_len) {
+		oserror();
+	}
+}
+
 
 #if _POSIX_C_SOURCE < 200809L
 size_t strnlen(char const *src, size_t n) {

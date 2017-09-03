@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
 		read_page(&oy);
 	}
 	
-	if (opst < OPUS_SOUND) {
+	if (opst < PAGE_SOUND) {
 		opuserror(err_opus_interrupted);
 	}
 	

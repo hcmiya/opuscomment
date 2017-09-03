@@ -116,22 +116,26 @@ static void check_uvs(ogg_page *og) {
 	}
 }
 
+void check_flac(ogg_page *og);
+
 static struct codec_parser set[] = {
 	// "OpusHead", "OpusTags"
-	{NULL, "Opus", 8, "\x4f\x70\x75\x73\x48\x65\x61\x64", check_opus, 8, "\x4f\x70\x75\x73\x54\x61\x67\x73"},
+	{CODEC_OPUS, NULL, "Opus", 8, "\x4f\x70\x75\x73\x48\x65\x61\x64", check_opus, 8, "\x4f\x70\x75\x73\x54\x61\x67\x73"},
 	// "\x80" "theora", "\x81" "theora"
-	{"theoracomment", "Theora", 7, "\x80" "\x74\x68\x65\x6F\x72\x61", check_theora, 7, "\x81" "\x74\x68\x65\x6F\x72\x61"},
+	{CODEC_COMMON, "theoracomment", "Theora", 7, "\x80" "\x74\x68\x65\x6F\x72\x61", check_theora, 7, "\x81" "\x74\x68\x65\x6F\x72\x61"},
 	// "\x1" "vorbis", "\x3" "vorbis"
-	{"vorbiscomment", "Vorbis", 7, "\x1" "\x76\x6f\x72\x62\x69\x73", check_vorbis, 7, "\x3" "\x76\x6f\x72\x62\x69\x73"},
+	{CODEC_COMMON, "vorbiscomment", "Vorbis", 7, "\x1" "\x76\x6f\x72\x62\x69\x73", check_vorbis, 7, "\x3" "\x76\x6f\x72\x62\x69\x73"},
 	// "\x80" "daala", "\x81" "daala"
-	{"daalacomment", "Daala", 6, "\x80" "\x64\x61\x61\x6c\x61", check_daala, 6, "\x81" "\x64\x61\x61\x6c\x61"},
+	{CODEC_COMMON, "daalacomment", "Daala", 6, "\x80" "\x64\x61\x61\x6c\x61", check_daala, 6, "\x81" "\x64\x61\x61\x6c\x61"},
 	// "Speex   ", NULL
-	{"speexcomment", "Speex", 8, "\x53\x70\x65\x65\x78\x20\x20\x20", check_speex, 0, NULL},
+	{CODEC_COMMON, "speexcomment", "Speex", 8, "\x53\x70\x65\x65\x78\x20\x20\x20", check_speex, 0, NULL},
 	// "PCM     ", NULL
-	{"oggpcmcomment", "PCM", 8, "\x50\x43\x4d\x20\x20\x20\x20\x20", check_pcm, 0, NULL},
+	{CODEC_COMMON, "oggpcmcomment", "PCM", 8, "\x50\x43\x4d\x20\x20\x20\x20\x20", check_pcm, 0, NULL},
 	// "UVS     ", NULL
-	{"ogguvscomment", "UVS", 8, "\x55\x56\x53\x20\x20\x20\x20\x20", check_uvs, 0, NULL},
-	{NULL, NULL, 0, NULL, NULL, 0, NULL},
+	{CODEC_COMMON, "ogguvscomment", "UVS", 8, "\x55\x56\x53\x20\x20\x20\x20\x20", check_uvs, 0, NULL},
+	// "\x7fFLAC", (variable)
+	{CODEC_FLAC, "flaccomment", "FLAC", 5, "\x7f\x46\x4C\x41\x43", check_flac, 0, NULL},
+	{0, NULL, NULL, 0, NULL, NULL, 0, NULL},
 };
 
 void select_codec(void) {
