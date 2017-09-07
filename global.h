@@ -45,6 +45,7 @@ GLOBAL enum {
 	PAGE_INFO,
 	PAGE_INFO_BORDER,
 	PAGE_COMMENT,
+	PAGE_OTHER_METADATA,
 	PAGE_SOUND,
 } opst;
 
@@ -65,11 +66,11 @@ GLOBAL struct codec_parser {
 GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
-GLOBAL uint32_t opus_idx, opus_sno;
+GLOBAL uint32_t opus_idx, opus_sno, opus_idx_diff;
 GLOBAL bool leave_zero, non_opus_appeared;
 GLOBAL bool error_on_thread;
 
-GLOBAL FILE *fpopus;
+GLOBAL FILE *fpopus, *fpout;
 
 #ifdef NLS
 #include <nl_types.h>

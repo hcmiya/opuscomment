@@ -7,6 +7,7 @@
 
 #include "global.h"
 #include "error.h"
+#include "ocutil.h"
 
 static bool test_tag_field_keepcase(uint8_t *line, size_t n, bool *on_field) {
 	size_t i;
@@ -51,7 +52,10 @@ size_t fill_buffer(void *buf, size_t left, size_t buflen, FILE *fp) {
 
 bool test_non_opus(ogg_page *og) {
 	if (ogg_page_serialno(og) == opus_sno) {
-		if (ogg_page_pageno(og) != opus_idx) {
+		if (ogg_page_bos(og)) {
+			opuserror(err_opus_bad_stream);
+		}
+		if (opst != PAGE_SOUND && ogg_page_pageno(og) != opus_idx) {
 			opuserror(err_opus_discontinuous, ogg_page_pageno(og), opus_idx);
 		}
 		return true;
@@ -85,7 +89,7 @@ bool test_non_opus(ogg_page *og) {
 	return false;
 }
 
-void write_page_g(ogg_page *og, FILE *fp) {
+void write_page(ogg_page *og, FILE *fp) {
 	size_t ret;
 	ret = fwrite(og->header, 1, og->header_len, fp);
 	if (ret != og->header_len) {
@@ -97,6 +101,9 @@ void write_page_g(ogg_page *og, FILE *fp) {
 	}
 }
 
+void set_pageno(ogg_page *og, int no) {
+	*(uint32_t*)&og->header[18] = oi32(no);
+}
 
 #if _POSIX_C_SOURCE < 200809L
 size_t strnlen(char const *src, size_t n) {

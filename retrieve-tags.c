@@ -246,6 +246,9 @@ void *retrieve_tags(void *fp_) {
 		}
 		// 1-3バイト目はネイティブFLACによるヘッダのバイト数が格納されるが
 		// Oggパケットを代わりに使うので無視
+		// 次・Oggパケットの一部となる上記ヘッダを一時埋め
+		fwrite(buf, 1, 4, fptag);
+		check_tagpacket_length(4);
 	}
 	else {
 		rtread(buf, codec->commagic_len, fp);
