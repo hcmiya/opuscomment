@@ -467,8 +467,8 @@ static void parse_page(ogg_page *og) {
 			break;
 		}
 	}
-	if (opst < PAGE_SOUND && ogg_page_eos(og)) {
-		opuserror(err_opus_bad_content);
+	if (isopus && opst < PAGE_SOUND && ogg_page_eos(og)) {
+		opuserror(err_opus_bad_stream);
 	}
 	if (!isopus) {
 		write_page(og, fpout);
