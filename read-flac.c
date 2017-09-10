@@ -136,7 +136,7 @@ void parse_flac(ogg_page *og) {
 		}
 	}
 	if (isflac && opst < PAGE_SOUND && ogg_page_eos(og)) {
-		opuserror(err_opus_bad_content);
+		opuserror(err_opus_bad_stream);
 	}
 	if (!isflac) {
 		if (ogg_page_pageno(og) == 0) {
