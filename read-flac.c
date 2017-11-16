@@ -9,7 +9,6 @@
 #include <arpa/inet.h>
 
 #include "opuscomment.h"
-#include "global.h"
 
 static uint8_t init_page_buf[79];
 static ogg_page init_page;

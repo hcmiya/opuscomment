@@ -12,7 +12,6 @@
 #include <signal.h>
 
 #include "opuscomment.h"
-#include "global.h"
 
 static size_t seeked_len;
 static char *outtmp;

@@ -9,7 +9,6 @@
 #include <arpa/inet.h>
 
 #include "opuscomment.h"
-#include "global.h"
 
 static void check_opus(ogg_page *og) {
 	if (og->body_len < 19) {

@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "global.h"
-#include "error.h"
-#include "limit.h"
+#include "opuscomment.h"
 
 void errorprefix(void) {
 	fprintf(stderr, catgets(catd, 1, 3, "%s: "), program_name);

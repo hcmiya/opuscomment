@@ -8,7 +8,6 @@
 #include <pthread.h>
 
 #include "opuscomment.h"
-#include "global.h"
 
 static void rtread(void *p, size_t len, FILE *fp) {
 	size_t readlen = fread(p, 1, len, fp);

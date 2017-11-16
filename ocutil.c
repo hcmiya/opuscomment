@@ -5,9 +5,7 @@
 #include <ogg/ogg.h>
 #include <stdbool.h>
 
-#include "global.h"
-#include "error.h"
-#include "ocutil.h"
+#include "opuscomment.h"
 
 static bool test_tag_field_keepcase(uint8_t *line, size_t n, bool *on_field) {
 	size_t i;

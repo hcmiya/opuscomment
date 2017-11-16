@@ -1,3 +1,6 @@
+#ifndef OPUSCOMMENT_H
+#define OPUSCOMMENT_H
+
 #include <ogg/ogg.h>
 #include <stdbool.h>
 #include <iconv.h>
@@ -16,6 +19,7 @@ void select_codec(void);
 #define catgets(catd, set_id, msg_id, s) (s)
 #endif
 
+#include "global.h"
 #include "ocutil.h"
 #include "limit.h"
 #include "error.h"
@@ -30,3 +34,5 @@ struct edit_st {
 	FILE *str, *len;
 	size_t num;
 };
+
+#endif

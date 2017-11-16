@@ -9,7 +9,6 @@
 #include <errno.h>
 
 #include "opuscomment.h"
-#include "global.h"
 
 static bool to_file;
 static void puterror(void) {

@@ -15,9 +15,8 @@
 #include <errno.h>
 #include <limits.h>
 
-#include "opuscomment.h"
 #define GLOBAL_MAIN
-#include "global.h"
+#include "opuscomment.h"
 #include "version.h"
 
 static void usage(void) {

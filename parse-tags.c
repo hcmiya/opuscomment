@@ -12,7 +12,6 @@
 #include <pthread.h>
 
 #include "opuscomment.h"
-#include "global.h"
 
 static bool from_file;
 static void readerror(void) {
