@@ -194,4 +194,5 @@ iconv_t iconv_new(char const *to, char const *from) {
 			oserror();
 		}
 	}
+	return cd;
 }
