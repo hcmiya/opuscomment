@@ -200,7 +200,14 @@ static void cleanup(void) {
 }
 
 void open_output_file(void) {
-	if (O.out) {
+	if (O.edit == EDIT_LIST) {
+		fpout = fopen("/dev/null", "w");
+		if (!fpout) {
+			fileerror(O.out);
+		}
+		remove_tmp = false;
+	}
+	else if (O.out) {
 		if (strcmp(O.out, "-") == 0) {
 			fpout = stdout;
 		}
