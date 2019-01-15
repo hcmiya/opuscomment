@@ -33,14 +33,14 @@ opuscommentはタグの内容が改行を含む場合、常にそれをエスケ
 ## コンパイル・動作要件
 
 * C99
-* POSIX.1-2008またはPOSIX.1-2001 XSI拡張(SUSv2)に対応したAPI
+* POSIX.1-2008またはPOSIX.1-2001 XSI拡張(SUSv3)に対応したAPI
 * libogg
 
 尚、libopus、libopusfileは必要ありません。configureスクリプトを使用していないので、上記要件を満たすことや対応するヘッダファイルが存在すること(Debianならば`libogg-dev`をインストール)をコンパイル前にご確認下さい。Makefileのコメントも参照下さい。
 
 ## インストール
 
-    $ make
+    $ make -r
 
 をすると同じディレクトリに`opuscomment`という名前でバイナリが出力されますのでそれを任意の場所にコピーします。
 
