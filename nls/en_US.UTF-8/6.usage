@@ -29,11 +29,11 @@ Options:\n\
           In list mode, write tags to tagfile.\n\
           In append/write mode, read tags from tagfile\n\
     -d NAME[=VALUE]\n\
-          Delete tags in srcfile matched with the argument.\n\
+          Delete tags matched with the argument from srcfile.\n\
           When VALUE is omitted, All of NAME is removed. Implies -U\n\
     -p    Supress editing for METADATA_BLOCK_PICTURE\n\
-    -U    Convert field name in srcfile to uppercase\n\
-    -V    Verify Tags in opusfile\n\
+    -U    Convert field name stored in srcfile to uppercase\n\
+    -V    Verify Tags stored in opusfile\n\
     -T    Check whether editing input has been terminated by line feed.\n\
     -D    Defer editing IO; implies -V, -T\n\
 `
