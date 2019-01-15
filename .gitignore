@@ -1,4 +1,4 @@
 opuscomment
-ocd
 tests/
 endianness.c
+*.o
