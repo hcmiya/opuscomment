@@ -9,6 +9,7 @@ progname="${0##*/}"
 printbinint() (
 	val=$1
 	i=0
+	out=
 	while [ $i -lt 4 ]
 	do
 		val8=$((val%256))
