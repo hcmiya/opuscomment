@@ -132,7 +132,7 @@ mod="$tmp/mod"
 postgain=$("$OC" -vQ -- "$mod" 2>&1 >/dev/null)
 
 diff=$((pregain - postgain))
-echo "${trackgain:+"R128_TRACK_GAIN=$((trackgain + diff))"}
-${albumgain:+"R128_ALBUM_GAIN=$((albumgain + diff))"}" |"$OC" -a -d R128_TRACK_GAIN -d R128_ALBUM_GAIN ${idx:+-i "$idx"} -- "$mod" "$dest"
+echo "R128_TRACK_GAIN=$((trackgain + diff))
+R128_ALBUM_GAIN=$((albumgain + diff))" |"$OC" -a -d R128_TRACK_GAIN -d R128_ALBUM_GAIN ${idx:+-i "$idx"} -- "$mod" "$dest"
 
 
