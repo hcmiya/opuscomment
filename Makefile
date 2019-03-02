@@ -5,11 +5,11 @@
 # iconv(3)は昔のFreeBSDの様に別ライブラリになっている可能性もあるので、適宜LIBSを編集するようお願いします。
 # NLSに対応していない、あるいは必要がない場合は、CFLAGSから-DNLSを除くことで無効に出来ます。
 
-SRCS=put-tags.c parse-tags.c read.c read-flac.c ocutil.c retrieve-tags.c select-codec.c
-CONFSRCS=endianness.c error.c main.c
+SRCS=src/put-tags.c src/parse-tags.c src/read.c src/read-flac.c src/ocutil.c src/retrieve-tags.c src/select-codec.c
+CONFSRCS=src/endianness.c src/error.c src/main.c
 OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
-HEADERS=global.h ocutil.h limit.h error.h
-ERRORDEFS=errordef/opus.tab errordef/main.tab
+HEADERS=src/global.h src/ocutil.h src/limit.h src/error.h
+ERRORDEFS=src/errordef/opus.tab src/errordef/main.tab
 CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS -DNDEBUG
 #CFLAGS=-D_XOPEN_SOURCE=600 -DNLS -DNDEBUG
 LDFLAGS=
@@ -24,8 +24,8 @@ opuscomment: $(OBJS)
 .SUFFIXES:
 .SUFFIXES: .c .o
 
-.c.o:
-	$(CC) $(CFLAGS) -c $<
+#.c.o:
+#	$(CC) $(CFLAGS) -c $<
 
 $(SRCS): $(HEADERS)
 	@touch $@
@@ -35,17 +35,17 @@ debug: tests/ocd ;
 tests/ocd: $(HEADERS) $(SRCS) $(CONFSRCS) $(ERRORDEFS)
 	$(CC) -g -o tests/ocd $(CFLAGS) -UNDEBUG $(LDFLAGS) $(LIBS) $(SRCS) $(CONFSRCS)
 
-endianness.c: endianness-check.sh
-	./endianness-check.sh >endianness.c
+src/endianness.c: endianness-check.sh
+	./endianness-check.sh > src/endianness.c
 
-error.c: $(ERRORDEFS) $(HEADERS)
+src/error.c: $(ERRORDEFS) $(HEADERS)
 	@touch $@
 
-main.c: $(HEADERS) version.h
+src/main.c: $(HEADERS) src/version.h
 	@touch $@
 
 clean:
-	rm endianness.c opuscomment tests/ocd *.o 2>/dev/null || :
+	rm src/endianness.c opuscomment tests/ocd $(OBJS) 2>/dev/null || :
 
 updoc: doc/opuscomment.ja.1 doc/opuschgain.ja.1 ;
 
