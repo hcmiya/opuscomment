@@ -6,7 +6,6 @@ $set 3
 4 stream doesn’t contain the codec
 5 invalid Ogg stream
 6 unsupported version
-7 not supported for multiple logical stream
 8 invalid UTF-8 sequence at tag record #%d
 9 tag packet is too long (up to %u MiB)
 10 discontinuous page—encountered p. %u against expectation of p. %u
