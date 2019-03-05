@@ -44,7 +44,6 @@ Options:\n\
     -s scale\n\
           Specify output gain in scale for PCM samples.\n\
           1 for same scale. 0.5 for half.\n\
-    -0    Set output gain to 0\n\
     -r    Specify that the gain is relative to internal value\n\
     -1    When output gain becomes 0 by converting to internal representation,\n\
           set ±1/256 dB instead\n\

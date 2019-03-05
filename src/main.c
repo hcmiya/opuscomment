@@ -32,7 +32,7 @@ static void usage(void) {
 	fprintf(stderr, catgets(catd, 6, 4,
 "Synopsys:\n"
 "    %1$s [-l] [-i idx] [-DepQRUv] srcfile\n"
-"    %1$s {-a|-w} [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
+"    %1$s {-a|-w} [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
 "    %1$s [-h]\n"
 "\n"
 "Options:\n"
@@ -66,7 +66,6 @@ static void usage(void) {
 "    -s scale\n"
 "          Specify output gain in scale for PCM samples.\n"
 "          1 for same scale. 0.5 for half.\n"
-"    -0    Set output gain to 0\n"
 "    -r    Specify that the gain is relative to internal value\n"
 "    -1    When output gain becomes 0 by converting to internal representation,\n"
 "          set [+-]1/256 dB instead\n"
@@ -90,7 +89,7 @@ static void parse_args(int argc, char **argv) {
 	bool added_tag = false, del_tag = false;
 	int gainfmt;
 	double gv;
-	while ((c = getopt(argc, argv, "lwaReg:s:0r1vQpUc:t:d:VTDi:hq")) != -1) {
+	while ((c = getopt(argc, argv, "lwaReg:s:r1vQpUc:t:d:VTDi:hq")) != -1) {
 		switch (c) {
 		case 'g':
 		case 's':
@@ -123,14 +122,6 @@ static void parse_args(int argc, char **argv) {
 		switch (c) {
 		case 'r':
 			O.gain_relative = true;
-			break;
-			
-		case '0':
-			O.gain_fix = true;
-			O.gain_relative = false;
-			O.gain_val = 0;
-			O.gain_not_zero = false;
-			gainfmt = c;
 			break;
 			
 		case 'Q':

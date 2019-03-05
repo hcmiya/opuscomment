@@ -12,7 +12,7 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 \fBopuscomment\fR [ \fB-l\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-DepQRUv\fR ] \fB\fIsrcfile\fB\fR
 
 
-\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR | \fB-0\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
+\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
 
 .SH "説明"
 .PP
@@ -77,9 +77,6 @@ vorbis commentは一定の書式が定められているが、Opusの内部構�
 .TP
 \fB-s \fIscale\fB\fR
 出力ゲインをPCMサンプルの倍率で指定する。1で等倍。0.5で半分(コマンド内でdBに変換)
-.TP
-\fB-0\fR
-出力ゲインを0にする
 .TP
 \fB-r\fR
 出力ゲインの指定を内部の設定に対する相対値とする

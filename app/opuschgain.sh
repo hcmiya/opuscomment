@@ -3,8 +3,7 @@
 OC=opuscomment
 progname="${0##*/}"
 
-if [ $# = 0 ]
-then
+usage() {
 	cat <<heredoc >&2
 Synopsys:
     $progname {-g gain|-s scale|-0} [-i idx] [-1Qr] opusfile [output]
@@ -13,13 +12,20 @@ Description:
     Change Opus' output gain with R128 gain tag
 heredoc
 	exit 1
+}
+
+if [ $# = 0 ]
+then usage
 fi
 
 E() {
 	eno=$1
 	shift
 	printf '%s: %s\n' "$progname" "$*" >&2
-	exit $eno
+	case $eno in
+	u) usage ;;
+	*) exit $eno ;;
+	esac
 }
 
 mode= q78= val= relative= not0= idx=
@@ -28,12 +34,11 @@ do
 	case $sw in
 	g|s)
 		mode=$sw
-		gainhasval=y
 		gainval="$OPTARG"
 		;;
 	0)
-		mode=0
-		gainhasval=
+		mode=g
+		gainval=0
 		;;
 	i)
 		idx="$OPTARG"
@@ -48,18 +53,13 @@ do
 		relative=y
 		;;
 	*)
-		exit 1
+		usage
 		;;
 	esac
 done
 shift $((OPTIND - 1))
 
-[ -n "$mode" ] || E 1 no mode specified
-if [ $mode = 0 ]
-then
-	relative=
-	not0=
-fi
+[ -n "$mode" ] || E u no gain modifier specified
 
 case $# in
 0)
@@ -71,7 +71,7 @@ case $# in
 	dest=
 	;;
 2)
-	out=other
+	out=create
 	src="$1"
 	dest="$2"
 	;;
@@ -81,7 +81,7 @@ case $# in
 esac
 
 [ -n "$src" ] || E 1 empty file name
-[ $out = other -a -z "$dest" ] && E 1 empty file name || :
+[ $out = create -a -z "$dest" ] && E 1 empty file name || :
 
 set -e
 
@@ -122,12 +122,12 @@ albumgain=$(get_gain_tag ALBUM)
 
 if [ -z "$trackgain" -a -z "$albumgain" ]
 then
-	exec "$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" ${dest:+"$dest"}
+	exec "$OC" -$mode "$gainval" ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" ${dest:+"$dest"}
 	exit 1
 fi
 
 mod="$tmp/mod"
-"$OC" -$mode ${gainhasval:+"$gainval"} ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
+"$OC" -$mode "$gainval" ${idx:+-i "$idx"} ${not0:+-1} ${q78:+-Q} ${relative:+-r} -- "$src" "$mod"
 [ $out = overwrite ] && dest="$src" || :
 postgain=$("$OC" -vQ -- "$mod" 2>&1 >/dev/null)
 
