@@ -19,6 +19,7 @@
 #include "opuscomment.h"
 #include "version.h"
 
+static struct codec_parser const *default_codec;
 static void usage(void) {
 	char revision[64];
 	strftime(revision, 64, "%x", &(struct tm){
@@ -31,8 +32,8 @@ static void usage(void) {
 	
 	fprintf(stderr, catgets(catd, 6, 4,
 "Synopsys:\n"
-"    %1$s [-l] [-i idx] [-DepQRUv] srcfile\n"
-"    %1$s {-a|-w} [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
+"    %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n"
+"    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
 "    %1$s [-h]\n"
 "\n"
 "Options:\n"
@@ -40,6 +41,8 @@ static void usage(void) {
 "    -a    Append mode\n"
 "    -w    Write mode\n"
 "    -h    Print this message and exit\n"
+"    -C codec\n"
+"          Select codec\n"
 "    -i idx\n"
 "          Specify %2$s index for editing in multiplexed Ogg stream\n"
 "          (1-origin, without non-%2$s stream)\n"
@@ -58,8 +61,8 @@ static void usage(void) {
 "    -V    Verify Tags stored in srcfile\n"
 "    -T    Check whether editing input has been terminated by line feed\n"
 "    -D    Defer editing IO; implies -V, -T\n"
-	), program_name, codec->name);
-	if (!codec->prog) {
+	), program_name, default_codec->name);
+	if (!default_codec->prog) {
 		fprintf(stderr, catgets(catd, 6, 5,
 "    -g gain\n"
 "          Specify output gain in dB\n"
@@ -71,7 +74,7 @@ static void usage(void) {
 "          set [+-]1/256 dB instead\n"
 "    -Q    Use Q7.8 format for editing output gain\n"
 "    -v    Put output gain to stderr\n"
-		), codec->name);
+		));
 	}
 	exit(1);
 }
@@ -89,8 +92,25 @@ static void parse_args(int argc, char **argv) {
 	bool added_tag = false, del_tag = false;
 	int gainfmt;
 	double gv;
-	while ((c = getopt(argc, argv, "lwaReg:s:r1vQpUc:t:d:VTDi:hq")) != -1) {
+	
+	while ((c = getopt(argc, argv, "1ac:C:d:Deg:hi:lpqQrRs:t:TUvVw")) != -1) {
 		switch (c) {
+		case 'l':
+			O.edit = EDIT_LIST;
+			break;
+			
+		case 'w':
+			O.edit = EDIT_WRITE;
+			break;
+			
+		case 'a':
+			O.edit = EDIT_APPEND;
+			break;
+			
+		case 'h':
+			usage();
+			break;
+			
 		case 'g':
 		case 's':
 			gainfmt = c;
@@ -110,16 +130,6 @@ static void parse_args(int argc, char **argv) {
 			}
 			break;
 			
-		case 'h':
-			usage();
-			break;
-			
-		case '?':
-			exit(1);
-			break;
-		}
-		
-		switch (c) {
 		case 'r':
 			O.gain_relative = true;
 			break;
@@ -130,18 +140,6 @@ static void parse_args(int argc, char **argv) {
 			
 		case '1':
 			O.gain_not_zero = true;
-			break;
-			
-		case 'l':
-			O.edit = EDIT_LIST;
-			break;
-			
-		case 'w':
-			O.edit = EDIT_WRITE;
-			break;
-			
-		case 'a':
-			O.edit = EDIT_APPEND;
 			break;
 			
 		case 'p':
@@ -205,6 +203,16 @@ static void parse_args(int argc, char **argv) {
 			
 		case 'q':
 			// 何もしない
+			break;
+			
+		case 'C':
+			if (!select_codec_by_name(optarg)) {
+				opterror(c, catgets(catd, 7, 4, "unknown codec \"%s\""), optarg);
+			}
+			break;
+			
+		case '?':
+			exit(1);
 			break;
 		}
 	}
@@ -298,6 +306,7 @@ int main(int argc, char **argv) {
 		program_name = program_name_default;
 	}
 	select_codec();
+	default_codec = codec;
 	
 #ifdef NLS
 	catd = catopen("opuscomment", NL_CAT_LOCALE);

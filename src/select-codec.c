@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <limits.h>
 #include <arpa/inet.h>
+#include <locale.h>
+#include <strings.h>
 
 #include "opuscomment.h"
 
@@ -141,3 +143,15 @@ void select_codec(void) {
 	for (codec = set + 1; codec->prog != NULL && strcmp(program_name, codec->prog) != 0; codec++) {}
 	if (!codec->prog) codec = set;
 };
+
+bool select_codec_by_name(char const *name) {
+	static locale_t clocale = (locale_t)0;
+	if (!clocale) {
+		clocale = newlocale(LC_ALL, "C", (locale_t)0);
+		if (!clocale) {
+			oserror();
+		}
+	}
+	for (codec = set; codec->name != NULL && strcasecmp_l(name, codec->name, clocale) != 0; codec++) {}
+	return !!codec->name;
+}

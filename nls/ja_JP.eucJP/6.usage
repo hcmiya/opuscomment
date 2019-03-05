@@ -9,8 +9,8 @@ $ version: %1$s = バージョン番号 (x.y.z), %2$s = 更新日 strftimeで"%x"で出力され
 $ %1$s = プログラム名 %2$s = コーデック名、Opus、Theora等
 4 `\
 使い方:\n\
-    %1$s [-l] [-i idx] [-DepQRUv] srcfile\n\
-    %1$s {-a|-w} [-i idx] [-g gain|-s scale|-0] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n\
+    %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n\
+    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n\
     %1$s [-h]\n\
 \n\
 オプション:\n\
@@ -18,6 +18,8 @@ $ %1$s = プログラム名 %2$s = コーデック名、Opus、Theora等
     -a    タグ追記モード\n\
     -w    タグ書き込みモード\n\
     -h    使い方を表示して終了する\n\
+    -C codec\n\
+          コーデックを選択する\n\
     -i idx\n\
           多重化されたOggストリーム中の編集対象の%2$sストリームを、\n\
           %2$s以外のものを除いた1起点の順番で指定する。\n\
