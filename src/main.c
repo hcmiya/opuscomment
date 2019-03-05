@@ -300,7 +300,7 @@ int main(int argc, char **argv) {
 	select_codec();
 	
 #ifdef NLS
-	catd = catopen("opuscomment.cat", NL_CAT_LOCALE);
+	catd = catopen("opuscomment", NL_CAT_LOCALE);
 #endif
 	if (argc == 1) usage();
 	
