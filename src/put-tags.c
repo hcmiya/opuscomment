@@ -95,9 +95,9 @@ void *put_tags(void *fp_) {
 	if (!O.tag_raw) {
 		cd = iconv_new(nl_langinfo(CODESET), "UTF-8");
 	}
-	size_t buflenunit = STACK_BUF_LEN / 3;
-	size_t buflen = STACK_BUF_LEN;
-	uint8_t buf[STACK_BUF_LEN];
+	size_t const buflen = STACK_BUF_LEN;
+	size_t const buflenunit = buflen / 3;
+	uint8_t buf[buflen];
 	int nth = 1;
 	uint8_t* (*esc)(uint8_t*, uint8_t*, size_t) = O.tag_escape ? esc_vc : esc_oc;
 	uint8_t *raw = buf + buflenunit * 2;

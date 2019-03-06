@@ -87,6 +87,9 @@ static void out_of_range(int c) {
 	opterror(c, catgets(catd, 7, 2, "the value is out of range"));
 }
 
+void select_codec(void);
+bool select_codec_by_name(char const*);
+
 static void parse_args(int argc, char **argv) {
 	int c;
 	bool added_tag = false, del_tag = false;

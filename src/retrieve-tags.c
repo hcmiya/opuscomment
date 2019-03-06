@@ -55,15 +55,15 @@ void check_tagpacket_length(size_t len) {
 }
 
 
-static bool rtcopy_write(FILE *fp, void *fptag_) {
+static bool rtcopy_write(FILE *packet_input, void *fptag_) {
 	FILE *fptag = fptag_;
-	uint32_t len = rtchunk(fp);
+	uint32_t len = rtchunk(packet_input);
 	uint8_t buf[STACK_BUF_LEN];
 	bool first = true;
 	bool field = true;
 	bool copy;
 	while (len) {
-		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, packet_input);
 		if (first) {
 			first = false;
 			
@@ -104,51 +104,50 @@ static bool rtcopy_write(FILE *fp, void *fptag_) {
 
 static FILE *rtcd_src, *dellist_str, *dellist_len;
 static bool upcase_applied;
-static bool rtcopy_delete(FILE *fp, void *fptag_) {
+static bool rtcopy_delete(FILE *packet_input, void *fptag_) {
 	static int idx = 1;
 	FILE *fptag = fptag_;
-	FILE *src = rtcd_src, *dstr = dellist_str, *dlen = dellist_len;
 	
-	// 一旦レコードを全て一時ファイルsrcに保存し、-dの引数と一つずつ比較していく
-	rewind(src);
-	uint32_t srclen = rtchunk(fp);
+	// -dの引数と一つずつ比較していくための準備として、レコード1つを一時ファイルrtcd_srcに書き出す
+	rewind(rtcd_src);
+	uint32_t srclen = rtchunk(packet_input);
 	uint8_t buf[STACK_BUF_LEN];
 	size_t len = srclen;
 	while (len) {
-		// フィールド名にいる間のループ
+		// フィールド名を大文字化する
 		bool field = true;
-		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, packet_input);
 		test_tag_field(buf, rl, true, &field, &upcase_applied);
-		fwrite(buf, 1, rl, src);
+		fwrite(buf, 1, rl, rtcd_src);
 		len -= rl;
 		if (!field) break;
 	}
 	while (len) {
 		// フィールド名を抜けた後のループ
-		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
-		fwrite(buf, 1, rl, src);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, packet_input);
+		fwrite(buf, 1, rl, rtcd_src);
 		len -= rl;
 	}
 	
 	// 削除リストのループ
-	rewind(dstr); rewind(dlen);
+	rewind(dellist_str); rewind(dellist_len);
 	bool copy = true;
 	bool matched = false;
-	while (fread(buf, 1, 5, dlen)) {
+	while (fread(buf, 1, 5, dellist_len)) {
 		uint32_t cmplen = *(uint32_t*)buf;
 		bool field_only = buf[4];
 		
 		size_t const bufhalf = STACK_BUF_LEN / 2;
 		uint8_t *cmp = buf + bufhalf;
-		rewind(src);
+		rewind(rtcd_src);
 		// 比較
 		if (field_only && srclen > cmplen || cmplen == srclen) {
 			// フィールド名のみ比較でソースが削除指定より長い または
 			// 全比較でソースと削除の長さが一致する時
 			matched = true;
 			while (cmplen) {
-				size_t rl = fill_buffer(buf, cmplen, bufhalf, src);
-				fread(cmp, 1, rl, dstr);
+				size_t rl = fill_buffer(buf, cmplen, bufhalf, rtcd_src);
+				fread(cmp, 1, rl, dellist_str);
 				cmplen -= rl;
 				if (memcmp(buf, cmp, rl) != 0) {
 					matched = false;
@@ -157,7 +156,7 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 			}
 			if (matched) {
 				if (field_only) {
-					fread(buf, 1, 1, src);
+					fread(buf, 1, 1, rtcd_src);
 					if (*buf == 0x3d) {
 						goto MATCHED;
 					}
@@ -170,16 +169,16 @@ static bool rtcopy_delete(FILE *fp, void *fptag_) {
 		}
 		// 次の削除チャンクに進む
 		while (cmplen) {
-			cmplen -= fill_buffer(buf, cmplen, STACK_BUF_LEN, dstr);
+			cmplen -= fill_buffer(buf, cmplen, STACK_BUF_LEN, dellist_str);
 		}
 	}
 	// 削除するものと一致しなかったらfptagにコピー
-	rewind(src);
+	rewind(rtcd_src);
 	*(uint32_t*)buf = oi32(srclen);
 	fwrite(buf, 4, 1, fptag);
 	check_tagpacket_length(4);
 	while (srclen) {
-		size_t rl = fill_buffer(buf, srclen, STACK_BUF_LEN, src);
+		size_t rl = fill_buffer(buf, srclen, STACK_BUF_LEN, rtcd_src);
 		fwrite(buf, 1, rl, fptag);
 		srclen -= rl;
 		check_tagpacket_length(rl);
@@ -189,16 +188,16 @@ MATCHED:
 	return !matched;
 }
 
-static bool rtcopy_list(FILE *fp, void *listfd_) {
+static bool rtcopy_list(FILE *packet_input, void *listfd_) {
 	static size_t idx = 1;
 	int listfd = *(int*)listfd_;
-	uint32_t len = rtchunk(fp);
+	uint32_t len = rtchunk(packet_input);
 	uint8_t buf[STACK_BUF_LEN];
 	bool first = true;
 	bool field = true;
 	bool copy;
 	while (len) {
-		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, packet_input);
 		if (first) {
 			if (*buf == 0x3d) opuserror(err_opus_bad_tag, idx);
 			first = false;
@@ -226,17 +225,16 @@ static bool rtcopy_list(FILE *fp, void *listfd_) {
 
 void *put_tags(void*);
 void flac_next_is_audio(void);
-void *retrieve_tags(void *fp_) {
+void *retrieve_tags(void *packet_input_) {
 	// parse_header_border() からスレッド化された
-	// fp はタグパケットの読み込みパイプ
-	FILE *fp = fp_;
+	FILE *packet_input = packet_input_;
 	uint8_t buf[STACK_BUF_LEN];
 	
 	struct rettag_st *rtn = calloc(1, sizeof(*rtn));
 	
 	FILE *fptag = rtn->tag = tmpfile();
 	if (codec->type == CODEC_FLAC) {
-		rtread(buf, 4, fp);
+		rtread(buf, 4, packet_input);
 		if (buf[0] & 0x7f != 4) {
 			opuserror(err_opus_bad_content);
 		}
@@ -250,7 +248,7 @@ void *retrieve_tags(void *fp_) {
 		check_tagpacket_length(4);
 	}
 	else {
-		rtread(buf, codec->commagic_len, fp);
+		rtread(buf, codec->commagic_len, packet_input);
 		if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
 			opuserror(err_opus_bad_content);
 		}
@@ -258,12 +256,12 @@ void *retrieve_tags(void *fp_) {
 	}
 	
 	// ベンダ文字列
-	uint32_t len = rtchunk(fp);
+	uint32_t len = rtchunk(packet_input);
 	*(uint32_t*)buf = oi32(len);
 	fwrite(buf, 4, 1, fptag);
 	check_tagpacket_length(codec->commagic_len + 4);
 	while (len) {
-		size_t rl = rtfill(buf, len, STACK_BUF_LEN, fp);
+		size_t rl = rtfill(buf, len, STACK_BUF_LEN, packet_input);
 		fwrite(buf, 1, rl, fptag);
 		check_tagpacket_length(rl);
 		len -= rl;
@@ -271,7 +269,7 @@ void *retrieve_tags(void *fp_) {
 	rtn->tagbegin = tagpacket_total;
 	
 	// レコード数
-	size_t recordnum = rtn->del = rtchunk(fp);
+	size_t recordnum = rtn->del = rtchunk(packet_input);
 	fwrite(buf, 4, 1, fptag); // レコード数埋め(後でstore_tags()で書き換え)
 	check_tagpacket_length(4);
 	bool (*rtcopy)(FILE*, void*);
@@ -297,7 +295,7 @@ void *retrieve_tags(void *fp_) {
 	}
 	
 	while (recordnum) {
-		rtn->num += rtcopy(fp, wh);
+		rtn->num += rtcopy(packet_input, wh);
 		recordnum--;
 	}
 	rtn->del -= rtn->num;
@@ -312,23 +310,23 @@ void *retrieve_tags(void *fp_) {
 		fclose(rtcd_src); fclose(dellist_str); fclose(dellist_len);
 	}
 	
-	len = fread(buf, 1, 1, fp);
+	len = fread(buf, 1, 1, packet_input);
 	if (len && (codec->prog || (*buf & 1))) {
 		// codec->prog ← opuscomment 以外は全部パディングを保存
 		rtn->padding = tmpfile();
 		fwrite(buf, 1, len, rtn->padding);
 		check_tagpacket_length(len);
 		size_t n;
-		while ((n = fread(buf, 1, STACK_BUF_LEN, fp))) {
+		while ((n = fread(buf, 1, STACK_BUF_LEN, packet_input))) {
 			fwrite(buf, 1, n, rtn->padding);
 			check_tagpacket_length(n);
 		}
 	}
 	else {
 		size_t n;
-		while ((n = fread(buf, 1, STACK_BUF_LEN, fp))) {}
+		while ((n = fread(buf, 1, STACK_BUF_LEN, packet_input))) {}
 	}
-	fclose(fp);
+	fclose(packet_input);
 	rtn->upcase = upcase_applied;
 	return rtn;
 }
