@@ -211,9 +211,7 @@ static bool count_field_len(uint8_t *line, size_t n) {
 		add = n - fieldlen;
 	}
 	else {
-		size_t preeq = (uint8_t*)memchr(line, 0x3d, n) - line;
-		add = preeq - fieldlen;
-		filled = true;
+		add = (uint8_t*)memchr(line, 0x3d, n) - line;
 	}
 	if (fieldlen + add <= 22) {
 		memcpy(&field_pending[fieldlen], line, add);
@@ -287,7 +285,19 @@ static void line_oc(uint8_t *line, size_t n, bool lf) {
 		return;
 	}
 	
-	if(test_blank(line, n, lf)) return;
+	if (afterlf) {
+		if (*line == 0x9) {
+			*line = 0x0a;
+			if (lf) n--;
+			append_buffer(line, n);
+			afterlf = lf;
+			return;
+		}
+		else {
+			finalize_record();
+		}
+	}
+	if (test_blank(line, n, lf)) return;
 	
 	if (lf) n--;
 	if (on_field) {
@@ -296,24 +306,9 @@ static void line_oc(uint8_t *line, size_t n, bool lf) {
 		test_mbp(&line, &n);
 	}
 	else {
-		if (afterlf) {
-			afterlf = false;
-			if (*line == 0x9) {
-				*line = 0xa;
-			}
-			else {
-				// 新行が<tab>で始まってなかったら前の行のレコード確定作業をして再帰
-				finalize_record();
-				if (lf) n++;
-				line_oc(line, n, lf);
-				return;
-			}
-		}
 		append_buffer(line, n);
 	}
-	if (lf) {
-		afterlf = true;
-	}
+	afterlf = lf;
 }
 
 static int esctab(int c) {
