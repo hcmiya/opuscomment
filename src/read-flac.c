@@ -18,7 +18,7 @@ static FILE *tyukan;
 static void put_streaminfo(void) {
 	*(uint16_t*)&init_page.body[7] = ntohs(flac_header_num);
 	ogg_page_checksum_set(&init_page);
-	fwrite(init_page_buf, 1, 79, fpout);
+	fwrite(init_page_buf, 1, 79, built_stream);
 }
 
 void check_flac(ogg_page *og) {
@@ -71,7 +71,7 @@ bool parse_metadata_border(ogg_page *og) {
 		// 溜めてたメタデータを出力に移動
 		rewind(tyukan);
 		while ((rl = fread(buf, 1, STACK_BUF_LEN, tyukan))) {
-			if (fwrite(buf, 1, rl, fpout) != rl) oserror();
+			if (fwrite(buf, 1, rl, built_stream) != rl) oserror();
 		}
 		fclose(tyukan);
 		// 後続の音声データをページ番号をずらしつつ出力
@@ -139,7 +139,7 @@ void parse_flac(ogg_page *og) {
 	}
 	if (!isflac) {
 		if (ogg_page_pageno(og) == 0) {
-			write_page(og, fpout);
+			write_page(og, built_stream);
 		}
 		else {
 			tyukan = tyukan ? tyukan : tmpfile();

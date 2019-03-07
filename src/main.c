@@ -331,8 +331,8 @@ int main(int argc, char **argv) {
 	}
 	
 	O.in = argv[optind];
-	fpopus = fopen(O.in, "r");
-	if (!fpopus) {
+	stream_input = fopen(O.in, "r");
+	if (!stream_input) {
 		fileerror(O.in);
 	}
 	
@@ -342,7 +342,7 @@ int main(int argc, char **argv) {
 	
 	size_t buflen = 1 << 17;
 	uint8_t *buf = ogg_sync_buffer(&oy, buflen);
-	size_t len = fread(buf, 1, buflen, fpopus);
+	size_t len = fread(buf, 1, buflen, stream_input);
 	if (len == (size_t)-1) oserror();
 	if (len < 4) {
 		opuserror(err_opus_non_ogg);
@@ -356,7 +356,7 @@ int main(int argc, char **argv) {
 	
 	for (;;) {
 		buf = ogg_sync_buffer(&oy, buflen);
-		len = fread(buf, 1, buflen, fpopus);
+		len = fread(buf, 1, buflen, stream_input);
 		if (!len) {
 			break;
 		}

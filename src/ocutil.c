@@ -58,11 +58,11 @@ bool test_non_opus(ogg_page *og) {
 		}
 		return true;
 	}
-	non_opus_appeared = true;
+	have_multi_streams = true;
 	
 	int pno = ogg_page_pageno(og);
 	if (pno == 0) {
-		if (leave_zero) {
+		if (leave_header_packets) {
 			opuserror(err_opus_bad_stream);
 		}
 		if (!ogg_page_bos(og) || ogg_page_eos(og) || ogg_page_granulepos(og) != 0) {
@@ -71,10 +71,10 @@ bool test_non_opus(ogg_page *og) {
 	}
 	else if (pno == 1) {
 		// 複数論理ストリームの先頭は全て0で始まるため、何かが1ページ目を始めたら今後0ページ目は来ないはずである。
-		leave_zero = true;
+		leave_header_packets = true;
 	}
 	else {
-		if (!leave_zero) {
+		if (!leave_header_packets) {
 			// 他で1ページ目が始まってないのに2ページ目以上が来た場合
 			opuserror(err_opus_bad_stream);
 		}
