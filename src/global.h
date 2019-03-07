@@ -54,6 +54,7 @@ GLOBAL struct codec_parser {
 		CODEC_OPUS,
 		CODEC_COMMON,
 		CODEC_FLAC,
+		CODEC_VP8,
 	} type;
 	char const *prog, *name;
 	size_t headmagic_len;

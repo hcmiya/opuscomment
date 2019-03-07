@@ -139,7 +139,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est)
 	fclose(fptag);
 	og.header_len = 27 + og.header[26];
 	og.body_len = commentlen;
-	if (og.header[26] != 255 && rst->padding) {
+	if (og.header[26] != 255 && rst->padding && rst->part_of_comment) {
 		// vorbis commentの最後のページにパディングを付け足す処理
 		// vorbisはタグとパディングの間でlacing valueを分けないとおかしくなるっぽい
 		size_t len;
@@ -166,7 +166,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est)
 	
 	if (rst->padding) {
 		memset(og.header + 26, 0xff, 256);
-		og.header[5] = 1;
+		og.header[5] = rst->part_of_comment;
 		size_t readlen;
 		while ((readlen = fread(og.body, 1, 255 * 255, rst->padding))) {
 			*(uint32_t*)&og.header[18] = oi32(idx++);

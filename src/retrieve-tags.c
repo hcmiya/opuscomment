@@ -233,6 +233,8 @@ void *retrieve_tags(void *packet_input_) {
 	struct rettag_st *rtn = calloc(1, sizeof(*rtn));
 	
 	FILE *fptag = rtn->tag = tmpfile();
+	rtn->part_of_comment = true;
+	uint32_t len;
 	if (codec->type == CODEC_FLAC) {
 		rtread(buf, 4, packet_input);
 		if (buf[0] & 0x7f != 4) {
@@ -250,13 +252,25 @@ void *retrieve_tags(void *packet_input_) {
 	else {
 		rtread(buf, codec->commagic_len, packet_input);
 		if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
-			opuserror(err_opus_bad_content);
+			if (codec->type == CODEC_VP8 && buf[5] != 2) {
+				len = codec->commagic_len;
+				rtn->part_of_comment = false;
+			}
+			else opuserror(err_opus_bad_content);
 		}
 		fwrite(buf, 1, codec->commagic_len, fptag);
+		if (!rtn->part_of_comment) {
+			// コメントパケットが無かった時用
+			if (O.edit == EDIT_LIST) exit(0);
+			uint8_t buf2[8] = "";
+			fwrite(buf, 1, 8, fptag);
+			rtn->tagbegin = codec->commagic_len + 4;
+			goto NOTCOMMENT;
+		}
 	}
 	
 	// ベンダ文字列
-	uint32_t len = rtchunk(packet_input);
+	len = rtchunk(packet_input);
 	*(uint32_t*)buf = oi32(len);
 	fwrite(buf, 4, 1, fptag);
 	check_tagpacket_length(codec->commagic_len + 4);
@@ -306,13 +320,11 @@ void *retrieve_tags(void *packet_input_) {
 		pthread_join(putth, NULL);
 		exit(0);
 	}
-	if (rtcd_src) {
-		fclose(rtcd_src); fclose(dellist_str); fclose(dellist_len);
-	}
 	
 	len = fread(buf, 1, 1, packet_input);
 	if (len && (codec->prog || (*buf & 1))) {
 		// codec->prog ← opuscomment 以外は全部パディングを保存
+	NOTCOMMENT:
 		rtn->padding = tmpfile();
 		fwrite(buf, 1, len, rtn->padding);
 		check_tagpacket_length(len);
@@ -325,6 +337,13 @@ void *retrieve_tags(void *packet_input_) {
 	else {
 		size_t n;
 		while ((n = fread(buf, 1, STACK_BUF_LEN, packet_input))) {}
+	}
+	
+	if (rtcd_src) {
+		fclose(rtcd_src);
+	}
+	if (dellist_str) {
+		fclose(dellist_str); fclose(dellist_len);
 	}
 	fclose(packet_input);
 	rtn->upcase = upcase_applied;

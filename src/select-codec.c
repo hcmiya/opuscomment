@@ -74,6 +74,16 @@ static void check_theora(ogg_page *og) {
 	}
 }
 
+static void check_vp8(ogg_page *og) {
+	// https://people.freedesktop.org/~slomo/ogg-vp8/ogg-vp8.pdf
+	// ヘッダ長、ヘッダ種類
+	if (og->body_len < 26 || og->body[5] != 1) opuserror(err_opus_bad_content);
+	// major 1
+	if (og->body[6] != 1) opuserror(err_opus_version);
+	// minor 0。0ならば必ずサイズは26
+	if (og->body[7] == 0 && og->body_len != 26) opuserror(err_opus_bad_content);
+}
+
 static void check_vorbis(ogg_page *og) {
 // 0-6 "\x1" "\x76\x6f\x72\x62\x69\x73" 
 /*7-10   1) [vorbis_version] = read 32 bits as unsigned integer
@@ -136,6 +146,8 @@ static struct codec_parser set[] = {
 	{CODEC_COMMON, "ogguvscomment", "UVS", 8, "\x55\x56\x53\x20\x20\x20\x20\x20", check_uvs, 0, NULL},
 	// "\x7fFLAC", (variable)
 	{CODEC_FLAC, "oggflaccomment", "FLAC", 5, "\x7f\x46\x4C\x41\x43", check_flac, 0, NULL},
+	// "\x4f" "VP80", "\x4f" "VP80" "\x2 " (optional)
+	{CODEC_VP8, "vp8comment", "VP8", 5, "\x4f" "\x56\x50\x38\x30", check_vp8, 7, "\x4f" "\x56\x50\x38\x30" "\x2\x20"},
 	{0, NULL, NULL, 0, NULL, NULL, 0, NULL},
 };
 
