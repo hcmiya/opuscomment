@@ -58,7 +58,7 @@ bool test_non_opus(ogg_page *og) {
 		}
 		return true;
 	}
-	have_multi_streams = true;
+// 	have_multi_streams = true;
 	
 	int pno = ogg_page_pageno(og);
 	if (pno == 0) {

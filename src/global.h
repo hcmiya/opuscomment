@@ -67,7 +67,8 @@ GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
 
 GLOBAL uint32_t opus_idx, opus_sno, opus_idx_diff;
-GLOBAL bool leave_header_packets, have_multi_streams;
+GLOBAL bool leave_header_packets;
+// GLOBAL bool have_multi_streams;
 GLOBAL bool error_on_thread;
 
 GLOBAL FILE *stream_input, *built_stream;

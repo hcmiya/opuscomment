@@ -265,6 +265,8 @@ static void exit_without_sigpipe(void) {
 	signal(SIGPIPE, SIG_IGN);
 }
 
+static size_t header_packet_pos, header_packet_len;
+static long built_header_pos;
 bool parse_info(ogg_page *og) {
 	static int osidx = 0;
 	if (!ogg_page_bos(og) || ogg_page_eos(og)) {
@@ -288,15 +290,18 @@ bool parse_info(ogg_page *og) {
 		opuserror(err_opus_bad_stream);
 	}
 	if (og->header_len < codec->headmagic_len || memcmp(og->body, codec->headmagic, codec->headmagic_len) != 0) {
-		have_multi_streams = true;
+// 		have_multi_streams = true;
 		return false;
 	}
 	osidx++;
 	if (O.target_idx && O.target_idx != osidx) {
-		have_multi_streams = true; // ゲイン上書き処理で使う
+// 		have_multi_streams = true;
 		return false;
 	}
 	opus_sno = ogg_page_serialno(og);
+	header_packet_len = og->header_len + og->body_len;
+	header_packet_pos = seeked_len - header_packet_len;
+	built_header_pos = ftell(built_stream);
 	codec->parse(og);
 	if (O.edit != EDIT_LIST && codec->type != CODEC_FLAC) {
 		write_page(og, built_stream);
@@ -321,36 +326,28 @@ void *parse_tags(void*);
 
 static pthread_t retriever_thread, parser_thread;
 bool parse_info_border(ogg_page *og) {
-	leave_header_packets = true;
+	// ここにはページ番号1で来ているはず
 	if (ogg_page_continued(og)) {
 		opuserror(err_opus_border);
 	}
+	leave_header_packets = true;
+	
 	if (/*O.gain_fix && */O.edit == EDIT_NONE) {
 		// 出力ゲイン編集のみの場合
-		if (O.out || have_multi_streams) {
-			// 出力指定が別にあるかストリームが多重化されていたら残りをコピー
+		if (O.out) {
+			// 出力指定が別にある場合残りをコピー
 			put_left(og->header_len + og->body_len);
 		}
 		else {
 			// 上書きするなら最初のページのみを直接書き換えようとする
-			size_t headpagelen = ftell(built_stream);
-			rewind(built_stream);
-			uint8_t b[65536];
-			
-			seeked_len -= og->header_len + og->body_len + headpagelen;
+			uint8_t b[header_packet_len];
 			FILE *stream_overwrite = freopen(NULL, "r+", stream_input);
-			if (!stream_overwrite) {
-				oserror();
-			}
-			if (fseek(stream_overwrite, seeked_len, SEEK_SET)) {
-				oserror();
-			}
-			size_t ret = fread(b, 1, headpagelen, built_stream);
-			if (ret != headpagelen) {
-				oserror();
-			}
-			ret = fwrite(b, 1, headpagelen, stream_overwrite);
-			if (ret != headpagelen) {
+			if (!stream_overwrite
+				|| fseek(built_stream, built_header_pos, SEEK_SET)
+				|| fseek(stream_overwrite, header_packet_pos, SEEK_SET)
+				|| header_packet_len != fread(b, 1, header_packet_len, built_stream)
+				|| header_packet_len != fwrite(b, 1, header_packet_len, stream_overwrite)
+			) {
 				oserror();
 			}
 			exit(0);
@@ -474,11 +471,13 @@ static void parse_page(ogg_page *og) {
 	}
 }
 
-
+static void (*parse)(ogg_page*);
+void set_parser_type(void) {
+	parse = codec->type == CODEC_FLAC ? parse_flac : parse_page;
+}
 void read_page(ogg_sync_state *oy) {
 	int seeklen;
 	ogg_page og;
-	void (*parse)(ogg_page*) = codec->type == CODEC_FLAC ? parse_flac : parse_page;
 	while ((seeklen = ogg_sync_pageseek(oy, &og)) != 0) {
 		if (seeklen > 0) {
 			seeked_len += seeklen;
