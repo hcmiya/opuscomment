@@ -273,13 +273,7 @@ bool parse_info(ogg_page *og) {
 		if (ogg_page_pageno(og) == 0) {
 			opuserror(err_opus_bad_stream);
 		}
-		
-		if (osidx) {
-			opuserror(err_opus_no_target, O.target_idx);
-		}
-		else {
-			opuserror(err_opus_non_opus);
-		}
+		opuserror(err_opus_no_target_codec);
 	}
 	if (ogg_page_pageno(og) != 0) {
 		// BOSがあるのにページが0でない

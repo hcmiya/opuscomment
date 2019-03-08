@@ -1,6 +1,16 @@
+$ error at parsing arguments
+$ prefixed "opuscomment: -?: "
 $set 7
 
+$ failed to parse the argument as number
 1 failed to parse value
+
+$ -g|-s: -128 dB ≤ x < +128 dB
 2 the value is out of range
+
+$ argument of -t|-d doesn't satisfy requirements of tag format
 3 invalid tag format
+
+$ 
+$ %1$s = the argument which specifies unsupported codec name
 4 unknown codec “%s”

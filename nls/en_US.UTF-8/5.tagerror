@@ -1,8 +1,22 @@
+$ error at input tag
+$ prefixed "opuscomment: editing input #xx: "
+
 $set 5
 
+$ the record doesn't contain '='
 1 no field separator
+
+$ field name has out of 0x20-0x7e
 2 invalid field name
+
+$ the record begins by '='
 3 empty field name
+
+$ get '\0'
 4 binary file
+
+$ about '\\'
 5 invalid escape sequence
+
+$ 
 6 invalid UTF-8 sequence

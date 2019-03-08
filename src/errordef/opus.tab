@@ -12,7 +12,7 @@ LIST(  2, true,  interrupted,
 	"header is interrupted" )
 LIST(  3, true,  border,
 	"unexpected page break" )
-LIST(  4, false, non_opus,
+LIST(  4, false, no_target_codec,
 	"stream doesn't contain the codec" )
 LIST(  5, true,  bad_stream,
 	"invalid Ogg stream" )
@@ -32,5 +32,5 @@ LIST( 12, true,  bad_content,
 	"invalid header content" )
 LIST( 13, false, bad_tag,
 	"invalid tag format at #%d" )
-LIST( 14, false, no_target,
-	"no target stream" )
+LIST( 14, false, unused_14,
+	NULL )

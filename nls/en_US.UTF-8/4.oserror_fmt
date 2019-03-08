@@ -1,4 +1,9 @@
+$ alternate of strerror(errno)
+$ prefixed "opuscomment: "
+
 $set 4
 
-$ %1$s = 変換元 %2$s = 変換先 
+$ iconv_open error
+$ %1$s = srccode
+$ %2$s = destcode
 3 iconv doesn’t support converting %s → %s

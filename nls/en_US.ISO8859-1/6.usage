@@ -1,12 +1,16 @@
-$ ??????????????????????????????????????
+$ usage message outputted to stderr
 
 $set 6
 $quote `
 
-$ version: %1$s = version string (x.y.z), %2$s = reviced date, made by strftime("%x")
+$ version
+$ %1$s = version string (x.y.z)
+$ %2$s = reviced date, made by strftime("%x")
 3 `Version: %s (rev. %s)\n`
 
-$ %1$s = program name %2$s = codec name, e.g. Opus, Theora, ...
+$ main usage
+$ %1$s = program name retrieved from argv[0]
+$ %2$s = codec name, e.g. Opus, Theora, ...
 4 `\
 Synopsys:\n\
     %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n\
@@ -40,6 +44,7 @@ Options:\n\
     -D    Defer editing IO; implies -V, -T\n\
 `
 
+$ opus specific options
 5 `\
     -g gain\n\
           Specify output gain in dB\n\

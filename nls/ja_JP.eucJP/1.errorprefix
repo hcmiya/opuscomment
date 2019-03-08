@@ -1,23 +1,30 @@
-$ 以下でいう「プログラム名」とはプログラムパスから得られた実行ファイル名を指す
+$ エラー文句のプレフィックス
 
 $set 1
 
 $quote "
 
-$ errorprefix: %s = プログラム名
+$ errorprefix: すべてのエラー文句の前に前置されるやつ
+$ %1$s = argv[0]から取得したプログラム名
 3 "%s: "
 
-$ opuserror ページ番号あり
+$ opuserror: Oggストリーム・コーデックのエラー
+$ %1$s = コーデック名
+$ %2$u = エラーが起こったページの番号
 4 "%sフォーマットエラー: %uページ目: "
 
-$ fileerror: %1$s = ファイル名
+$ fileerror: I/Oエラー
+$ %1$s = file name
 5 "%s: "
 
-$ tagerror: %zu = エラーが起こったタグの順番
+$ tagerror: タグパースのエラー
+$ %1$zu = current number of tag input
 6 "タグ入力%zu番目: "
 
-$ opterror: %c = オプションの1文字
+$ opterror: コマンドラインオプションのエラー
+$ %1$c = オプションの1文字
 7 "-%c: "
 
-$ opuserror ページ番号無し
+$ opuserror: Oggストリーム・コーデックのエラー、ページ番号報告無し
+$ %1$s = コーデック名
 8 "%sフォーマットエラー: "

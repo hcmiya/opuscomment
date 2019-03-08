@@ -1,13 +1,34 @@
+$ invalid usage, or generic error message in whole program
+$ prefixed "opuscomment: "
+
 $set 2
 
-3 failed to parse value
-4 the value is out of range
+$ -l
 5 can not use -t with list mode
+
+$ 
 6 use -a|-w with editing tag
+
+$ 
 7 options of editing gain can not use with list mode
+
+$ 
 8 no file specified
+
+$ 
 9 too many arguments
+
+$ %1$u = TAG_LENGTH_LIMIT__OUTPUT >> 20
 10 tag length exceeded the limit of storing (up to %u MiB)
-11 too long editing input. Haven’t you executed odd command?
+
+$ 
+11 too long editing input. Didn't you execute odd command?
+
+$ if -D and input is empty
 12 empty editing input
+
+$ if -T and no '\n' by EOF
 13 editing input is not terminated by line feed
+
+$ -d is exclusive to -l|-w. -d implies -a when mode option is omitted
+14 use -a with deleting tag

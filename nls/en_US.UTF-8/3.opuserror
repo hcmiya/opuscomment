@@ -1,15 +1,48 @@
+$ prefixed "opuscomment: Opus codec error: "
+
 $set 3
 
+$ first 4 bytes not matched to "OggS"
 1 not an Ogg
+
+$ if reached to EOF before reading sound page
 2 header is interrupted
+
+$ the packet needs to consist of single page
 3 unexpected page break
-4 stream doesn’t contain the codec
+
+$ doesn't contain opus
+4 target stream not found
+
+$ invalid BOS/EOS, the stream doesn't begin by page #0, etc
 5 invalid Ogg stream
+
+$ codec version
 6 unsupported version
+
+$ 7 missing
+
+$ tags stored in the codec stream is not utf-8
+$ %1$d = # of tag
 8 invalid UTF-8 sequence at tag record #%d
+
+$ 
+$ %1$u = TAG_LENGTH_LIMIT__INPUT >> 20
 9 tag packet is too long (up to %u MiB)
+
+$ ogg page may be dropped
+$ %1$u = encountered page no.
+$ %2$u = expected page no.
 10 discontinuous page—encountered p. %u against expectation of p. %u
+
+$ the packet of storing tag is shorter than total of tag chunk length
 11 tag packet is incomplete
+
+$ header contents is out of spec
 12 invalid header content
+
+$ the tag doesn't consist of NAME=VALUE
+$ %1$d = # of tag
 13 invalid tag format at #%d
-14 no target stream
+
+$ 14 missing
