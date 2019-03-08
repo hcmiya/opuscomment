@@ -9,10 +9,10 @@
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 .SH 書式
 
-\fBopuscomment\fR [ \fB-l\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-DepQRUv\fR ] \fB\fIsrcfile\fB\fR
+\fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-DepQRUv\fR ] \fB\fIsrcfile\fB\fR
 
 
-\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
+\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
 
 .SH "説明"
 .PP
@@ -35,8 +35,11 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 \fB-h\fR
 使い方を表示して終了する
 .TP
+\fB-C \fIcodec\fB\fR
+編集対象のコーデックを指定する
+.TP
 \fB-i \fIidx\fB\fR
-多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している
+多重化されたOggストリーム中の編集対象のストリームを、対象コーデック以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している
 .TP
 \fB-R\fR
 タグ入出力にUTF-8を使う。このオプションがない場合はロケールによる文字符号化との変換が行われる(\fBvorbiscomment\fR(1)互換)
