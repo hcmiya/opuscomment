@@ -1,0 +1,48 @@
+$ prefixed "opuscomment: Opus codec error: "
+
+$set 3
+
+$ first 4 bytes not matched to "OggS"
+1 n07 4n 066
+
+$ if reached to EOF before reading sound page
+2 h34d3r 15 1n73rrup73d
+
+$ the packet needs to consist of single page
+3 un3xp3c73d p463 br34k
+
+$ doesn't contain opus
+4 74r637 57r34m n07 f0und
+
+$ invalid BOS/EOS, the stream doesn't begin by page #0, etc
+5 1nv4l1d 066 57r34m
+
+$ codec version
+6 un5upp0r73d v3r510n
+
+$ 7 missing
+
+$ tags stored in the codec stream is not utf-8
+$ %1$d = # of tag
+8 1nv4l1d u7f-8 53qu3nc3 47 746 r3c0rd #%d
+
+$ 
+$ %1$u = TAG_LENGTH_LIMIT__INPUT >> 20
+9 746 p4ck37 15 700 l0n6 (up 70 %u m1b)
+
+$ ogg page may be dropped
+$ %1$u = encountered page no.
+$ %2$u = expected page no.
+10 d15c0n71nu0u5 p463 - 3nc0un73r3d p. %u 4641n57 3xp3c74710n 0f p. %u
+
+$ the packet of storing tag is shorter than total of tag chunk length
+11 746 p4ck37 15 1nc0mpl373
+
+$ header contents is out of spec
+12 1nv4l1d h34d3r c0n73n7
+
+$ the tag doesn't consist of NAME=VALUE
+$ %1$d = # of tag
+13 1nv4l1d 746 f0rm47 47 #%d
+
+$ 14 missing

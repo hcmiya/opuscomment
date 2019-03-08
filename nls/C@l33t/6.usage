@@ -1,0 +1,59 @@
+$ usage message outputted to stderr
+
+$set 6
+$quote `
+
+$ version
+$ %1$s = version string (x.y.z)
+$ %2$s = reviced date, made by strftime("%x")
+3 `v3r510n: %s (r3v. %s)\n`
+
+$ main usage
+$ %1$s = program name retrieved from argv[0]
+$ %2$s = codec name, e.g. Opus, Theora, ...
+4 `\
+5yn0p5y5:\n\
+    %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n\
+    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n\
+    %1$s [-h]\n\
+\n\
+0p710n5:\n\
+    -l    l157 m0d3\n\
+    -a    4pp3nd m0d3\n\
+    -w    wr173 m0d3\n\
+    -h    pr1n7 7h15 m355463 4nd 3x17\n\
+    -C codec\n\
+          53l3c7 c0d3c\n\
+    -i idx\n\
+          5p3c1fy %2$s 1nd3x f0r 3d171n6 1n mul71pl3x3d 066 57r34m\n\
+          (1-0r161n, w17h0u7 n0n-%2$s 57r34m)\n\
+    -R    455um3 3d171n6 10 70 b3 3nc0d3d 1n u7f-8\n\
+    -e    u53 35c4p3 53qu3nc3; \\\\, \\n, \\r 4nd \\0\n\
+    -t NAME=VALUE\n\
+          4dd 7h3 4r6um3n7 45 3d171n6 173m\n\
+    -c tagfile\n\
+          1n l157 m0d3, wr173 7465 70 "tagfile".\n\
+          1n 4pp3nd/wr173 m0d3, r34d 7465 fr0m "tagfile"\n\
+    -d NAME[=VALUE]\n\
+          d3l373 7465 m47ch3d w17h 7h3 4r6um3n7 fr0m "srcfile".\n\
+          wh3n "VALUE" 15 0m1773d, 4ll 0f "NAME" 15 r3m0v3d. 1mpl135 '-U'\n\
+    -p    5upr355 3d171n6 f0r m374d474_bl0ck_p1c7ur3\n\
+    -U    c0nv3r7 f13ld n4m3 570r3d 1n "srcfile" 70 upp3rc453\n\
+    -V    v3r1fy 7465 570r3d 1n "srcfile"\n\
+    -T    ch3ck wh37h3r 3d171n6 1npu7 h45 b33n 73rm1n473d by l1n3 f33d.\n\
+    -D    d3f3r 3d171n6 10; 1mpl135 '-V', '-T'\n\
+`
+
+$ opus specific options
+5 `\
+    -g gain\n\
+          5p3c1fy 0u7pu7 641n 1n db\n\
+    -s scale\n\
+          5p3c1fy 0u7pu7 641n 1n 5c4l3 f0r pcm 54mpl35.\n\
+          "1" f0r 54m3 5c4l3. "0.5" f0r h4lf.\n\
+    -r    5p3c1fy 7h47 7h3 641n 15 r3l471v3 70 1n73rn4l v4lu3\n\
+    -1    wh3n 0u7pu7 641n b3c0m35 0 by c0nv3r71n6 70 1n73rn4l r3pr353n74710n,\n\
+          537 [+-]1/256 db 1n5734d\n\
+    -Q    u53 q7.8 f0rm47 f0r 3d171n6 0u7pu7 641n\n\
+    -v    pu7 0u7pu7 641n 70 57d3rr\n\
+`

@@ -1,0 +1,34 @@
+$ invalid usage, or generic error message in whole program
+$ prefixed "opuscomment: "
+
+$set 2
+
+$ 
+5 c4n n07 u53 '-t' w17h l157 m0d3
+
+$ 
+6 u53 '-a|-w' w17h 3d171n6 746
+
+$ 
+7 0p710n5 0f 3d171n6 641n c4n n07 u53 w17h l157 m0d3
+
+$ 
+8 n0 f1l3 5p3c1f13d
+
+$ 
+9 700 m4ny 4r6um3n75
+
+$ %1$u = TAG_LENGTH_LIMIT__OUTPUT >> 20
+10 746 l3n67h 3xc33d3d 7h3 l1m17 0f 570r1n6 (up 70 %u m1b)
+
+$ 
+11 700 l0n6 3d171n6 1npu7. d1dn'7 y0u 3x3cu73 0dd c0mm4nd?
+
+$ if -D and input is empty
+12 3mp7y 3d171n6 1npu7
+
+$ if -T and no '\n' by EOF
+13 3d171n6 1npu7 15 n07 73rm1n473d by l1n3 f33d
+
+$ -d is exclusive to -l|-w. -d implies -a when mode option is omitted
+14 u53 '-a' w17h d3l371n6 746

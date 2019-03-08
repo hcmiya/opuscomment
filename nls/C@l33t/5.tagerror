@@ -1,0 +1,22 @@
+$ error at input tag
+$ prefixed "opuscomment: editing input #xx: "
+
+$set 5
+
+$ the record doesn't contain '='
+1 n0 f13ld 53p4r470r
+
+$ field name has out of 0x20-0x7e
+2 1nv4l1d f13ld n4m3
+
+$ the record begins by '='
+3 3mp7y f13ld n4m3
+
+$ get '\0'
+4 b1n4ry f1l3
+
+$ about '\\'
+5 1nv4l1d 35c4p3 53qu3nc3
+
+$ 
+6 1nv4l1d u7f-8 53qu3nc3

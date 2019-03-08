@@ -1,0 +1,9 @@
+$ alternate of strerror(errno)
+$ prefixed "opuscomment: "
+
+$set 4
+
+$ iconv_open error
+$ %1$s = srccode
+$ %2$s = destcode
+3 1c0nv d035n'7 5upp0r7 c0nv3r71n6 %s -> %s

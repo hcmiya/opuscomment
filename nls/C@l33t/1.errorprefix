@@ -1,0 +1,30 @@
+$ prefix of error message
+
+$set 1
+
+$quote "
+
+$ errorprefix: prefixed to all error messages
+$ %1$s = program name retrieved from argv[0]
+3 "%s: "
+
+$ opuserror: prefixed to codec/ogg-stream specific error
+$ %1$s = codec name
+$ %2$u = the page in where error caused
+4 "%s f0rm47 3rr0r: p463 %u: "
+
+$ fileerror: prefixed to I/O error
+$ %1$s = file name
+5 "%s: "
+
+$ tagerror: prefixed to parsing tags error
+$ %1$zu = current number of tag input
+6 "3d171n6 1npu7 #%zu: "
+
+$ opterror: prefixed to command line option error
+$ %1$c = single char of option
+7 "-%c: "
+
+$ opuserror: prefixed to codec/ogg-stream specific error, no page reporting
+$ %1$s = codec name
+8 "%s f0rm47 3rr0r: "
