@@ -10,9 +10,9 @@ CONFSRCS=endianness.c error.c main.c
 OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
 HEADERS=global.h ocutil.h limit.h error.h
 ERRORDEFS=errordef/opus.tab errordef/main.tab
-CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS -DNDEBUG
-#CFLAGS=-D_XOPEN_SOURCE=600 -DNLS -DNDEBUG
-LDFLAGS=
+CFLAGS+=-D_POSIX_C_SOURCE=200809L -DNLS
+#CFLAGS+=-D_XOPEN_SOURCE=600
+LDFLAGS+=
 LIBS=-logg -lm -lpthread
 CC=c99
 
@@ -30,11 +30,6 @@ opuscomment: $(OBJS)
 $(SRCS): $(HEADERS)
 	@touch $@
 
-debug: ../tests/ocd ;
-
-../tests/ocd: $(HEADERS) $(SRCS) $(CONFSRCS) $(ERRORDEFS)
-	$(CC) -g -o $@ $(CFLAGS) -UNDEBUG $(LDFLAGS) $(LIBS) $(SRCS) $(CONFSRCS)
-
 endianness.c: endianness-check.sh
 	./endianness-check.sh >endianness.c
 
@@ -45,4 +40,4 @@ main.c: $(HEADERS) version.h
 	@touch $@
 
 clean:
-	rm endianness.c opuscomment ../tests/ocd $(OBJS) 2>/dev/null || :
+	rm endianness.c opuscomment $(OBJS) 2>/dev/null || :
