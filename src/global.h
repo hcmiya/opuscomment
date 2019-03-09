@@ -53,7 +53,6 @@ GLOBAL struct codec_parser {
 	enum {
 		CODEC_OPUS,
 		CODEC_COMMON,
-		CODEC_FLAC,
 		CODEC_VP8,
 	} type;
 	char const *prog, *name;

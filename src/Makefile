@@ -5,7 +5,7 @@
 # iconv(3)は昔のFreeBSDの様に別ライブラリになっている可能性もあるので、適宜LIBSを編集するようお願いします。
 # NLSに対応していない、あるいは必要がない場合は、CFLAGSから-DNLSを除くことで無効に出来ます。
 
-SRCS=put-tags.c parse-tags.c read.c read-flac.c ocutil.c retrieve-tags.c select-codec.c
+SRCS=put-tags.c parse-tags.c read.c ocutil.c retrieve-tags.c select-codec.c
 CONFSRCS=endianness.c error.c main.c
 OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
 HEADERS=global.h ocutil.h limit.h error.h

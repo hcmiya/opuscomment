@@ -224,7 +224,6 @@ static bool rtcopy_list(FILE *packet_input, void *listfd_) {
 }
 
 void *put_tags(void*);
-void flac_next_is_audio(void);
 void *retrieve_tags(void *packet_input_) {
 	// parse_header_border() からスレッド化された
 	FILE *packet_input = packet_input_;
@@ -235,38 +234,22 @@ void *retrieve_tags(void *packet_input_) {
 	FILE *fptag = rtn->tag = tmpfile();
 	rtn->part_of_comment = true;
 	uint32_t len;
-	if (codec->type == CODEC_FLAC) {
-		rtread(buf, 4, packet_input);
-		if (buf[0] & 0x7f != 4) {
-			opuserror(err_opus_bad_content);
+	rtread(buf, codec->commagic_len, packet_input);
+	if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
+		if (codec->type == CODEC_VP8 && buf[5] != 2) {
+			len = codec->commagic_len;
+			rtn->part_of_comment = false;
 		}
-		if (buf[0] & 0x80) {
-			flac_next_is_audio();
-		}
-		// 1-3バイト目はネイティブFLACによるヘッダのバイト数が格納されるが
-		// Oggパケットを代わりに使うので無視
-		// 次・Oggパケットの一部となる上記ヘッダを一時埋め
-		fwrite(buf, 1, 4, fptag);
-		check_tagpacket_length(4);
+		else opuserror(err_opus_bad_content);
 	}
-	else {
-		rtread(buf, codec->commagic_len, packet_input);
-		if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
-			if (codec->type == CODEC_VP8 && buf[5] != 2) {
-				len = codec->commagic_len;
-				rtn->part_of_comment = false;
-			}
-			else opuserror(err_opus_bad_content);
-		}
-		fwrite(buf, 1, codec->commagic_len, fptag);
-		if (!rtn->part_of_comment) {
-			// コメントパケットが無かった時用
-			if (O.edit == EDIT_LIST) exit(0);
-			uint8_t buf2[8] = "";
-			fwrite(buf, 1, 8, fptag);
-			rtn->tagbegin = codec->commagic_len + 4;
-			goto NOTCOMMENT;
-		}
+	fwrite(buf, 1, codec->commagic_len, fptag);
+	if (!rtn->part_of_comment) {
+		// コメントパケットが無かった時用
+		if (O.edit == EDIT_LIST) exit(0);
+		uint8_t buf2[8] = "";
+		fwrite(buf, 1, 8, fptag);
+		rtn->tagbegin = codec->commagic_len + 4;
+		goto NOTCOMMENT;
 	}
 	
 	// ベンダ文字列

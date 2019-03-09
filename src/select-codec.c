@@ -127,8 +127,6 @@ static void check_uvs(ogg_page *og) {
 	}
 }
 
-void check_flac(ogg_page *og);
-
 static struct codec_parser set[] = {
 	// "OpusHead", "OpusTags"
 	{CODEC_OPUS, NULL, "Opus", 8, "\x4f\x70\x75\x73\x48\x65\x61\x64", check_opus, 8, "\x4f\x70\x75\x73\x54\x61\x67\x73"},
@@ -144,9 +142,6 @@ static struct codec_parser set[] = {
 	{CODEC_COMMON, "oggpcmcomment", "PCM", 8, "\x50\x43\x4d\x20\x20\x20\x20\x20", check_pcm, 0, NULL},
 	// "UVS     ", NULL
 	{CODEC_COMMON, "ogguvscomment", "UVS", 8, "\x55\x56\x53\x20\x20\x20\x20\x20", check_uvs, 0, NULL},
-	// "\x7fFLAC", (variable)
-	{CODEC_FLAC, "oggflaccomment", "FLAC", 5, "\x7f\x46\x4C\x41\x43", check_flac, 0, NULL},
-	// "\x4f" "VP80", "\x4f" "VP80" "\x2 " (optional)
 	{CODEC_VP8, "vp8comment", "VP8", 5, "\x4f" "\x56\x50\x38\x30", check_vp8, 7, "\x4f" "\x56\x50\x38\x30" "\x2\x20"},
 	{0, NULL, NULL, 0, NULL, NULL, 0, NULL},
 };

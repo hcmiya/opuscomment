@@ -60,8 +60,6 @@ void put_left(size_t rew) {
 	exit(0);
 }
 
-bool flac_make_tag_packet(ogg_page *og, FILE *fptag, FILE **built_stream);
-
 static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page) {
 	FILE *fptag = rst->tag;
 	size_t const pagebuflen = 65536; // oggページの最大長 = 65307
@@ -102,11 +100,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		exceed_output_limit();
 	}
-	bool lastmeta = true;
 	FILE *pages = built_stream;
-	if (codec->type == CODEC_FLAC) {
-		lastmeta = flac_make_tag_packet(np, fptag, &pages);
-	}
 	
 	rewind(fptag); 
 	ogg_page og;
@@ -190,7 +184,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 		/* NOTREACHED */
 	}
 	opus_idx_diff = idx - opus_idx;
-	opst = lastmeta ? PAGE_SOUND : PAGE_INFO_BORDER;
+	opst = PAGE_SOUND;
 }
 
 static void cleanup(void) {
@@ -298,7 +292,7 @@ bool parse_info(ogg_page *og) {
 	header_packet_pos = seeked_len - header_packet_len;
 	built_header_pos = ftell(built_stream);
 	codec->parse(og);
-	if (O.edit != EDIT_LIST && codec->type != CODEC_FLAC) {
+	if (O.edit != EDIT_LIST) {
 		write_page(og, built_stream);
 	}
 	opus_idx++;
@@ -476,19 +470,13 @@ static void parse_page(ogg_page *og) {
 	}
 }
 
-void parse_flac(ogg_page *og);
-
-static void (*parse)(ogg_page*);
-void set_parser_type(void) {
-	parse = codec->type == CODEC_FLAC ? parse_flac : parse_page;
-}
 void read_page(ogg_sync_state *oy) {
 	int seeklen;
 	ogg_page og;
 	while ((seeklen = ogg_sync_pageseek(oy, &og)) != 0) {
 		if (seeklen > 0) {
 			seeked_len += seeklen;
-			parse(&og);
+			parse_page(&og);
 		}
 		else seeked_len += -seeklen;
 	}

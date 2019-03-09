@@ -113,13 +113,11 @@ static void toutf8(int fdu8) {
 static FILE *strstore, *strcount;
 static size_t editlen;
 
-static bool first_call = true, ignore_picture = false;
+static bool first_call = true;
 static uint32_t recordlen;
 static void finalize_record(void) {
-	if (!ignore_picture) {
-		fwrite(&recordlen, 4, 1, strcount);
-		tagnum++;
-	}
+	fwrite(&recordlen, 4, 1, strcount);
+	tagnum++;
 	first_call = true;
 }
 
@@ -136,7 +134,6 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 		keep_blank = true;
 		wsplen = 0;
 		recordlen = 0;
-		ignore_picture = false;
 	}
 	if (keep_blank) {
 		size_t i;
@@ -194,7 +191,6 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 }
 
 static void append_buffer(uint8_t *line, size_t n) {
-	if (ignore_picture) return;
 	editlen += n;
 	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		exceed_output_limit();
@@ -244,17 +240,7 @@ static void test_mbp(uint8_t **line, size_t *n) {
 				w = 22;
 			}
 			else if (fieldlen == 22 && !on_field) {
-				uint8_t const *mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d";
-				if (codec->type == CODEC_FLAC &&
-					memcmp(field_pending, mbp, 22) == 0) {
-					// FLACでM_B_Pを入力した時は今の処無視しておく
-					ignore_picture = true;
-					editlen -= 4;
-					w = 0;
-				}
-				else {
-					w = 22;
-				}
+				w = 22;
 			}
 			else {
 				w = fieldlen;

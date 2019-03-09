@@ -89,7 +89,6 @@ static void out_of_range(int c) {
 
 void select_codec(void);
 bool select_codec_by_name(char const*);
-void set_parser_type(void);
 
 static void parse_args(int argc, char **argv) {
 	int c;
@@ -351,7 +350,6 @@ int main(int argc, char **argv) {
 	if (memcmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
 		opuserror(err_opus_non_ogg);
 	}
-	set_parser_type();
 	open_output_file();
 	ogg_sync_wrote(&oy, len);
 	read_page(&oy);
