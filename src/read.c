@@ -16,6 +16,7 @@
 static size_t seeked_len;
 static char *outtmp;
 static bool remove_tmp;
+static FILE *non_opus_stream;
 
 void move_file(void) {
 	if (fclose(built_stream) == EOF) {
@@ -61,7 +62,7 @@ void put_left(size_t rew) {
 
 bool flac_make_tag_packet(ogg_page *og, FILE *fptag, FILE **built_stream);
 
-static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est) {
+static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page) {
 	FILE *fptag = rst->tag;
 	size_t const pagebuflen = 65536; // oggページの最大長 = 65307
 	uint8_t pagebuf[pagebuflen];
@@ -87,11 +88,15 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est)
 	}
 	fclose(est->str); fclose(est->len);
 	
-	if (rst->padding) {
-		// パディングがある時は先頭をfptagの後ろに移す(Vorbis対策)
+	if (rst->padding && rst->part_of_comment) {
+		// パディングがある時はfptagの後ろに移す
 		rewind(rst->padding);
-		fread(pagebuf, 1, 1, rst->padding);
-		fwrite(pagebuf, 1, 1, fptag);
+		size_t readlen;
+		while (readlen = fread(pagebuf, 1, pagebuflen, rst->padding)) {
+			fwrite(pagebuf, 1, readlen, fptag);
+		}
+		fclose(rst->padding);
+		rst->padding = NULL;
 	}
 	long commentlen = ftell(fptag);
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
@@ -109,102 +114,80 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est)
 	og.header = pagebuf;
 	og.body_len = 255 * 255;
 	og.body = pagebuf + 282;
-	memcpy(og.header,
-		"\x4f\x67\x67\x53"
-		"\0"
-		"\0"
-		"\0\0\0\0\0\0\0\0", 14);
-// 		"S.NO"
-// 		"SEQ "
-// 		"CRC ", 26);
+	memcpy(og.header, "\x4f\x67\x67\x53\x0\x0", 6);
+	set_granulepos(&og, -1);
 	*(uint32_t*)&og.header[14] = oi32(opus_sno);
 	memset(og.header + 26, 0xff, 256);
 	
 	uint32_t idx = 1;
 	while (commentlen >= 255 * 255) {
-		og.header[5] = idx != 1;
 		fread(og.body, 1, 255 * 255, fptag);
-		*(uint32_t*)&og.header[18] = oi32(idx);
+		set_pageno(&og, idx++);
 		ogg_page_checksum_set(&og);
 		write_page(&og, pages);
 		commentlen -= 255 * 255;
-		idx++;
+		if (!og.header[5]) og.header[5] = 1;
 	}
 	
+	// パケットの最後のページ生成
 	og.header[5] = idx != 1;
-	*(uint32_t*)&og.header[18] = oi32(idx++);
+	set_granulepos(&og, 0);
+	set_pageno(&og, idx++);
 	og.header[26] = commentlen / 255 + 1;
 	og.header[26 + og.header[26]] = commentlen % 255;
 	fread(og.body, 1, commentlen, fptag);
 	fclose(fptag);
 	og.header_len = 27 + og.header[26];
 	og.body_len = commentlen;
-	if (og.header[26] != 255 && rst->padding && rst->part_of_comment) {
-		// vorbis commentの最後のページにパディングを付け足す処理
-		// vorbisはタグとパディングの間でlacing valueを分けないとおかしくなるっぽい
-		size_t len;
-		size_t laceleft = (255 - og.header[26]) * 255;
-		len = fread(og.body + og.body_len, 1, laceleft, rst->padding);
-		if (laceleft == len) {
-			og.header_len = 282;
-			og.header[26] = 255;
-			og.body_len += len;
-		}
-		else {
-			fclose(rst->padding);
-			rst->padding = NULL;
-			int seg = len / 255 + 1;
-			int lastseg = len % 255;
-			og.header_len += seg;
-			og.header[26] += seg;
-			og.header[26 + og.header[26]] = lastseg;
-			og.body_len += len;
-		}
-	}
 	ogg_page_checksum_set(&og);
 	write_page(&og, pages);
 	
-	if (rst->padding) {
-		memset(og.header + 26, 0xff, 256);
-		og.header[5] = rst->part_of_comment;
-		size_t readlen;
-		while ((readlen = fread(og.body, 1, 255 * 255, rst->padding))) {
-			*(uint32_t*)&og.header[18] = oi32(idx++);
-			if (readlen != 255 * 255) break;
-			ogg_page_checksum_set(&og);
-			write_page(&og, pages);
-		}
-		fclose(rst->padding);
-		
-		og.header[26] = readlen / 255 + 1;
-		og.header[26 + og.header[26]] = readlen % 255;
-		og.header_len = 27 + og.header[26];
-		og.body_len = readlen;
+	// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
+	// 空のページを生成して開始ページ番号を合わせる
+	og.header_len = 27;
+	og.header[5] = 0;
+	set_granulepos(&og, -1);
+	og.header[26] = 0;
+	og.body_len = 0;
+	while (idx < opus_idx - packet_break_in_page) {
+		set_pageno(&og, idx++);
 		ogg_page_checksum_set(&og);
 		write_page(&og, pages);
 	}
 	
-	size_t lastpagelen = np->header_len + np->body_len;
-	if (lastmeta && idx < opus_idx) {
-		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
-		// 空のページを生成して開始ページ番号を合わせる
-		og.header[5] = 1;
-		og.header[26] = 0;
-		og.header_len = 27;
-		og.body_len = 0;
-		while (idx < opus_idx) {
-			*(uint32_t*)&og.header[18] = oi32(idx++);
-			ogg_page_checksum_set(&og);
-			write_page(&og, pages);
+	if (packet_break_in_page) {
+		uint8_t *lace_tag = &np->header[27];
+		while (*lace_tag == 255) {
+			lace_tag++;
+			np->body_len -= 255;
+			np->body += 255;
 		}
-		put_left(lastpagelen);
-		/* NOTREACHED */
+		np->body_len -= *lace_tag;
+		np->body += *lace_tag;
+		lace_tag++;
+		np->header_len -= lace_tag - &np->header[27];
+		np->header[5] = 0;
+		np->header[26] -= lace_tag - &np->header[27];
+		memmove(&np->header[27], lace_tag, np->header[26]);
+		set_pageno(np, idx++);
+		ogg_page_checksum_set(np);
+		write_page(np, pages);
 	}
-	else if (lastmeta) {
-		if (idx == opus_idx) {
-			put_left(lastpagelen);
-			/* NOTREACHED */
+	
+	{
+		rewind(non_opus_stream);
+		size_t readlen;
+		while (readlen = fread(pagebuf, 1, pagebuflen, non_opus_stream)) {
+			if (fwrite(pagebuf, 1, readlen, built_stream) != readlen) {
+				oserror();
+			}
 		}
+		fclose(non_opus_stream);
+		non_opus_stream = NULL;
+	}
+	if (idx == opus_idx) {
+		put_left(0);
+		/* NOTREACHED */
 	}
 	opus_idx_diff = idx - opus_idx;
 	opst = lastmeta ? PAGE_SOUND : PAGE_INFO_BORDER;
@@ -256,6 +239,7 @@ void open_output_file(void) {
 		atexit(cleanup);
 		built_stream = fdopen(fd, "w+");
 	}
+	non_opus_stream = tmpfile();
 }
 
 static void exit_without_sigpipe(void) {
@@ -263,6 +247,21 @@ static void exit_without_sigpipe(void) {
 		return;
 	}
 	signal(SIGPIPE, SIG_IGN);
+}
+
+static void check_header_is_single_page(ogg_page *og) {
+	uint8_t lace_num = og->header[26];
+	if (!lace_num) opuserror(err_opus_border);
+	uint8_t const *lace = &og->header[27];
+	for (int_fast16_t i = 0; i < lace_num - 1; i++) {
+		if (*lace++ != 255) {
+			opuserror(err_opus_border);
+		}
+	}
+	if (*lace == 255) {
+		opuserror(err_opus_border);
+	}
+	// 最後のlacing valueはチェックしない
 }
 
 static size_t header_packet_pos, header_packet_len;
@@ -283,7 +282,9 @@ bool parse_info(ogg_page *og) {
 		// ヘッダのgranuleposは必ず0
 		opuserror(err_opus_bad_stream);
 	}
-	if (og->header_len < codec->headmagic_len || memcmp(og->body, codec->headmagic, codec->headmagic_len) != 0) {
+	check_header_is_single_page(og);
+	
+	if (og->body_len < codec->headmagic_len || memcmp(og->body, codec->headmagic, codec->headmagic_len) != 0) {
 // 		have_multi_streams = true;
 		return false;
 	}
@@ -306,17 +307,39 @@ bool parse_info(ogg_page *og) {
 }
 
 static int retriever_fd;
-static void copy_tag_packet(ogg_page *og) {
+static bool copy_tag_packet(ogg_page *og, bool *packet_break_in_page) {
 	static unsigned int total = 0;
-	total += og->body_len;
+	
+	int lace_num = og->header[26];
+	if (!lace_num) return false;
+	
+	uint8_t const *lace = &og->header[27];
+	uint8_t const *bin = og->body;
+	
+	uint_fast8_t i;
+	for (i = 0; i < lace_num - 1 && og->header[27 + i] == 255; i++, bin += 255, total += 255) {
+		if (total > TAG_LENGTH_LIMIT__INPUT) {
+			opuserror(err_opus_long_tag, TAG_LENGTH_LIMIT__INPUT >> 20);
+		}
+		write(retriever_fd, bin, 255);
+	}
+	total += og->header[27 + i];
 	if (total > TAG_LENGTH_LIMIT__INPUT) {
 		opuserror(err_opus_long_tag, TAG_LENGTH_LIMIT__INPUT >> 20);
 	}
-	write(retriever_fd, og->body, og->body_len);
+	write(retriever_fd, bin, og->header[27 + i]);
+	i++;
+	bool packet_term = false;
+	if (i != lace_num || og->header[27 + i - 1] != 255) {
+		packet_term = true;
+		*packet_break_in_page = i != lace_num;
+	}
+	return packet_term;
 }
 
 void *retrieve_tags(void*);
 void *parse_tags(void*);
+bool parse_comment(ogg_page *og);
 
 static pthread_t retriever_thread, parser_thread;
 bool parse_info_border(ogg_page *og) {
@@ -367,32 +390,26 @@ bool parse_info_border(ogg_page *og) {
 	
 	// 本スレッドはOpusTagsのパケットを構築する
 	opst = PAGE_COMMENT;
-	copy_tag_packet(og);
-	opus_idx++;
-	return true;
+	return parse_comment(og);
 }
 
+static bool parse_comment_term(ogg_page *og, bool packet_break_in_page);
 bool parse_page_sound(ogg_page *og);
-static bool parse_comment_term(ogg_page *og);
 
 bool parse_comment(ogg_page *og) {
-	if (!ogg_page_continued(og)) {
-		return parse_comment_term(og);
-	}
-	
-	if (ogg_page_eos(og)) {
+	if (ogg_page_eos(og) || opus_idx > 1 && !ogg_page_continued(og)) {
 		opuserror(err_opus_bad_stream);
 	}
-	copy_tag_packet(og);
 	opus_idx++;
+	bool packet_break_in_page;
+	if (copy_tag_packet(og, &packet_break_in_page)) {
+		return parse_comment_term(og, packet_break_in_page);
+	}
+	
 	return true;
 }
 
-void parse_flac(ogg_page *og);
-void flac_metadata_term_test(ogg_page *og);
-
-static bool parse_comment_term(ogg_page *og) {
-	flac_metadata_term_test(og);
+static bool parse_comment_term(ogg_page *og, bool packet_break_in_page) {
 	// タグパケットのパース処理のスレッドを合流
 	struct rettag_st *rst;
 	struct edit_st *est;
@@ -413,17 +430,11 @@ static bool parse_comment_term(ogg_page *og) {
 // 	else if (O.edit == EDIT_LIST) {
 // 		exit(0);
 // 	}
-	else {
-		store_tags(og, rst, est);
-		free(rst);
-		free(est);
-		if (codec->type == CODEC_FLAC) {
-			parse_flac(og);
-			return true;
-		}
-	}
+	store_tags(og, rst, est, packet_break_in_page);
+	free(rst);
+	free(est);
 	
-	return parse_page_sound(og);
+	return true;
 }
 
 bool parse_page_sound(ogg_page *og) {
@@ -461,9 +472,11 @@ static void parse_page(ogg_page *og) {
 		opuserror(err_opus_bad_stream);
 	}
 	if (!isopus) {
-		write_page(og, built_stream);
+		write_page(og, ogg_page_pageno(og) && non_opus_stream ? non_opus_stream : built_stream);
 	}
 }
+
+void parse_flac(ogg_page *og);
 
 static void (*parse)(ogg_page*);
 void set_parser_type(void) {
