@@ -148,13 +148,6 @@ void parse_flac(ogg_page *og) {
 	}
 }
 
-void flac_metadata_term_test(ogg_page *og) {
-	if (last_header ^ (og->body[0] == 0xff)) {
-		// FLACの最終メタデータ指示と音声データ開始が一致しない時エラー
-		opuserror(err_opus_bad_content);
-	}
-}
-
 bool flac_make_tag_packet(ogg_page *og, FILE *tag, FILE **out) {
 	uint32_t cplen = ntohl((ftell(tag) - 4) | 0x04000000 | (last_header << 31));
 	rewind(tag);

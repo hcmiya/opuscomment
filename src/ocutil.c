@@ -103,6 +103,10 @@ void set_pageno(ogg_page *og, int no) {
 	*(uint32_t*)&og->header[18] = oi32(no);
 }
 
+void set_granulepos(ogg_page *og, int64_t pos) {
+	*(int64_t*)&og->header[6] = oi64(pos);
+}
+
 #if _POSIX_C_SOURCE < 200809L
 size_t strnlen(char const *src, size_t n) {
 	char const *endp = src + n, *p = src;
