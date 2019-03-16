@@ -13,7 +13,7 @@ LIST(  2, true,  interrupted,
 LIST(  3, true,  border,
 	"unexpected page break" )
 LIST(  4, false, no_target_codec,
-	"stream doesn't contain the codec" )
+	"target stream not found" )
 LIST(  5, true,  bad_stream,
 	"invalid Ogg stream" )
 LIST(  6, false, version,

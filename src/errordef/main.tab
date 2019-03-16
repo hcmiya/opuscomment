@@ -27,7 +27,7 @@ LIST(  9, many_args,
 LIST( 10, output_limit,
 	"tag length exceeded the limit of storing (up to %u MiB)" )
 LIST( 11, long_input,
-	"too long editing input. Haven't you executed odd command?" )
+	"too long editing input. Didn't you execute odd command?" )
 LIST( 12, no_input,
 	"empty editing input" )
 LIST( 13, no_term,
