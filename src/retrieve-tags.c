@@ -368,7 +368,6 @@ void rt_del_args(uint8_t *buf, size_t len, bool term) {
 	dellist_len = dellist_len ? dellist_len : tmpfile();
 	dellist_str = dellist_str ? dellist_str : tmpfile();
 	
-	len -= term;
 	recordlen += len;
 	if (field && !test_tag_field(buf, len, true, &field, &upcase_applied)) {
 		opterror('d', catgets(catd, 7, 3, "invalid tag format"));

@@ -14,7 +14,7 @@ $ %2$s = codec name, e.g. Opus, Theora, ...
 4 `\
 5yn0p5y5:\n\
     %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n\
-    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n\
+    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-0e] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DQprRUv] srcfile [output]\n\
     %1$s [-h]\n\
 \n\
 0p710n5:\n\
@@ -29,6 +29,7 @@ $ %2$s = codec name, e.g. Opus, Theora, ...
           (1-0r161n, w17h0u7 n0n-%2$s 57r34m)\n\
     -R    455um3 3d171n6 10 70 b3 3nc0d3d 1n u7f-8\n\
     -e    u53 35c4p3 53qu3nc3; \\\\, \\n, \\r 4nd \\0\n\
+    -0    Use '\\0' separation for editing IO\n\
     -t NAME=VALUE\n\
           4dd 7h3 4r6um3n7 45 3d171n6 173m\n\
     -c tagfile\n\

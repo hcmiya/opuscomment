@@ -33,7 +33,7 @@ static void usage(void) {
 	fprintf(stderr, catgets(catd, 6, 4,
 "Synopsys:\n"
 "    %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n"
-"    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n"
+"    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-0e] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DQprRUv] srcfile [output]\n"
 "    %1$s [-h]\n"
 "\n"
 "Options:\n"
@@ -48,6 +48,7 @@ static void usage(void) {
 "          (1-origin, without non-%2$s stream)\n"
 "    -R    Assume editing IO to be encoded in UTF-8\n"
 "    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
+"    -0    Use '\\0' separation for editing IO\n"
 "    -t NAME=VALUE\n"
 "          Add the argument as editing item\n"
 "    -c tagfile\n"
@@ -97,7 +98,7 @@ static void parse_args(int argc, char **argv) {
 	int gainfmt;
 	double gv;
 	
-	while ((c = getopt(argc, argv, "1ac:C:d:Deg:hi:lpqQrRs:t:TUvVw")) != -1) {
+	while ((c = getopt(argc, argv, "01ac:C:d:Deg:hi:lpqQrRs:t:TUvVw")) != -1) {
 		switch (c) {
 		case 'l':
 			O.edit = EDIT_LIST;
@@ -155,7 +156,11 @@ static void parse_args(int argc, char **argv) {
 			break;
 			
 		case 'e':
-			O.tag_escape = true;
+			O.tag_escape = TAG_ESCAPE_BACKSLASH;
+			break;
+			
+		case '0':
+			O.tag_escape = TAG_ESCAPE_NUL;
 			break;
 			
 		case 'U':

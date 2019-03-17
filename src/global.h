@@ -28,7 +28,11 @@ GLOBAL struct {
 	bool gain_put;
 	
 	bool tag_ignore_picture;
-	bool tag_escape;
+	enum  {
+		TAG_ESCAPE_TAB,
+		TAG_ESCAPE_BACKSLASH,
+		TAG_ESCAPE_NUL,
+	} tag_escape;
 	bool tag_raw;
 	bool tag_toupper;
 	char *tag_filename;

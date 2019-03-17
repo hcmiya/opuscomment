@@ -14,7 +14,7 @@ $ %2$s = codec name, e.g. Opus, Theora, ...
 4 `\
 Synopsys:\n\
     %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n\
-    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DeQprRUv] srcfile [output]\n\
+    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-0e] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DQprRUv] srcfile [output]\n\
     %1$s [-h]\n\
 \n\
 Options:\n\
@@ -29,6 +29,7 @@ Options:\n\
           (1-origin, without non-%2$s stream)\n\
     -R    Assume editing IO to be encoded in UTF-8\n\
     -e    Use escape sequence; \\\\, \\n, \\r and \\0\n\
+    -0    Use '\\0' separation for editing IO\n\
     -t NAME=VALUE\n\
           add the argument as editing item\n\
     -c tagfile\n\

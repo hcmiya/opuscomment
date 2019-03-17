@@ -67,7 +67,7 @@ static void toutf8(int fdu8) {
 		if (total > TAG_LENGTH_LIMIT__INPUT) {
 			mainerror(err_main_long_input);
 		}
-		if (strnlen(&lbuf[remain], readlen) != readlen) {
+		if (O.tag_escape != TAG_ESCAPE_NUL && strnlen(&lbuf[remain], readlen) != readlen) {
 			err_bin();
 		}
 		size_t llen = readlen + remain;
@@ -388,12 +388,38 @@ static void line_vc(uint8_t *line, size_t n, bool lf) {
 	}
 }
 
+static void line_nul(uint8_t *line, size_t n, bool term) {
+	if (!line) {
+		if (!first_call) {
+			if (!keep_blank) {
+				if (on_field) err_nosep();
+				finalize_record();
+			}
+			first_call = true;
+		}
+		return;
+	}
+	
+	if(test_blank(line, n, term)) return;
+	
+	if (on_field) {
+		if(!test_tag_field(line, n, true, &on_field, NULL)) err_name();
+		if (on_field && term) err_nosep();
+		test_mbp(&line, &n);
+	}
+	else {
+		append_buffer(line, n);
+	}
+	
+	if (term) finalize_record();
+}
+
 void prepare_record(void) {
 	strstore = strstore ? strstore : tmpfile();
 	strcount = strcount ? strcount : tmpfile();
 }
 
-void *split(void *fp_) {
+void *split_text(void *fp_) {
 	FILE *fp = fp_;
 	prepare_record();
 	void (*line)(uint8_t *, size_t, bool) = O.tag_escape ? line_vc : line_oc;
@@ -419,6 +445,27 @@ void *split(void *fp_) {
 	return NULL;
 }
 
+void *split_binary(void *fp_) {
+	FILE *fp = fp_;
+	prepare_record();
+	
+	uint8_t tagbuf[STACK_BUF_LEN];
+	size_t readlen;
+	while ((readlen = fread(tagbuf, 1, STACK_BUF_LEN, fp)) != 0) {
+		uint8_t *p1, *p2;
+		p1 = tagbuf;
+		while ((p2 = memchr(p1, 0, readlen - (p1 - tagbuf))) != NULL) {
+			line_nul(p1, p2 - p1, true);
+			p1 = p2 + 1;
+		}
+		size_t left = readlen - (p1 - tagbuf);
+		if (left) line_nul(p1, left, false);
+	}
+	fclose(fp);
+	line_nul(NULL, 0, false);
+	return NULL;
+}
+
 void *parse_tags(void* nouse_) {
 	bool do_read = true;
 	if (tagnum) {
@@ -441,6 +488,7 @@ void *parse_tags(void* nouse_) {
 		pipe(pfd);
 		FILE *fpu8 = fdopen(pfd[0], "r");
 		pthread_t split_thread;
+		void *(*split)(void*) = O.tag_escape == TAG_ESCAPE_NUL ? split_binary : split_text;
 		pthread_create(&split_thread, NULL, split, fpu8);
 		
 		// 本スレッドはstdinをUTF-8化する
@@ -470,7 +518,7 @@ void parse_opt_tag(int opt, char const *arg) {
 	switch (opt) {
 	case 't':
 		prepare_record();
-		addbuf = line_oc;
+		addbuf = line_nul;
 		break;
 	case 'd':
 		addbuf = rt_del_args;
@@ -497,8 +545,7 @@ void parse_opt_tag(int opt, char const *arg) {
 	if (iconv(optcd, NULL, NULL, &u8, &u8left) == (size_t)-1) {
 		oserror();
 	}
-	u8[0] = 0xa;
-	addbuf(u8buf, u8 - u8buf + 1, true);
+	addbuf(u8buf, u8 - u8buf, true);
 	addbuf(NULL, 0, false);
 }
 
