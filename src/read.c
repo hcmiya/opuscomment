@@ -307,7 +307,6 @@ static bool copy_tag_packet(ogg_page *og, bool *packet_break_in_page) {
 	int lace_num = og->header[26];
 	if (!lace_num) return false;
 	
-	uint8_t const *lace = &og->header[27];
 	uint8_t const *bin = og->body;
 	
 	uint_fast8_t i;

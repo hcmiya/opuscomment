@@ -336,7 +336,6 @@ int main(int argc, char **argv) {
 		fileerror(O.in);
 	}
 	
-	uint8_t *fbp;
 	ogg_sync_state oy;
 	ogg_sync_init(&oy);
 	
