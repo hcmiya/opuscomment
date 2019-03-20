@@ -131,7 +131,6 @@ static bool rtcopy_delete(FILE *packet_input, void *fptag_) {
 	
 	// 削除リストのループ
 	rewind(dellist_str); rewind(dellist_len);
-	bool copy = true;
 	bool matched = false;
 	while (fread(buf, 1, 5, dellist_len)) {
 		uint32_t cmplen = *(uint32_t*)buf;
@@ -263,7 +262,7 @@ void *retrieve_tags(void *packet_input_) {
 			// コメントパケットが無かった時用
 			if (O.edit == EDIT_LIST) exit(0);
 			uint8_t buf2[8] = "";
-			fwrite(buf, 1, 8, fptag);
+			fwrite(buf2, 1, 8, fptag);
 			rtn->tagbegin = codec->commagic_len + 4;
 			goto NOTCOMMENT;
 		}

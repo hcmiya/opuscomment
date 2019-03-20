@@ -90,7 +90,6 @@ void *put_tags(void *fp_) {
 	putdest = O.tag_deferred ? tmpfile() : stdout;
 	
 	iconv_t cd;
-	char charsetname[128];
 	
 	if (!O.tag_raw) {
 		cd = iconv_new(nl_langinfo(CODESET), "UTF-8");

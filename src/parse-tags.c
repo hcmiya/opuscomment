@@ -129,7 +129,7 @@ static uint8_t field_pending[22];
 static bool test_blank(uint8_t *line, size_t n, bool lf) {
 	if (first_call) {
 		// = で始まってたらすぐエラー(575)
-		if (*line == 0x3d) err_nosep();
+		if (*line == 0x3d) err_empty();
 		first_call = false;
 		on_field = true;
 		fieldlen = 0;
@@ -204,7 +204,6 @@ static void append_buffer(uint8_t *line, size_t n) {
 }
 
 static bool count_field_len(uint8_t *line, size_t n) {
-	uint8_t *p = field_pending + fieldlen;
 	size_t add;
 	bool filled;
 	if (on_field) {
@@ -381,6 +380,9 @@ static void line_vc(uint8_t *line, size_t n, bool lf) {
 		if (on_field && lf) err_nosep();
 		test_mbp(&line, &n);
 	}
+	else {
+		append_buffer(line, n);
+	}
 	if (lf) {
 		finalize_record();
 	}
@@ -414,6 +416,7 @@ void *split(void *fp_) {
 	}
 	fclose(fp);
 	line(NULL, 0, false);
+	return NULL;
 }
 
 void *parse_tags(void* nouse_) {
