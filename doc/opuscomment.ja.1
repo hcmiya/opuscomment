@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2019-03-18" "1.4.11" "opuscomment 1.4マニュアル"
+.TH "OPUSCOMMENT" "1" "2019-03-21" "1.4.12" "opuscomment 1.4マニュアル"
 
 .SH 名前
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
@@ -54,7 +54,7 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 出力モード時、タグを\fItagfile\fRに書き出す。書き込み・追記モード時、\fItagfile\fRからタグを読み出す
 .TP
 \fB-d \fINAME[=VALUE]\fB\fR
-引数に一致するOpusファイル内のタグを削除する。\fI=VALUE\fRが省略された場合、\fINAME\fRが一致する全てのタグが削除される。\fB-U\fRが暗黙的に指定される
+引数に一致するOpusファイル内のタグを削除する。\fI=VALUE\fRが省略された場合、\fINAME\fRが一致する全てのタグが削除される。\fB-U\fRを暗黙的に指定する
 .TP
 \fB-p\fR
 出力モード時、\fIMETADATA_BLOCK_PICTURE\fRを出力しない。書込モード時、\fIMETADATA_BLOCK_PICTURE\fRは削除されず編集前のタグが維持される。
@@ -70,7 +70,7 @@ Opusファイル内のタグの項目名に小文字が含まれていた場合�
 vorbis commentは一定の書式が定められているが、Opusの内部構造としては任意のバイナリ列を保存することが出来る。このオプションが無い場合は、内部に保存されたレコードがUTF-8として妥当であればvorbis commentの形式を満たさなくてもそれを尊重してそのまま出力しようとする。しかしこの動作は\fBopuscomment\fRをはじめ他のフィルタとの連携に支障を来す可能性が高い。そのためそこでのエラーを防ぐ・あるいはエラー検出をさせるために信頼できないOpusファイルに対して編集を行う際に\fB-V\fRを使うと便利である。\fB-D\fRも参照のこと。
 .TP
 \fB-T\fR
-編集入力が改行で終わっているか確認する
+編集入力が改行で終わっていない場合エラーにする
 .TP
 \fB-D\fR
 出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また\fB-V\fRを暗黙的に指定する。書き込みモード時、空の編集入力をエラーとする。また\fB-T\fRを暗黙的に指定する
