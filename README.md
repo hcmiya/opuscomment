@@ -1,5 +1,7 @@
 # opuscomment
 
+The formal README is written in [Japanese](./README.ja.md).
+
 ## Overview
 
 <dfn>opuscomment</dfn> is an editing utility for Ogg Opus with an interface compatible with [vorbiscomment](https://github.com/xiph/vorbis-tools). The first feature is that you can edit the output gain which is one of Opus's important functions. It also aims to always escape tags that span multiple lines safely and to facilitate incorporation into other software.
