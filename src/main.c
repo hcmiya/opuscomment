@@ -60,7 +60,7 @@ static void usage(void) {
 "    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
 "    -U    Convert field name stored in srcfile to uppercase\n"
 "    -V    Verify Tags stored in srcfile\n"
-"    -T    Check whether editing input has been terminated by line feed\n"
+"    -T    Error when editing input is not terminated by line feed\n"
 "    -D    Defer editing IO; implies -V, -T\n"
 	), program_name, default_codec->name);
 	if (!default_codec->prog) {
