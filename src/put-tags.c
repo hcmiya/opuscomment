@@ -19,7 +19,9 @@ static void puterror(void) {
 		oserror();
 	}
 }
-static void u8error(int nth) {
+
+static int nth = 1;
+static void u8error(void) {
 	opuserror(err_opus_utf8, nth);
 }
 
@@ -31,9 +33,7 @@ static void put_bin(uint8_t const *buf, size_t len) {
 	}
 }
 static void put_ls(char const *ls) {
-	if (fputs(ls, putdest) == EOF) {
-		puterror();
-	}
+	put_bin(ls, strlen(ls));
 }
 
 static uint8_t *esc_oc(uint8_t *src, uint8_t *dest, size_t len) {
@@ -74,6 +74,49 @@ static uint8_t *esc_vc(uint8_t *src, uint8_t *dest, size_t len) {
 	}
 	return dest;
 }
+
+static uint8_t *esc_nul(uint8_t *src, uint8_t *dest, size_t len) {
+	return memcpy(dest, src, len) + len;
+}
+
+typedef uint8_t* (*esc_func_)(uint8_t*, uint8_t*, size_t);
+static esc_func_ esc_func[] = {
+	esc_oc, esc_vc, esc_nul
+};
+
+static size_t conv_none(iconv_t cd, uint8_t *buf, size_t tagleft) {
+	put_bin(buf, tagleft);
+	return 0;
+}
+
+static size_t conv_ls(iconv_t cd, uint8_t *buf, size_t tagleft) {
+	uint8_t *u8 = buf;
+	char *ls = buf + tagleft;
+	size_t remain = 0;
+	for (;;) {
+		char *lsend = ls;
+		size_t bufleft = STACK_BUF_LEN - ((uint8_t*)ls - buf) - 1;
+		size_t iconvret = iconv(cd, (char**)&u8, &tagleft, &lsend, &bufleft);
+		int ie = errno;
+		errno = 0;
+		if (iconvret == (size_t)-1 && ie == EILSEQ) {
+			u8error();
+		}
+		*lsend = '\0';
+		// WONTFIX
+		// ロケール文字列に \0 が含まれていてもそのままそこで途切れさせる
+		put_ls(ls);
+		if (iconvret != (size_t)-1 || ie == EINVAL) {
+			remain = tagleft;
+			if (remain) {
+				memcpy(buf, u8, remain);
+			}
+			break;
+		}
+	}
+	return remain;
+}
+
 void *put_tags(void *fp_) {
 	// retrieve_tag() からスレッド化された
 	// fpはチャンク化されたタグ
@@ -94,67 +137,49 @@ void *put_tags(void *fp_) {
 	if (!O.tag_raw) {
 		cd = iconv_new(nl_langinfo(CODESET), "UTF-8");
 	}
-	size_t const buflen = STACK_BUF_LEN;
-	size_t const buflenunit = buflen / 3;
-	uint8_t buf[buflen];
-	int nth = 1;
-	uint8_t* (*esc)(uint8_t*, uint8_t*, size_t) = O.tag_escape ? esc_vc : esc_oc;
-	uint8_t *raw = buf + buflenunit * 2;
+	bool nulsep = O.tag_escape == TAG_ESCAPE_NUL;
+	size_t const buflenunit = STACK_BUF_LEN / (3 - nulsep);
+	uint8_t buf[STACK_BUF_LEN];
+	uint8_t *raw = buf + buflenunit * (2 - nulsep);
+	uint8_t *(*esc)(uint8_t*, uint8_t*, size_t) = esc_func[O.tag_escape];
+	size_t (*conv)(iconv_t cd, uint8_t*, size_t) = O.tag_raw ? conv_none : conv_ls;
 	
 	for (;;) {
-		uint8_t *u8;
-		char *ls;
 		uint32_t len;
 		if (!fread(&len, 4, 1, fp)) break;
+		if (nulsep && nth > 1) put_bin("", 1);
 		size_t left = len, remain = 0;
 		while (left) {
 			size_t readlen = fill_buffer(raw, left, buflenunit - remain, fp);
 			left -= readlen;
 			
 			size_t tagleft = esc(raw, buf + remain, readlen) - buf;
-			
-			if (O.tag_raw) {
-				put_bin(buf, tagleft);
-			}
-			else {
-				u8 = buf;
-				ls = buf + tagleft;
-				for (;;) {
-					char *lsend = ls;
-					size_t bufleft = buflen - ((uint8_t*)ls - buf) - 1;
-					size_t iconvret = iconv(cd, (char**)&u8, &tagleft, &lsend, &bufleft);
-					int ie = errno;
-					errno = 0;
-					if (iconvret == (size_t)-1 && ie == EILSEQ) {
-						u8error(nth);
-					}
-					*lsend = '\0';
-					// WONTFIX
-					// ロケール文字列に \0 が含まれていてもそのままそこで途切れさせる
-					put_ls(ls);
-					if (iconvret != (size_t)-1 || ie == EINVAL) {
-						remain = tagleft;
-						if (remain) {
-							memcpy(buf, u8, remain);
-						}
-						break;
-					}
-				}
-			}
+			remain = conv(cd, buf, tagleft);
 		}
 		if (remain) {
-			u8error(nth);
+			u8error();
 		}
 		if (O.tag_raw) {
-			put_bin("\x0a", 1);
+			if (!nulsep) {
+				put_bin("\x0a", 1);
+			}
 		}
 		else {
-			memcpy(buf, "\x0a", 2);
-			left = 2, remain = 128;
-			u8 = buf, ls = buf + 2;
+			uint8_t *u8;
+			char *ls;
+			if (nulsep) {
+				*buf = '\0';
+				left = 1, remain = 128;
+			}
+			else {
+				memcpy(buf, "\x0a", 2);
+				left = 2, remain = 128;
+			}
+			u8 = buf, ls = buf + left;
 			if (iconv(cd, (char**)&u8, &left, &ls, &remain) == (size_t)-1) {
 				oserror();
 			}
+			// u8はここでiconv()前のlsを指していることに注意
 			put_ls(u8);
 		}
 		nth++;
@@ -165,7 +190,7 @@ void *put_tags(void *fp_) {
 		FILE *deferred = putdest;
 		putdest = stdout;
 		rewind(deferred);
-		while(fgets(buf, buflen, deferred)) {
+		while(fgets(buf, STACK_BUF_LEN, deferred)) {
 			put_ls(buf);
 		}
 		fclose(deferred);
