@@ -235,18 +235,6 @@ void *retrieve_tags(void *packet_input_) {
 	rtn->part_of_comment = true;
 	uint32_t len;
 	if (codec->type == CODEC_FLAC) {
-		rtread(buf, 4, packet_input);
-		if (buf[0] & 0x7f != 4) {
-			opuserror(err_opus_bad_content);
-		}
-		if (buf[0] & 0x80) {
-			flac_next_is_audio();
-		}
-		// 1-3バイト目はネイティブFLACによるヘッダのバイト数が格納されるが
-		// Oggパケットを代わりに使うので無視
-		// 次・Oggパケットの一部となる上記ヘッダを一時埋め
-		fwrite(buf, 1, 4, fptag);
-		check_tagpacket_length(4);
 	}
 	else {
 		rtread(buf, codec->commagic_len, packet_input);

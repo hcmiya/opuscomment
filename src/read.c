@@ -102,11 +102,6 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		exceed_output_limit();
 	}
-	bool lastmeta = true;
-	FILE *pages = built_stream;
-	if (codec->type == CODEC_FLAC) {
-		lastmeta = flac_make_tag_packet(np, fptag, &pages);
-	}
 	
 	rewind(fptag); 
 	ogg_page og;
@@ -124,7 +119,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 		fread(og.body, 1, 255 * 255, fptag);
 		set_pageno(&og, idx++);
 		ogg_page_checksum_set(&og);
-		write_page(&og, pages);
+		write_page(&og, built_stream);
 		commentlen -= 255 * 255;
 		if (!og.header[5]) og.header[5] = 1;
 	}
@@ -140,7 +135,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 	og.header_len = 27 + og.header[26];
 	og.body_len = commentlen;
 	ogg_page_checksum_set(&og);
-	write_page(&og, pages);
+	write_page(&og, built_stream);
 	
 	// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 	// 空のページを生成して開始ページ番号を合わせる
@@ -152,7 +147,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 	while (idx < opus_idx - packet_break_in_page) {
 		set_pageno(&og, idx++);
 		ogg_page_checksum_set(&og);
-		write_page(&og, pages);
+		write_page(&og, built_stream);
 	}
 	
 	if (packet_break_in_page) {
@@ -171,7 +166,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 		memmove(&np->header[27], lace_tag, np->header[26]);
 		set_pageno(np, idx++);
 		ogg_page_checksum_set(np);
-		write_page(np, pages);
+		write_page(np, built_stream);
 	}
 	
 	{
@@ -190,7 +185,7 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 		/* NOTREACHED */
 	}
 	opus_idx_diff = idx - opus_idx;
-	opst = lastmeta ? PAGE_SOUND : PAGE_INFO_BORDER;
+	opst = PAGE_SOUND;
 }
 
 static void cleanup(void) {
@@ -475,19 +470,13 @@ static void parse_page(ogg_page *og) {
 	}
 }
 
-void parse_flac(ogg_page *og);
-
-static void (*parse)(ogg_page*);
-void set_parser_type(void) {
-	parse = codec->type == CODEC_FLAC ? parse_flac : parse_page;
-}
 void read_page(ogg_sync_state *oy) {
 	int seeklen;
 	ogg_page og;
 	while ((seeklen = ogg_sync_pageseek(oy, &og)) != 0) {
 		if (seeklen > 0) {
 			seeked_len += seeklen;
-			parse(&og);
+			parse_page(&og);
 		}
 		else seeked_len += -seeklen;
 	}

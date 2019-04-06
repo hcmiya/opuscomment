@@ -355,7 +355,6 @@ int main(int argc, char **argv) {
 	if (memcmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
 		opuserror(err_opus_non_ogg);
 	}
-	set_parser_type();
 	open_output_file();
 	ogg_sync_wrote(&oy, len);
 	read_page(&oy);
