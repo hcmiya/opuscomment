@@ -73,10 +73,11 @@ opuscommentはX/Open NLSを使った地域化を実装しています。`nls/`�
 | argv[0] | コーデック |
 |--|--|
 | (下記以外の全て) | Opus |
-| theoracomment | Theora |
 | vorbiscomment | Vorbis |
-| daalacomment | Daala |
 | speexcomment | Speex |
+| vp8comment | VP8 |
+| theoracomment | Theora |
+| daalacomment | Daala |
 | oggpcmcomment | PCM |
 | ogguvscomment | UVS |
 

@@ -76,10 +76,11 @@ Although it is appropriate, the system standard message catalog location is diff
 | argv[0] | codec |
 |--|--|
 | (all but next) | Opus |
-| theoracomment | Theora |
 | vorbiscomment | Vorbis |
-| daalacomment | Daala |
 | speexcomment | Speex |
+| vp8comment | VP8 |
+| theoracomment | Theora |
+| daalacomment | Daala |
 | oggpcmcomment | PCM |
 | ogguvscomment | UVS |
 
