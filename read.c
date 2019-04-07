@@ -138,7 +138,7 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 		"\x4f\x67\x67\x53"
 		"\0"
 		"\0"
-		"\0\0\0\0\0\0\0\0", 14);
+		"\xff\xff\xff\xff\xff\xff\xff\xff", 14);
 // 		"S.NO"
 // 		"SEQ "
 // 		"CRC ", 26);
@@ -157,6 +157,7 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	}
 	
 	og.header[5] = idx != 1;
+	memset(&og.header[6], 0, 8);
 	*(uint32_t*)&og.header[18] = oi32(idx++);
 	og.header[26] = commentlen / 255 + 1;
 	og.header[26 + og.header[26]] = commentlen % 255;
@@ -170,7 +171,8 @@ static void store_tags(size_t lastpagelen, struct rettag_st *rst, struct edit_st
 	if (idx < opus_idx) {
 		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
 		// 空のページを生成して開始ページ番号を合わせる
-		og.header[5] = 1;
+		og.header[5] = 0;
+		memset(&og.header[6], 0xff, 8);
 		og.header[26] = 0;
 		og.header_len = 27;
 		og.body_len = 0;
