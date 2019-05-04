@@ -8,9 +8,13 @@
 void parse_opt_tag(int, char const*);
 void pticonv_close(void);
 void read_page(ogg_sync_state*);
+void read_flac(void);
 void move_file(void);
 iconv_t iconv_new(char const *to, char const *from);
 void open_output_file(void);
+
+void *retrieve_tags(void*);
+void *parse_tags(void*);
 
 #ifdef NLS
 #include <nl_types.h>

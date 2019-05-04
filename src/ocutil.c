@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <ogg/ogg.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #include "opuscomment.h"
 
@@ -105,6 +106,13 @@ void set_pageno(ogg_page *og, int no) {
 
 void set_granulepos(ogg_page *og, int64_t pos) {
 	*(int64_t*)&og->header[6] = oi64(pos);
+}
+
+void exit_without_sigpipe(void) {
+	if (!error_on_thread) {
+		return;
+	}
+	signal(SIGPIPE, SIG_IGN);
 }
 
 #if _POSIX_C_SOURCE < 200809L

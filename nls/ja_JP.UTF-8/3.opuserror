@@ -2,6 +2,9 @@ $ 『opuscomment: Opus codec error: 』と前置される
 
 $set 3
 
+$ 最初の4バイトが『fLaC』ではなかった
+0 FLACではない
+
 $ 最初の4バイトが『OggS』ではなかった
 1 Oggではない
 

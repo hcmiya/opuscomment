@@ -2,6 +2,9 @@ $ prefixed "opuscomment: Opus codec error: "
 
 $set 3
 
+$ first 4 bytes not matched to "fLaC"
+0 n07 4 FLAC
+
 $ first 4 bytes not matched to "OggS"
 1 n07 4n 066
 

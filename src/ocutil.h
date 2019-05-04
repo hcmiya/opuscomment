@@ -12,6 +12,7 @@ bool test_non_opus(ogg_page *og);
 void write_page(ogg_page *og, FILE *fp);
 void set_pageno(ogg_page *og, int no);
 void set_granulepos(ogg_page *og, int64_t pos);
+void exit_without_sigpipe(void);
 
 #if _POSIX_C_SOURCE < 200809L
 size_t strnlen(char const *src, size_t n);

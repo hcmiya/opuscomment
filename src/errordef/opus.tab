@@ -4,8 +4,8 @@ LIST( NUM, REPORT_PAGE, ENUM,
 LIST( , , ,
 	"" )
 */
-LIST(  0, false, unused_0,
-	NULL )
+LIST(  0, false, non_flac,
+	"not a FLAC" )
 LIST(  1, false, non_ogg,
 	"not an Ogg" )
 LIST(  2, true,  interrupted,

@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <signal.h>
 
 #include "opuscomment.h"
 
@@ -237,13 +236,6 @@ void open_output_file(void) {
 	non_opus_stream = tmpfile();
 }
 
-static void exit_without_sigpipe(void) {
-	if (!error_on_thread) {
-		return;
-	}
-	signal(SIGPIPE, SIG_IGN);
-}
-
 static void check_header_is_single_page(ogg_page *og) {
 	uint8_t lace_num = og->header[26];
 	if (!lace_num) opuserror(err_opus_border);
@@ -331,8 +323,6 @@ static bool copy_tag_packet(ogg_page *og, bool *packet_break_in_page) {
 	return packet_term;
 }
 
-void *retrieve_tags(void*);
-void *parse_tags(void*);
 bool parse_comment(ogg_page *og);
 
 static pthread_t retriever_thread, parser_thread;

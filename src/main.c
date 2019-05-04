@@ -293,6 +293,34 @@ static void interrupted(int sig) {
 	exit(1);
 }
 
+static void read_ogg(void) {
+	ogg_sync_state oy;
+	ogg_sync_init(&oy);
+	
+	size_t buflen = 1 << 17;
+	uint8_t *buf = ogg_sync_buffer(&oy, buflen);
+	size_t len = fread(buf, 1, buflen, stream_input);
+	if (len == (size_t)-1) oserror();
+	if (len < 4) {
+		opuserror(err_opus_non_ogg);
+	}
+	if (memcmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
+		opuserror(err_opus_non_ogg);
+	}
+	ogg_sync_wrote(&oy, len);
+	read_page(&oy);
+	
+	for (;;) {
+		buf = ogg_sync_buffer(&oy, buflen);
+		len = fread(buf, 1, buflen, stream_input);
+		if (!len) {
+			break;
+		}
+		ogg_sync_wrote(&oy, len);
+		read_page(&oy);
+	}
+}
+
 int main(int argc, char **argv) {
 	struct sigaction sa;
 	sa.sa_handler = interrupted;
@@ -342,32 +370,9 @@ int main(int argc, char **argv) {
 		fileerror(O.in);
 	}
 	
-	ogg_sync_state oy;
-	ogg_sync_init(&oy);
-	
-	size_t buflen = 1 << 17;
-	uint8_t *buf = ogg_sync_buffer(&oy, buflen);
-	size_t len = fread(buf, 1, buflen, stream_input);
-	if (len == (size_t)-1) oserror();
-	if (len < 4) {
-		opuserror(err_opus_non_ogg);
-	}
-	if (memcmp(buf, "\x4f\x67\x67\x53", 4) != 0) {
-		opuserror(err_opus_non_ogg);
-	}
 	open_output_file();
-	ogg_sync_wrote(&oy, len);
-	read_page(&oy);
-	
-	for (;;) {
-		buf = ogg_sync_buffer(&oy, buflen);
-		len = fread(buf, 1, buflen, stream_input);
-		if (!len) {
-			break;
-		}
-		ogg_sync_wrote(&oy, len);
-		read_page(&oy);
-	}
+	if (codec->type == CODEC_FLAC) read_flac();
+	else read_ogg();
 	
 	if (opst < PAGE_SOUND) {
 		opuserror(err_opus_interrupted);

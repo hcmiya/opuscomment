@@ -234,26 +234,22 @@ void *retrieve_tags(void *packet_input_) {
 	FILE *fptag = rtn->tag = tmpfile();
 	rtn->part_of_comment = true;
 	uint32_t len;
-	if (codec->type == CODEC_FLAC) {
+	rtread(buf, codec->commagic_len, packet_input);
+	if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
+		if (codec->type == CODEC_VP8 && buf[5] != 2) {
+			len = codec->commagic_len;
+			rtn->part_of_comment = false;
+		}
+		else opuserror(err_opus_bad_content);
 	}
-	else {
-		rtread(buf, codec->commagic_len, packet_input);
-		if (memcmp(buf, codec->commagic, codec->commagic_len) != 0) {
-			if (codec->type == CODEC_VP8 && buf[5] != 2) {
-				len = codec->commagic_len;
-				rtn->part_of_comment = false;
-			}
-			else opuserror(err_opus_bad_content);
-		}
-		fwrite(buf, 1, codec->commagic_len, fptag);
-		if (!rtn->part_of_comment) {
-			// コメントパケットが無かった時用
-			if (O.edit == EDIT_LIST) exit(0);
-			uint8_t buf2[8] = "";
-			fwrite(buf2, 1, 8, fptag);
-			rtn->tagbegin = codec->commagic_len + 4;
-			goto NOTCOMMENT;
-		}
+	fwrite(buf, 1, codec->commagic_len, fptag);
+	if (!rtn->part_of_comment) {
+		// コメントパケットが無かった時用
+		if (O.edit == EDIT_LIST) exit(0);
+		uint8_t buf2[8] = "";
+		fwrite(buf2, 1, 8, fptag);
+		rtn->tagbegin = codec->commagic_len + 4;
+		goto NOTCOMMENT;
 	}
 	
 	// ベンダ文字列
@@ -305,13 +301,14 @@ void *retrieve_tags(void *packet_input_) {
 		// タグ出力スレッド合流
 		close(pfd[1]);
 		pthread_join(putth, NULL);
+// 		if (codec->type == CODEC_FLAC) return NULL;
 		exit(0);
 	}
 	
 	len = fread(buf, 1, 1, packet_input);
 	if (len && (codec->prog || (*buf & 1))) {
 		// codec->prog ← opuscomment 以外は全部パディングを保存
-	NOTCOMMENT:
+	NOTCOMMENT: // ←VP8用
 		rtn->padding = tmpfile();
 		fwrite(buf, 1, len, rtn->padding);
 		check_tagpacket_length(len);
