@@ -89,7 +89,7 @@ static void *put_base64_locale(void *tagin_) {
 		// このiconv()はPCS範囲内でシフトも発生しないはずなのでバッファ持ち越しがない
 		// asciiは元のlocの位置に移った
 		size_t writelen = loc - ascii;
-		size_t writeret = fwrite(ascii, 1, loc - ascii, stdout);
+		size_t writeret = fwrite(ascii, 1, loc - ascii, tag_output);
 		if (writelen != writeret) {
 			oserror();
 		}
@@ -110,19 +110,19 @@ static uint8_t const * const b64tab_ascii =
 
 static void read_picture_list(size_t left) {
 	pthread_t loctr_th;
-	FILE *tagout;
+	FILE *ascii_out;
 	if (!O.tag_raw) {
 		int pfd[2];
 		pipe(pfd);
-		tagout = fdopen(pfd[1], "w");
+		ascii_out = fdopen(pfd[1], "w");
 		FILE *tagin = fdopen(pfd[0], "r");
 		pthread_create(&loctr_th, NULL, put_base64_locale, tagin);
 	}
 	else {
-		tagout = stdout;
+		ascii_out = tag_output;
 	}
 	
-	fwrite(MBPeq, 1, strlen(MBPeq), tagout);
+	fwrite(MBPeq, 1, strlen(MBPeq), ascii_out);
 	
 	while (left) {
 		uint8_t raw[3] = {0};
@@ -149,14 +149,14 @@ static void read_picture_list(size_t left) {
 		for (int_fast8_t i = 0; i < 4; i++) {
 			b64[i] = b64tab_ascii[b64[i]];
 		}
-		fwrite(b64, 1, 4, tagout);
+		fwrite(b64, 1, 4, ascii_out);
 		left -= readlen;
 	}
 	
-	fwrite((uint8_t[]){ O.tag_escape == TAG_ESCAPE_NUL ? 0 : 0xa }, 1, 1, tagout);
+	fwrite((uint8_t[]){ O.tag_escape == TAG_ESCAPE_NUL ? 0 : 0xa }, 1, 1, ascii_out);
 	
 	if (!O.tag_raw) {
-		fclose(tagout);
+		fclose(ascii_out);
 		pthread_join(loctr_th, NULL);
 	}
 }
