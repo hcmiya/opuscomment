@@ -301,7 +301,8 @@ void *retrieve_tags(void *packet_input_) {
 		// タグ出力スレッド合流
 		close(pfd[1]);
 		pthread_join(putth, NULL);
-// 		if (codec->type == CODEC_FLAC) return NULL;
+		if (codec->type == CODEC_FLAC) return NULL;
+		tag_output_close();
 		exit(0);
 	}
 	

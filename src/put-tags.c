@@ -10,9 +10,8 @@
 
 #include "opuscomment.h"
 
-static bool to_file;
 static void puterror(void) {
-	if (to_file) {
+	if (tag_output_to_file) {
 		fileerror(O.tag_filename);
 	}
 	else {
@@ -25,9 +24,8 @@ static void u8error(void) {
 	opuserror(err_opus_utf8, nth);
 }
 
-static FILE *putdest;
 static void put_bin(uint8_t const *buf, size_t len) {
-	size_t ret = fwrite(buf, 1, len, putdest);
+	size_t ret = fwrite(buf, 1, len, tag_output);
 	if (ret != len) {
 		puterror();
 	}
@@ -117,20 +115,29 @@ static size_t conv_ls(iconv_t cd, uint8_t *buf, size_t tagleft) {
 	return remain;
 }
 
+void tag_output_close(void) {
+	if (O.tag_deferred) {
+		FILE *deferred = tag_output;
+		tag_output = stdout;
+		rewind(deferred);
+		size_t readlen;
+		uint8_t buf[STACK_BUF_LEN];
+		while(readlen = fread(buf, 1, STACK_BUF_LEN, deferred)) {
+			put_bin(buf, readlen);
+		}
+		fclose(deferred);
+	}
+	
+	if (fclose(stdout) == EOF) {
+		puterror();
+	}
+}
+
 void *put_tags(void *fp_) {
 	// retrieve_tag() からスレッド化された
 	// fpはチャンク化されたタグ
 	// [4バイト: タグ長(ホストエンディアン)][任意長: UTF-8タグ]
 	FILE *fp = fp_;
-	bool to_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
-	if (to_file) {
-		FILE *tmp = freopen(O.tag_filename, "w", stdout);
-		if (!tmp) {
-			fileerror(O.tag_filename);
-		}
-	}
-	
-	putdest = O.tag_deferred ? tmpfile() : stdout;
 	
 	iconv_t cd;
 	
@@ -186,19 +193,6 @@ void *put_tags(void *fp_) {
 	}
 	fclose(fp);
 	
-	if (O.tag_deferred) {
-		FILE *deferred = putdest;
-		putdest = stdout;
-		rewind(deferred);
-		while(fgets(buf, STACK_BUF_LEN, deferred)) {
-			put_ls(buf);
-		}
-		fclose(deferred);
-	}
-	
-	if (fclose(stdout) == EOF) {
-		puterror();
-	}
 	return NULL;
 }
 

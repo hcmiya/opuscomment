@@ -70,13 +70,17 @@ GLOBAL struct codec_parser {
 
 GLOBAL char const *program_name;
 GLOBAL char const *program_name_default GLOBAL_VAL("opuscomment");
+// "METADATA_BLOCK_PICTURE=" in ASCII
+GLOBAL uint8_t const * const MBPeq
+	GLOBAL_VAL("\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d");
 
 GLOBAL uint32_t opus_idx, opus_sno, opus_idx_diff;
 GLOBAL bool leave_header_packets;
 // GLOBAL bool have_multi_streams;
 GLOBAL bool error_on_thread;
 
-GLOBAL FILE *stream_input, *built_stream;
+GLOBAL FILE *stream_input, *built_stream, *tag_output;
+GLOBAL bool tag_output_to_file;
 
 #ifdef NLS
 #include <nl_types.h>

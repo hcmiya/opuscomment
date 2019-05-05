@@ -15,6 +15,7 @@ void open_output_file(void);
 
 void *retrieve_tags(void*);
 void *parse_tags(void*);
+void tag_output_close(void);
 
 #ifdef NLS
 #include <nl_types.h>

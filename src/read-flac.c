@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <langinfo.h>
+#include <iconv.h>
 
 #include "opuscomment.h"
 
@@ -75,6 +77,90 @@ static void read_comment(size_t left) {
 	error_on_thread = false;
 }
 
+static void *put_base64_locale(void *tagin_) {
+	FILE *tagin = tagin_;
+	iconv_t cd = iconv_open(nl_langinfo(CODESET), "us-ascii");
+	size_t readlen;
+	char buf[128];
+	while (readlen = fread(buf, 1, 64, tagin)) {
+		size_t asciileft = readlen, locleft = 128 - readlen;
+		char *ascii = buf, *loc = buf + readlen;
+		iconv(cd, &ascii, &asciileft, &loc, &locleft);
+		// このiconv()はPCS範囲内でシフトも発生しないはずなのでバッファ持ち越しがない
+		// asciiは元のlocの位置に移った
+		size_t writelen = loc - ascii;
+		size_t writeret = fwrite(ascii, 1, loc - ascii, stdout);
+		if (writelen != writeret) {
+			oserror();
+		}
+	}
+	iconv_close(cd);
+	fclose(tagin);
+	return NULL;
+}
+
+static uint8_t const * const b64tab_ascii =
+	"\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f" // A-O
+	"\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5a" // P-Z
+	"\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f" // a-o
+	"\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a" // p-z
+	"\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39" // 0-9
+	"\x2b\x2f\x3d" // + / =
+	;
+
+static void read_picture_list(size_t left) {
+	pthread_t loctr_th;
+	FILE *tagout;
+	if (!O.tag_raw) {
+		int pfd[2];
+		pipe(pfd);
+		tagout = fdopen(pfd[1], "w");
+		FILE *tagin = fdopen(pfd[0], "r");
+		pthread_create(&loctr_th, NULL, put_base64_locale, tagin);
+	}
+	else {
+		tagout = stdout;
+	}
+	
+	fwrite(MBPeq, 1, strlen(MBPeq), tagout);
+	
+	while (left) {
+		uint8_t raw[3] = {0};
+		uint8_t b64[4];
+		size_t readlen = left > 3 ? 3 : left;
+		size_t readret = fread(raw, 1, readlen, stream_input);
+		if (readret != readlen) {
+			if (ferror(stream_input)) oserror();
+			else opuserror(err_opus_lost_tag);
+		}
+		// 00000011 11112222 22333333
+		b64[0] = raw[0] >> 2;
+		b64[1] = (raw[0] << 4 | raw[1] >> 4) & 0x3f;
+		b64[2] = (raw[1] << 2 | raw[2] >> 6) & 0x3f;
+		b64[3] = raw[2] & 0x3f;
+		switch (readlen) {
+		case 1:
+			b64[2] = 64;
+			// FALLTHROUGH
+		case 2:
+			b64[3] = 64;
+			break;
+		}
+		for (int_fast8_t i = 0; i < 4; i++) {
+			b64[i] = b64tab_ascii[b64[i]];
+		}
+		fwrite(b64, 1, 4, tagout);
+		left -= readlen;
+	}
+	
+	fwrite((uint8_t[]){ O.tag_escape == TAG_ESCAPE_NUL ? 0 : 0xa }, 1, 1, tagout);
+	
+	if (!O.tag_raw) {
+		fclose(tagout);
+		pthread_join(loctr_th, NULL);
+	}
+}
+
 void read_flac(void) {
 	size_t readlen = fread(gbuf, 1, 4, stream_input);
 	if (readlen == (size_t)-1) oserror();
@@ -102,9 +188,19 @@ void read_flac(void) {
 		switch (type) {
 		case 4:
 			read_comment(left);
+			met_comment = true;
 			break;
-//		case 6:
-//			break;
+		case 6:
+			if (O.edit == EDIT_LIST) {
+				if (!O.tag_ignore_picture) {
+					read_picture_list(left);
+					break;
+				}
+			}
+			else {
+				break;
+			}
+			// FALLTHROUGH
 		default:
 			write_buffer(gbuf, 4, built_stream);
 			while (left) {
@@ -117,6 +213,10 @@ void read_flac(void) {
 			break;
 		}
 		metadata_num++;
+	}
+	if (O.edit == EDIT_LIST) {
+		tag_output_close();
+		exit(0);
 	}
 	opst = PAGE_SOUND;
 }

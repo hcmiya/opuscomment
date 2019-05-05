@@ -243,9 +243,8 @@ static void test_mbp(uint8_t **line, size_t *n) {
 				w = 22;
 			}
 			else if (fieldlen == 22 && !on_field) {
-				uint8_t const *mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d";
 				if (codec->type == CODEC_FLAC &&
-					memcmp(field_pending, mbp, 22) == 0) {
+					memcmp(field_pending, MBPeq, 22) == 0) {
 					// FLACでM_B_Pを入力した時は今の処無視しておく
 					ignore_picture = true;
 					editlen -= 4;

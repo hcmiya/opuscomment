@@ -200,6 +200,16 @@ void open_output_file(void) {
 			fileerror(O.out);
 		}
 		remove_tmp = false;
+		
+		tag_output_to_file = O.tag_filename && strcmp(O.tag_filename, "-") != 0;
+		if (tag_output_to_file) {
+			FILE *tmp = freopen(O.tag_filename, "w", stdout);
+			if (!tmp) {
+				fileerror(O.tag_filename);
+			}
+		}
+		
+		tag_output = O.tag_deferred ? tmpfile() : stdout;
 	}
 	else if (O.out) {
 		if (strcmp(O.out, "-") == 0) {
