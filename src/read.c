@@ -59,9 +59,7 @@ void put_left(size_t rew) {
 	exit(0);
 }
 
-bool flac_make_tag_packet(ogg_page *og, FILE *fptag, FILE **built_stream);
-
-static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page) {
+void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page) {
 	FILE *fptag = rst->tag;
 	size_t const pagebuflen = 65536; // oggページの最大長 = 65307
 	uint8_t pagebuf[pagebuflen];
@@ -101,8 +99,9 @@ static void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est,
 	if (commentlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		exceed_output_limit();
 	}
+	if (codec->type == CODEC_FLAC) return;
 	
-	rewind(fptag); 
+	rewind(fptag);
 	ogg_page og;
 	og.header_len = 282;
 	og.header = pagebuf;

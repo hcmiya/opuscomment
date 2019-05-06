@@ -28,13 +28,16 @@ bool get_metadata_header(uint8_t *type, size_t *len) {
 	*type = 0x7f & gbuf[0];
 	gbuf[0] = 0;
 	*len = htonl(*(uint32_t*)gbuf);
+	gbuf[0] = *type; // 「最後のヘッダ」標識を削除
 	return last;
 }
 
-static void write_buffer(void *buf, size_t len, FILE *fp) {
-	size_t wlen = fwrite(buf, 1, len, built_stream);
+static void write_buffer(void const *buf, size_t len, FILE *fp) {
+	size_t wlen = fwrite(buf, 1, len, fp);
 	if (wlen != len) oserror();
 }
+
+void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page);
 
 static void read_comment(size_t left) {
 	// ここから read.c の parse_info_border() と大体一緒
@@ -44,8 +47,6 @@ static void read_comment(size_t left) {
 	
 	pthread_t retriever_thread, parser_thread;
 	if (O.edit != EDIT_LIST) {
-		fprintf(stderr, "flac hensyuu ni wa mada taiou site imasen!\n");
-		exit(1);
 		// 編集入力タグパースを別スレッド化 parse_tags.c へ
 		pthread_create(&parser_thread, NULL, parse_tags, NULL);
 	}
@@ -73,6 +74,16 @@ static void read_comment(size_t left) {
 	if (O.edit != EDIT_LIST) {
 		// 編集入力タグパースのスレッドを合流
 		pthread_join(parser_thread, (void **)&est);
+		store_tags(NULL, rst, est, false);
+		uint32_t left = ftell(rst->tag);
+		*(uint32_t*)gbuf = ntohl(left);
+		gbuf[0] = 4;
+		write_buffer(gbuf, 4, built_stream);
+		rewind(rst->tag);
+		size_t readlen;
+		while (readlen = fread(gbuf, 1, gbuflen, rst->tag)) {
+			write_buffer(gbuf, readlen, built_stream);
+		}
 	}
 	error_on_thread = false;
 }
@@ -88,11 +99,7 @@ static void *put_base64_locale(void *tagin_) {
 		iconv(cd, &ascii, &asciileft, &loc, &locleft);
 		// このiconv()はPCS範囲内でシフトも発生しないはずなのでバッファ持ち越しがない
 		// asciiは元のlocの位置に移った
-		size_t writelen = loc - ascii;
-		size_t writeret = fwrite(ascii, 1, loc - ascii, tag_output);
-		if (writelen != writeret) {
-			oserror();
-		}
+		write_buffer(ascii, loc - ascii, tag_output);
 	}
 	iconv_close(cd);
 	fclose(tagin);
@@ -122,7 +129,7 @@ static void read_picture_list(size_t left) {
 		ascii_out = tag_output;
 	}
 	
-	fwrite(MBPeq, 1, strlen(MBPeq), ascii_out);
+	write_buffer(MBPeq, strlen(MBPeq), ascii_out);
 	
 	while (left) {
 		uint8_t raw[3] = {0};
@@ -149,17 +156,19 @@ static void read_picture_list(size_t left) {
 		for (int_fast8_t i = 0; i < 4; i++) {
 			b64[i] = b64tab_ascii[b64[i]];
 		}
-		fwrite(b64, 1, 4, ascii_out);
+		write_buffer(b64, 4, ascii_out);
 		left -= readlen;
 	}
 	
-	fwrite((uint8_t[]){ O.tag_escape == TAG_ESCAPE_NUL ? 0 : 0xa }, 1, 1, ascii_out);
+	write_buffer((uint8_t[]){ O.tag_escape == TAG_ESCAPE_NUL ? 0 : 0xa }, 1, ascii_out);
 	
 	if (!O.tag_raw) {
 		fclose(ascii_out);
 		pthread_join(loctr_th, NULL);
 	}
 }
+
+void put_left(size_t rew);
 
 void read_flac(void) {
 	size_t readlen = fread(gbuf, 1, 4, stream_input);
@@ -198,16 +207,15 @@ void read_flac(void) {
 				}
 			}
 			else {
-				break;
 			}
 			// FALLTHROUGH
 		default:
-			write_buffer(gbuf, 4, built_stream);
+			if (type != 1) write_buffer(gbuf, 4, built_stream); // パディングを削除
 			while (left) {
 				size_t readlen = left > gbuflen ? gbuflen : left;
 				size_t readret = fread(gbuf, 1, readlen, stream_input);
 				if (readlen != readret) oserror();
-				write_buffer(gbuf, readlen, built_stream);
+				if (type != 1) write_buffer(gbuf, readlen, built_stream);
 				left -= readlen;
 			}
 			break;
@@ -218,5 +226,6 @@ void read_flac(void) {
 		tag_output_close();
 		exit(0);
 	}
-	opst = PAGE_SOUND;
+	write_buffer("\x81\0\0", 4, built_stream); // 「最後のヘッダ」標識を立てたパディングで〆
+	put_left(-(size_t)ftell(stream_input)); // "seeked_len(0) - rew" でfseek()するので
 }
