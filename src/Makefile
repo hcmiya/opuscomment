@@ -16,10 +16,13 @@ LDFLAGS+=
 LIBS=-logg -lm -lpthread
 CC=c99
 
-all: opuscomment ;
+all: opuscomment opuspictotag;
 
 opuscomment: $(OBJS)
-	$(CC) -o opuscomment $(CFLAGS) $(LDFLAGS) $(LIBS) $(OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(LIBS) $^
+
+opuspictotag: picture.c opuspictotag.c
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(LIBS) $^
 
 .SUFFIXES:
 .SUFFIXES: .c .o
@@ -40,4 +43,4 @@ main.c: $(HEADERS) version.h
 	@touch $@
 
 clean:
-	rm endianness.c opuscomment $(OBJS) 2>/dev/null || :
+	rm endianness.c opuscomment opuspictotag $(OBJS) 2>/dev/null || :
