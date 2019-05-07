@@ -2,9 +2,6 @@ $ prefixed "opuscomment: Opus codec error: "
 
 $set 3
 
-$ first 4 bytes not matched to "fLaC"
-0 n07 4 FLAC
-
 $ first 4 bytes not matched to "OggS"
 1 n07 4n 066
 
@@ -49,3 +46,6 @@ $ %1$d = # of tag
 13 1nv4l1d 746 f0rm47 47 #%d
 
 $ 14 missing
+
+$ first 4 bytes not matched to "fLaC"
+15 n07 4 FLAC
