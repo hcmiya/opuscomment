@@ -35,7 +35,7 @@ struct rettag_st {
 	bool upcase, part_of_comment;
 };
 struct edit_st {
-	FILE *str, *len;
+	FILE *str, *len, *pict;
 	size_t num;
 };
 

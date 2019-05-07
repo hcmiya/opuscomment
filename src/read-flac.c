@@ -84,6 +84,10 @@ static void read_comment(size_t left) {
 		while (readlen = fread(gbuf, 1, gbuflen, rst->tag)) {
 			write_buffer(gbuf, readlen, built_stream);
 		}
+		rewind(est->pict);
+		while (readlen = fread(gbuf, 1, gbuflen, est->pict)) {
+			write_buffer(gbuf, readlen, built_stream);
+		}
 	}
 	error_on_thread = false;
 }
@@ -106,15 +110,7 @@ static void *put_base64_locale(void *tagin_) {
 	return NULL;
 }
 
-static uint8_t const * const b64tab_ascii =
-	"\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f" // A-O
-	"\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5a" // P-Z
-	"\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f" // a-o
-	"\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a" // p-z
-	"\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39" // 0-9
-	"\x2b\x2f\x3d" // + / =
-	;
-
+static bool met_comment, met_picture;
 static void read_picture_list(size_t left) {
 	pthread_t loctr_th;
 	FILE *ascii_out;
@@ -129,6 +125,9 @@ static void read_picture_list(size_t left) {
 		ascii_out = tag_output;
 	}
 	
+	if (O.tag_escape == TAG_ESCAPE_NUL && (met_comment || met_picture)) {
+		write_buffer("", 1, ascii_out);
+	}
 	write_buffer(MBPeq, strlen(MBPeq), ascii_out);
 	
 	while (left) {
@@ -160,15 +159,19 @@ static void read_picture_list(size_t left) {
 		left -= readlen;
 	}
 	
-	write_buffer((uint8_t[]){ O.tag_escape == TAG_ESCAPE_NUL ? 0 : 0xa }, 1, ascii_out);
+	if (O.tag_escape != TAG_ESCAPE_NUL) {
+		write_buffer((uint8_t[]){ 0xa }, 1, ascii_out);
+	}
 	
 	if (!O.tag_raw) {
 		fclose(ascii_out);
 		pthread_join(loctr_th, NULL);
 	}
+	
+	met_picture = true;
 }
 
-void put_left(size_t rew);
+void put_left(long rew);
 
 void read_flac(void) {
 	size_t readlen = fread(gbuf, 1, 4, stream_input);
@@ -183,7 +186,6 @@ void read_flac(void) {
 	
 	bool last_metadata = false;
 	size_t metadata_num = 0;
-	bool met_comment = false;
 	while (!last_metadata) {
 		uint8_t type;
 		size_t left;
@@ -194,8 +196,13 @@ void read_flac(void) {
 			|| met_comment && type == 4) {
 			opuserror(err_opus_bad_content);
 		}
+		bool delete_header = O.edit == EDIT_LIST;
+		if (type == 1) delete_header = true;
 		switch (type) {
 		case 4:
+			if (O.edit == EDIT_LIST && O.tag_escape == TAG_ESCAPE_NUL && met_picture) {
+				write_buffer("", 1, tag_output);
+			}
 			read_comment(left);
 			met_comment = true;
 			break;
@@ -206,16 +213,17 @@ void read_flac(void) {
 					break;
 				}
 			}
-			else {
+			else if (O.edit == EDIT_WRITE) {
+				delete_header = !O.tag_ignore_picture;
 			}
 			// FALLTHROUGH
 		default:
-			if (type != 1) write_buffer(gbuf, 4, built_stream); // パディングを削除
+			if (!delete_header) write_buffer(gbuf, 4, built_stream);
 			while (left) {
 				size_t readlen = left > gbuflen ? gbuflen : left;
 				size_t readret = fread(gbuf, 1, readlen, stream_input);
 				if (readlen != readret) oserror();
-				if (type != 1) write_buffer(gbuf, readlen, built_stream);
+				if (!delete_header) write_buffer(gbuf, readlen, built_stream);
 				left -= readlen;
 			}
 			break;
@@ -227,5 +235,5 @@ void read_flac(void) {
 		exit(0);
 	}
 	write_buffer("\x81\0\0", 4, built_stream); // 「最後のヘッダ」標識を立てたパディングで〆
-	put_left(-(size_t)ftell(stream_input)); // "seeked_len(0) - rew" でfseek()するので
+	put_left(-ftell(stream_input)); // "seeked_len(0) - rew" でfseek()するので
 }

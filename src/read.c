@@ -12,7 +12,7 @@
 
 #include "opuscomment.h"
 
-static size_t seeked_len;
+static long seeked_len;
 static char *outtmp;
 static bool remove_tmp;
 static FILE *non_opus_stream;
@@ -38,7 +38,7 @@ void move_file(void) {
 	}
 }
 
-void put_left(size_t rew) {
+void put_left(long rew) {
 	clearerr(stream_input);
 	if (fseek(stream_input, seeked_len - rew, SEEK_SET)) {
 		oserror();

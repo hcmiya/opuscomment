@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 
 #include "opuscomment.h"
 
@@ -49,6 +50,9 @@ static void err_esc(void) {
 }
 static void err_utf8(void) {
 	tagerror(catgets(catd, 5, 6, "invalid UTF-8 sequence"));
+}
+static void err_base64(void) {
+	tagerror(catgets(catd, 5, 7, "invalid BASE64 sequence"));
 }
 static void err_noterm(void) {
 	mainerror(err_main_no_term);
@@ -110,13 +114,27 @@ static void toutf8(int fdu8) {
 	}
 }
 
-static FILE *strstore, *strcount;
+static FILE *strstore, *strcount, *flacpict;
 static size_t editlen;
 
-static bool first_call = true, ignore_picture = false;
+static bool first_call = true;
 static uint32_t recordlen;
+static long picture_top;
+static uint8_t b64[4];
+static int_fast8_t b64pos, b64rawlen;
+static bool b64term, store_picture;
 static void finalize_record(void) {
-	if (!ignore_picture) {
+	if (store_picture) {
+		if (b64pos != 0) err_base64();
+		long picend = ftell(flacpict);
+		uint32_t piclength = picend - picture_top - 4;
+		piclength = ntohl(0x06000000 | piclength);
+		fseek(flacpict, picture_top, SEEK_SET);
+		fwrite(&piclength, 4, 1, flacpict);
+		fseek(flacpict, 0, SEEK_END);
+		picture_top = picend;
+	}
+	else {
 		fwrite(&recordlen, 4, 1, strcount);
 		tagnum++;
 	}
@@ -136,7 +154,9 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 		keep_blank = true;
 		wsplen = 0;
 		recordlen = 0;
-		ignore_picture = false;
+		store_picture = false;
+		b64term = false;
+		b64pos = 0;
 	}
 	if (keep_blank) {
 		size_t i;
@@ -193,8 +213,49 @@ static bool test_blank(uint8_t *line, size_t n, bool lf) {
 	return false;
 }
 
+static void decode_base64(uint8_t *line, size_t n) {
+	uint8_t const *end = line + n;
+	while (line < end) {
+		uint8_t const *b64char = strchr(b64tab_ascii, *line++);
+		if (!b64char) err_base64();
+		uint_fast8_t b64idx = b64char - b64tab_ascii;
+		if (b64term && b64pos == 0) err_base64();
+		if (b64idx == 64 && b64pos < 2) err_base64();
+		if (b64pos == 2 && b64idx == 64) {
+			b64term = true;
+			b64pos = 0;
+			b64rawlen = 1;
+		}
+		if (b64pos == 3) {
+			if (b64term) {
+				if (b64idx != 64) err_base64();
+				else b64idx = 0;
+			}
+			else if (b64idx == 64) {
+				b64idx = 0;
+				b64term = true;
+				b64rawlen = 2;
+			}
+			else b64rawlen = 3;
+		}
+		b64[b64pos++] = b64idx;
+		if (b64pos == 4) {
+			uint8_t raw[3];
+			// 000000 11|1111 2222|22 333333
+			raw[0] = b64[0] << 2 | b64[1] >> 4;
+			raw[1] = b64[1] << 4 | b64[2] >> 2;
+			raw[2] = b64[2] << 6 | b64[3];
+			fwrite(raw, 1, b64rawlen, flacpict);
+			b64pos = 0;
+		}
+	}
+}
+
 static void append_buffer(uint8_t *line, size_t n) {
-	if (ignore_picture) return;
+	if (store_picture) {
+		decode_base64(line, n);
+		return;
+	}
 	editlen += n;
 	if (editlen > TAG_LENGTH_LIMIT__OUTPUT) {
 		exceed_output_limit();
@@ -245,10 +306,12 @@ static void test_mbp(uint8_t **line, size_t *n) {
 			else if (fieldlen == 22 && !on_field) {
 				if (codec->type == CODEC_FLAC &&
 					memcmp(field_pending, MBPeq, 22) == 0) {
-					// FLACでM_B_Pを入力した時は今の処無視しておく
-					ignore_picture = true;
+					store_picture = true;
+					fwrite((uint32_t[]){0}, 4, 1, flacpict);
 					editlen -= 4;
-					w = 0;
+					uint8_t *databegin = strchr(*line, 0x3d) + 1;
+					append_buffer(databegin, *n - (databegin - *line));
+					return;
 				}
 				else {
 					w = 22;
@@ -416,6 +479,7 @@ static void line_nul(uint8_t *line, size_t n, bool term) {
 void prepare_record(void) {
 	strstore = strstore ? strstore : tmpfile();
 	strcount = strcount ? strcount : tmpfile();
+	flacpict = flacpict ? flacpict : codec->type == CODEC_FLAC ? tmpfile() : NULL;
 }
 
 void *split_text(void *fp_) {
@@ -499,6 +563,7 @@ void *parse_tags(void* nouse_) {
 	struct edit_st *rtn = calloc(1, sizeof(*rtn));
 	rtn->str = strstore;
 	rtn->len = strcount;
+	rtn->pict = flacpict;
 	rtn->num = tagnum;
 	return rtn;
 }
