@@ -346,7 +346,24 @@ int main(int argc, char **argv) {
 	default_codec = codec;
 	
 #ifdef NLS
-	catd = catopen("opuscomment", NL_CAT_LOCALE);
+#define co catd = catopen("opuscomment", NL_CAT_LOCALE)
+#ifdef DEFAULT_NLS_PATH
+	char const *nlspath = getenv("NLSPATH");
+	if (nlspath && *nlspath) {
+		co;
+	}
+	else {
+		setenv("NLSPATH", DEFAULT_NLS_PATH, true);
+		co;
+		if (catd == (nl_catd)-1) {
+			unsetenv("NLSPATH");
+			co;
+		}
+	}
+#else
+	co;
+#endif
+#undef co
 #endif
 	if (argc == 1) usage();
 	
