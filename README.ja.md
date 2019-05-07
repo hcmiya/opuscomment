@@ -48,23 +48,9 @@ opuscommentはタグの内容が改行を含む場合、常にそれをエスケ
 
 opuscommentはX/Open NLSを使った地域化を実装しています。`nls/`にカタログのソースを用意していますので、必要なロケールに対して`gencat(1)`を利用してカタログファイルに変換した後に適当なディレクトリに保存して下さい。
 
-適当とは言っても、システム標準のメッセージカタログの置き場所というのはシステム毎にバラバラですし、そもそも標準的なカタログの置き場所を設定していないシステムもあるかも知れません。そのため、アプリケーション用のデータディレクトリにカタログをインストールし、NLSPATHをそこに決め打ちしたシェルスクリプト経由でopuscommentを起動させるというのがおすすめです。`NLSPATH`の`%N`は`opuscomment`に置換されます。
+コンパイル時に`DEFAULT_NLS_PATH`を文字列でdefineすると、`NLSPATH`のデフォルト値を指定することができます。例えば`/home/user/.local/lib/opuscomment/nls/%L`のように。
 
-    # NLSカタログを使用する際のコンパイル後のインストール方法の一例
-    PREFIX=/usr/local
-    mkdir -p $PREFIX/libexec/opuscomment $PREFIX/lib/opuscomment/nls $PREFIX/bin
-    cp opuscomment $PREFIX/libexec/opuscomment/
-    for lang in ja_JP.UTF-8 ja_JP.eucJP
-    do env LANG=$lang gencat $PREFIX/lib/opuscomment/nls/$lang.cat nls/$lang/*
-    done
-    cat <<heredoc >$PREFIX/bin/opuscomment
-    #!/bin/sh
-    if [ -z "\$NLSPATH" ]
-    then NLSPATH=$PREFIX/lib/opuscomment/nls/%L.cat
-    fi
-    exec env NLSPATH="\$NLSPATH" $PREFIX/libexec/opuscomment/opuscomment "\$@"
-    heredoc
-    chmod +x $PREFIX/bin/opuscomment
+`NLSPATH`の`%N`は`opuscomment`に置換されます。
 
 ### バイナリの別名
 
@@ -74,6 +60,7 @@ opuscommentはX/Open NLSを使った地域化を実装しています。`nls/`�
 |--|--|
 | (下記以外の全て) | Opus |
 | vorbiscomment | Vorbis |
+| flaccomment | FLAC |
 | speexcomment | Speex |
 | vp8comment | VP8 |
 | theoracomment | Theora |
@@ -81,7 +68,7 @@ opuscommentはX/Open NLSを使った地域化を実装しています。`nls/`�
 | oggpcmcomment | PCM |
 | ogguvscomment | UVS |
 
-上記のいずれも編集が出来るのはOggに含まれている場合のみです。
+編集ができるのは、FLACはネイティブフォーマット、それ以外はOggに含まれている場合のみです。
 
 ## ライセンス
 
