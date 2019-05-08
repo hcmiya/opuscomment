@@ -160,7 +160,6 @@ esac
 if ! expr x"$mime" : x'[] !"#$%&'\''()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\^_`abcdefghijklmnopqrstuvwxyz{|}~-]*$' >/dev/null
 then E invalid mime type string
 fi
-printf %s "$mime" |iconv -t us-ascii >"$tmp/mime"
 
 description_conv_arg="-t utf-8"
 case $have_description_file in
@@ -188,6 +187,17 @@ case $# in
 1) cat -- "$1" >"$tmp/binary" ;;
 *) usage ;;
 esac
+
+if [ -z "$mime" ]
+then
+	determine="$(file - <"$tmp/binary")"
+	case "$determine" in
+	*JPEG*|*JFIF*) mime=image/jpeg ;;
+	*GIF*) mime=image/gif ;;
+	*PNG*) mime=image/png ;;
+	esac
+fi
+printf %s "$mime" |iconv -t us-ascii >"$tmp/mime"
 
 # generate packet
 {
