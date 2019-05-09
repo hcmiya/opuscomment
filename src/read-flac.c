@@ -41,15 +41,7 @@ void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool p
 
 static void read_comment(size_t left) {
 	// ここから read.c の parse_info_border() と大体一緒
-	// スレッド間通信で使っているパイプがエラー後のexit内での始末にSIGPIPEを発するのでその対策
-	atexit(exit_without_sigpipe);
-	error_on_thread = true;
-	
-	pthread_t retriever_thread, parser_thread;
-	if (O.edit != EDIT_LIST) {
-		// 編集入力タグパースを別スレッド化 parse_tags.c へ
-		pthread_create(&parser_thread, NULL, parse_tags, NULL);
-	}
+	pthread_t retriever_thread;
 	
 	// タグヘッダパースを別スレッド化 retrieve_tags.c へ
 	int pfd[2];

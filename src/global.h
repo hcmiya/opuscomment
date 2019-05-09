@@ -91,6 +91,8 @@ GLOBAL bool error_on_thread;
 GLOBAL FILE *stream_input, *built_stream, *tag_output;
 GLOBAL bool tag_output_to_file;
 
+GLOBAL pthread_t parser_thread;
+
 #ifdef NLS
 #include <nl_types.h>
 GLOBAL nl_catd catd;

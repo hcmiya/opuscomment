@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "opuscomment.h"
 
@@ -192,6 +193,10 @@ static void cleanup(void) {
 	}
 }
 
+static void exit_without_sigpipe(void) {
+	signal(SIGPIPE, SIG_IGN);
+}
+
 void open_output_file(void) {
 	if (O.edit == EDIT_LIST) {
 		built_stream = fopen("/dev/null", "w");
@@ -243,6 +248,15 @@ void open_output_file(void) {
 		built_stream = fdopen(fd, "w+");
 	}
 	non_opus_stream = tmpfile();
+	
+	// スレッド間通信で使っているパイプがエラー後のexit内での始末にSIGPIPEを発するのでその対策
+	atexit(exit_without_sigpipe);
+	switch (O.edit) {
+	case EDIT_WRITE:
+	case EDIT_APPEND:
+		// 編集入力タグパースを別スレッド化 parse_tags.c へ
+		pthread_create(&parser_thread, NULL, parse_tags, NULL);
+	}
 }
 
 static void check_header_is_single_page(ogg_page *og) {
@@ -334,7 +348,7 @@ static bool copy_tag_packet(ogg_page *og, bool *packet_break_in_page) {
 
 bool parse_comment(ogg_page *og);
 
-static pthread_t retriever_thread, parser_thread;
+static pthread_t retriever_thread;
 bool parse_info_border(ogg_page *og) {
 	// ここにはページ番号1で来ているはず
 	if (ogg_page_continued(og)) {
@@ -363,15 +377,6 @@ bool parse_info_border(ogg_page *og) {
 			exit(0);
 		}
 		/* NOTREACHED */
-	}
-	
-	// スレッド間通信で使っているパイプがエラー後のexit内での始末にSIGPIPEを発するのでその対策
-	atexit(exit_without_sigpipe);
-	error_on_thread = true;
-	
-	if (O.edit != EDIT_LIST) {
-		// 編集入力タグパースを別スレッド化 parse_tags.c へ
-		pthread_create(&parser_thread, NULL, parse_tags, NULL);
 	}
 	
 	// OpusTagsパケットパースを別スレッド化 retrieve_tags.c へ
