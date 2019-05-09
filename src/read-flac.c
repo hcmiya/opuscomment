@@ -39,6 +39,23 @@ static void write_buffer(void const *buf, size_t len, FILE *fp) {
 
 void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page);
 
+void store_tags_flac(struct rettag_st *rst, struct edit_st *est) {
+	store_tags(NULL, rst, est, false);
+	uint32_t left = ftell(rst->tag);
+	*(uint32_t*)gbuf = ntohl(left);
+	gbuf[0] = 4;
+	write_buffer(gbuf, 4, built_stream);
+	rewind(rst->tag);
+	size_t readlen;
+	while (readlen = fread(gbuf, 1, gbuflen, rst->tag)) {
+		write_buffer(gbuf, readlen, built_stream);
+	}
+	rewind(est->pict);
+	while (readlen = fread(gbuf, 1, gbuflen, est->pict)) {
+		write_buffer(gbuf, readlen, built_stream);
+	}
+}
+
 static void read_comment(size_t left) {
 	// ここから read.c の parse_info_border() と大体一緒
 	pthread_t retriever_thread;
@@ -66,22 +83,8 @@ static void read_comment(size_t left) {
 	if (O.edit != EDIT_LIST) {
 		// 編集入力タグパースのスレッドを合流
 		pthread_join(parser_thread, (void **)&est);
-		store_tags(NULL, rst, est, false);
-		uint32_t left = ftell(rst->tag);
-		*(uint32_t*)gbuf = ntohl(left);
-		gbuf[0] = 4;
-		write_buffer(gbuf, 4, built_stream);
-		rewind(rst->tag);
-		size_t readlen;
-		while (readlen = fread(gbuf, 1, gbuflen, rst->tag)) {
-			write_buffer(gbuf, readlen, built_stream);
-		}
-		rewind(est->pict);
-		while (readlen = fread(gbuf, 1, gbuflen, est->pict)) {
-			write_buffer(gbuf, readlen, built_stream);
-		}
+		store_tags_flac(rst, est);
 	}
-	error_on_thread = false;
 }
 
 static void *put_base64_locale(void *tagin_) {
@@ -225,6 +228,19 @@ void read_flac(void) {
 	if (O.edit == EDIT_LIST) {
 		tag_output_close();
 		exit(0);
+	}
+	if (!met_comment) {
+		struct rettag_st *rst = calloc(1, sizeof(*rst));
+		rst->tag = tmpfile();
+		rst->part_of_comment = true;
+		size_t vendorlen = strlen(new_vendor_string_ascii);
+		fwrite((uint32_t[]){oi32(vendorlen)}, 4, 1, rst->tag);
+		fwrite(new_vendor_string_ascii, 1, vendorlen, rst->tag);
+		rst->tagbegin = vendorlen + 4;
+		fwrite((uint32_t[]){0}, 4, 1, rst->tag);
+		struct edit_st *est;
+		pthread_join(parser_thread, (void **)&est);
+		store_tags_flac(rst, est);
 	}
 	write_buffer("\x81\0\0", 4, built_stream); // 「最後のヘッダ」標識を立てたパディングで〆
 	put_left(-ftell(stream_input)); // "seeked_len(0) - rew" でfseek()するので

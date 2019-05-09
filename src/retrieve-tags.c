@@ -246,9 +246,10 @@ void *retrieve_tags(void *packet_input_) {
 	if (!rtn->part_of_comment) {
 		// コメントパケットが無かった時用
 		if (O.edit == EDIT_LIST) exit(0);
-		uint8_t buf2[8] = "";
-		fwrite(buf2, 1, 8, fptag);
-		rtn->tagbegin = codec->commagic_len + 4;
+		size_t vendorlen = strlen(new_vendor_string_ascii);
+		fwrite((uint32_t[]){oi32(vendorlen)}, 4, 1, fptag);
+		fwrite(new_vendor_string_ascii, 1, vendorlen, fptag);
+		rtn->tagbegin = codec->commagic_len + vendorlen + 4;
 		goto NOTCOMMENT;
 	}
 	

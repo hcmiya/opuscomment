@@ -417,7 +417,6 @@ static bool parse_comment_term(ogg_page *og, bool packet_break_in_page) {
 		// 編集入力タグパースのスレッドを合流
 		pthread_join(parser_thread, (void **)&est);
 	}
-	error_on_thread = false;
 	
 	if (O.edit == EDIT_APPEND && !rst->del && !est->num && !O.out && !O.gain_fix && !rst->upcase) {
 		// タグ追記モードで出力が上書き且つ
