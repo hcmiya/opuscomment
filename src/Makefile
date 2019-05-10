@@ -7,8 +7,10 @@
 # `DEFAULT_NLS_PATH`を文字列でdefineをすると、NLSPATHが無い時に最初にcatopen(3)をする場所を指定することができます。
 
 SRCS=put-tags.c parse-tags.c read.c read-flac.c ocutil.c retrieve-tags.c select-codec.c
+SRCSP=picture.c opuspictotag.c
 CONFSRCS=endianness.c error.c main.c
 OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
+OBJSP=$(SRCSP:.c=.o)
 HEADERS=global.h ocutil.h limit.h error.h
 ERRORDEFS=errordef/opus.tab errordef/main.tab
 DEFAULT_MACROS=-D_POSIX_C_SOURCE=200809L -DNLS
@@ -16,10 +18,13 @@ DEFAULT_MACROS=-D_POSIX_C_SOURCE=200809L -DNLS
 LIBS=-logg -lm -lpthread
 CC=c99
 
-all: opuscomment ;
+all: opuscomment opuspictotag;
 
 opuscomment: $(OBJS)
-	$(CC) -o opuscomment $(DEFAULT_MACROS) $(CFLAGS) $(LDFLAGS) $(LIBS) $(OBJS)
+	$(CC) -o $@ $(DEFAULT_MACROS) $(CFLAGS) $(LDFLAGS) $(LIBS) $^
+
+opuspictotag: $(OBJSP)
+	$(CC) -o $@ $(DEFAULT_MACROS) $(CFLAGS) $(LDFLAGS) $(LIBS) $^
 
 .SUFFIXES:
 .SUFFIXES: .c .o
@@ -40,4 +45,4 @@ main.c: $(HEADERS) version.h
 	@touch $@
 
 clean:
-	rm endianness.c opuscomment $(OBJS) 2>/dev/null || :
+	rm endianness.c opuscomment opuspictotag $(OBJS) $(OBJSP) 2>/dev/null || :

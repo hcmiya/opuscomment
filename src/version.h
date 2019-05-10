@@ -1,4 +1,5 @@
 #define OPUSCOMMENT_VERSION "1.5.3"
+#define OPUSCOMMENT_URL "https://github.com/hcmiya/opuscomment"
 
 #define OPUSCOMMENT_REVISION_YEAR (2019 - 1900)
 #define OPUSCOMMENT_REVISION_MONTH (5 - 1)
