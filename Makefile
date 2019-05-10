@@ -1,6 +1,13 @@
 all:
 	$(MAKE) -C src -r
 
+compile-all-catalogs:
+	sh -c 'for i in nls/* ; do \
+		lang=$${i#nls/} ; \
+		ls $${i} |grep -v -e opuscomment.cat -e README |sort -n |sed "s!^!nls/$${lang}/!" \
+		|xargs env LANG=$${lang} gencat $${i}/opuscomment.cat ; \
+	done'
+
 clean:
 	$(MAKE) -C src clean
 
