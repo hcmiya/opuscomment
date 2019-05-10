@@ -40,7 +40,7 @@ opuscommentはタグの内容が改行を含む場合、常にそれをエスケ
 
 ## インストール
 
-    $ make
+    $ make CFLAGS=-DNDEBUG
 
 をすると`src/`に`opuscomment`という名前でバイナリが出力されますのでそれを任意の場所にコピーします。
 
