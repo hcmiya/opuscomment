@@ -39,7 +39,7 @@ void move_file(void) {
 	}
 }
 
-void put_left(long rew) {
+noreturn void put_left(long rew) {
 	clearerr(stream_input);
 	if (fseek(stream_input, seeked_len - rew, SEEK_SET)) {
 		oserror();

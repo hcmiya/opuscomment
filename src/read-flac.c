@@ -37,18 +37,18 @@ static void write_buffer(void const *buf, size_t len, FILE *fp) {
 	if (wlen != len) oserror();
 }
 
-void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page);
-
 void store_tags_flac(struct rettag_st *rst, struct edit_st *est) {
-	store_tags(NULL, rst, est, false);
-	uint32_t left = ftell(rst->tag);
-	*(uint32_t*)gbuf = ntohl(left);
-	gbuf[0] = 4;
-	write_buffer(gbuf, 4, built_stream);
-	rewind(rst->tag);
 	size_t readlen;
-	while (readlen = fread(gbuf, 1, gbuflen, rst->tag)) {
-		write_buffer(gbuf, readlen, built_stream);
+	if (rst) {
+		store_tags(NULL, rst, est, false);
+		uint32_t left = ftell(rst->tag);
+		*(uint32_t*)gbuf = ntohl(left);
+		gbuf[0] = 4;
+		write_buffer(gbuf, 4, built_stream);
+		rewind(rst->tag);
+		while (readlen = fread(gbuf, 1, gbuflen, rst->tag)) {
+			write_buffer(gbuf, readlen, built_stream);
+		}
 	}
 	rewind(est->pict);
 	while (readlen = fread(gbuf, 1, gbuflen, est->pict)) {
@@ -166,8 +166,6 @@ static void read_picture_list(size_t left) {
 	met_picture = true;
 }
 
-void put_left(long rew);
-
 void read_flac(void) {
 	size_t readlen = fread(gbuf, 1, 4, stream_input);
 	if (readlen == (size_t)-1) oserror();
@@ -230,16 +228,19 @@ void read_flac(void) {
 		exit(0);
 	}
 	if (!met_comment) {
-		struct rettag_st *rst = calloc(1, sizeof(*rst));
-		rst->tag = tmpfile();
-		rst->part_of_comment = true;
-		size_t vendorlen = strlen(new_vendor_string_ascii);
-		fwrite((uint32_t[]){oi32(vendorlen)}, 4, 1, rst->tag);
-		fwrite(new_vendor_string_ascii, 1, vendorlen, rst->tag);
-		rst->tagbegin = vendorlen + 4;
-		fwrite((uint32_t[]){0}, 4, 1, rst->tag);
 		struct edit_st *est;
 		pthread_join(parser_thread, (void **)&est);
+		struct rettag_st *rst = NULL;
+		if (est->num) {
+			rst = calloc(1, sizeof(*rst));
+			rst->tag = tmpfile();
+			rst->part_of_comment = true;
+			size_t vendorlen = strlen(new_vendor_string_ascii);
+			fwrite((uint32_t[]){oi32(vendorlen)}, 4, 1, rst->tag);
+			fwrite(new_vendor_string_ascii, 1, vendorlen, rst->tag);
+			rst->tagbegin = vendorlen + 4;
+			fwrite((uint32_t[]){0}, 4, 1, rst->tag);
+		}
 		store_tags_flac(rst, est);
 	}
 	write_buffer("\x81\0\0", 4, built_stream); // 「最後のヘッダ」標識を立てたパディングで〆
