@@ -40,7 +40,7 @@ opuscommentはタグの内容が改行を含む場合、常にそれをエスケ
 
 ## インストール
 
-    $ make CFLAGS=-DNDEBUG
+    $ ./build.sh release
 
 をすると`src/`に`opuscomment`という名前でバイナリが出力されますのでそれを任意の場所にコピーします。
 
@@ -48,7 +48,7 @@ opuscommentはタグの内容が改行を含む場合、常にそれをエスケ
 
 opuscommentはX/Open NLSを使った地域化を実装しています。`nls/`にカタログのソースを用意していますので、必要なロケールに対して`gencat(1)`を利用してカタログファイルに変換した後に適当なディレクトリに保存して下さい。
 
-コンパイル時に`DEFAULT_NLS_PATH`を文字列でdefineすると、`NLSPATH`のデフォルト値を指定することができます。例えば`/home/user/.local/lib/opuscomment/nls/%L`のように。
+build.shでのコンパイル時に環境変数`DEFAULT_NLS_PATH`を設定すると、`NLSPATH`のデフォルト値を指定することができます。例えば`/home/user/.local/lib/opuscomment/nls/%L`のように。
 
 `NLSPATH`の`%N`は`opuscomment`に置換されます。
 
