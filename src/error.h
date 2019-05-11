@@ -1,12 +1,12 @@
 #include <stdbool.h>
 
 void errorprefix(void);
-void mainerror(int, ...);
-void opuserror(int, ...);
-void oserror(void);
-void oserror_fmt(char const*, ...);
-void fileerror(char const*);
-void opterror(int, char const*, ...);
+noreturn void mainerror(int, ...);
+noreturn void opuserror(int, ...);
+noreturn void oserror(void);
+noreturn void oserror_fmt(char const*, ...);
+noreturn void fileerror(char const*);
+noreturn void opterror(int, char const*, ...);
 
 enum err_opus_ {
 #define LIST(I, B, E, S) err_opus_##E = I,
@@ -20,4 +20,4 @@ enum err_main_ {
 #undef LIST
 };
 
-void exceed_output_limit(void);
+noreturn void exceed_output_limit(void);

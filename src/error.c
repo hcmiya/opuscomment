@@ -8,7 +8,7 @@ void errorprefix(void) {
 	fprintf(stderr, catgets(catd, 1, 3, "%s: "), program_name);
 }
 
-void mainerror(int e, ...) {
+noreturn void mainerror(int e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
@@ -22,7 +22,7 @@ void mainerror(int e, ...) {
 	exit(1);
 }
 
-void opuserror(int e, ...) {
+noreturn void opuserror(int e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
@@ -46,12 +46,12 @@ void opuserror(int e, ...) {
 	exit(2);
 }
 
-void oserror(void) {
+noreturn void oserror(void) {
 	perror(program_name);
 	exit(3);
 }
 
-void oserror_fmt(char const *e, ...) {
+noreturn void oserror_fmt(char const *e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
@@ -60,14 +60,14 @@ void oserror_fmt(char const *e, ...) {
 	exit(3);
 }
 
-void fileerror(char const *file) {
+noreturn void fileerror(char const *file) {
 	errorprefix();
 	fprintf(stderr, catgets(catd, 1, 5, "%s: "), file);
 	perror(NULL);
 	exit(3);
 }
 
-void opterror(int c, char const *e, ...) {
+noreturn void opterror(int c, char const *e, ...) {
 	va_list ap;
 	va_start(ap, e);
 	errorprefix();
@@ -78,6 +78,6 @@ void opterror(int c, char const *e, ...) {
 }
 
 
-void exceed_output_limit(void) {
+noreturn void exceed_output_limit(void) {
 	mainerror(err_main_output_limit, TAG_LENGTH_LIMIT__OUTPUT >> 20);
 }

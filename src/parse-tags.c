@@ -25,7 +25,7 @@ static void readerror(void) {
 }
 
 static size_t tagnum;
-static void tagerror(char *e) {
+static noreturn void tagerror(char *e) {
 	errorprefix();
 	fprintf(stderr, catgets(catd, 1, 6, "editing input #%zu: "), tagnum + 1);
 	fputs(e, stderr);
