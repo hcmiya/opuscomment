@@ -28,7 +28,7 @@ E() {
 usage() {
 	cat <<heredoc
 Synopsis:
-    $progname [-t type] [-m mime] [-d desc|-D descfile] [-R] [image|-]
+    $progname [-t type] [-m mime] [-d desc|-D descfile] [-g WIDTHxHEIGHT] [-R] [image|-]
 
 Description:
     $progname generates METADATA_BLOCK_PICTURE tag for Ogg Opus/Vorbis from
@@ -43,6 +43,8 @@ Options:
         Set description
     -D descfile
         Load description from descfile
+    -g WIDTHxHEIGHT
+        Set geometry of the image
     -R
         Raw UTF-8 I/O. Affects -D and output
 heredoc
@@ -102,7 +104,8 @@ outcmd=cat
 raw=n
 have_description_file=n
 mime=
-while getopts t:d:D:m:R sw
+geometry=0x0
+while getopts t:d:D:m:g:R sw
 do
 	case $sw in
 	t)
@@ -118,6 +121,9 @@ do
 		;;
 	m)
 		mime="$OPTARG"
+		;;
+	g)
+		geometry="$OPTARG"
 		;;
 	R)
 		raw=y
@@ -159,6 +165,14 @@ esac
 
 if ! expr x"$mime" : x'[] !"#$%&'\''()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\^_`abcdefghijklmnopqrstuvwxyz{|}~-]*$' >/dev/null
 then E invalid mime type string
+fi
+
+if echo $geometry |grep -sqEx '[0-9]+x[0-9]+'
+then
+	width=${geometry%x*}
+	height=${geometry#*x}
+else
+	E invalid geometry
 fi
 
 description_conv_arg="-t utf-8"
@@ -208,8 +222,9 @@ printf %s "$mime" |iconv -t us-ascii >"$tmp/mime"
 		cat <"$tmp/mime"
 		printbinint $description_length
 		dd count=$description_length bs=1 <"$tmp/description" 2>/dev/null
-		# width, height, bpp, colors (are 0)
-		printf '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'
+		printbinint $width
+		printbinint $height
+		printf '\0\0\0\0\0\0\0\0' # bpp, colors (are 0)
 		printbinint $(wc -c <"$tmp/binary")
 		cat <"$tmp/binary"
 	} |escape_binary
