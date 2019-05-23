@@ -26,9 +26,9 @@ E() {
 }
 
 usage() {
-	cat <<heredoc
+	cat <<_heredoc
 Synopsis:
-    $progname [-t type] [-m mime] [-d desc|-D descfile] [-g WIDTHxHEIGHT] [-R] [image|-]
+    $progname [-t type] [-m mime] [-d desc|-D descfile] [-g WIDTHxHEIGHTxBPP[/COLORS]] [-R] [image|-]
 
 Description:
     $progname generates METADATA_BLOCK_PICTURE tag for Ogg Opus/Vorbis from
@@ -43,11 +43,11 @@ Options:
         Set description
     -D descfile
         Load description from descfile
-    -g WIDTHxHEIGHT
-        Set geometry of the image
+    -g WIDTHxHEIGHTxBPP[/COLORS]
+        Set geometry, bpp and number of colors of the image
     -R
         Raw UTF-8 I/O. Affects -D and output
-heredoc
+_heredoc
 	exit 1
 }
 
@@ -104,7 +104,7 @@ outcmd=cat
 raw=n
 have_description_file=n
 mime=
-geometry=0x0
+geometry=0x0x0/0
 while getopts t:d:D:m:g:R sw
 do
 	case $sw in
@@ -147,7 +147,8 @@ cover*|front*) type=3 ;;
 leaflet*) type=5 ;;
 media*|medium*) type=6 ;;
 lead*|solo*) type=7 ;;
-artist|artists|performer|performers) type=8 ;;
+bandlogo*|artistlogo*) type=19 ;;
+artist*|performer*) type=8 ;;
 conductor*) type=9 ;;
 band*|orchestra*) type=10 ;;
 composer*) type=11 ;;
@@ -158,7 +159,6 @@ recordedat*|record*loc*|*studio*) type=13 ;;
 *screen*|*capture*|*video*|*movie*) type=16 ;;
 *fish) type=17 ;; # ???
 illust*) type=18 ;;
-bandlogo*|artistlogo*) type=19 ;;
 publisherlogo*|studiologo*) type=20 ;;
 *) E unknown picture type ;;
 esac
@@ -167,10 +167,13 @@ if ! expr x"$mime" : x'[] !"#$%&'\''()*+,./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRST
 then E invalid mime type string
 fi
 
-if echo $geometry |grep -sqEx '[0-9]+x[0-9]+'
+if echo $geometry |grep -sqEx '[1-9][0-9]*x[1-9][0-9]*x[1-9][0-9]*(/(0|[1-9][0-9]*))?|0x0x0(/0)?'
 then
-	width=${geometry%x*}
-	height=${geometry#*x}
+	echo $geometry |tr x/ '  ' >$tmp/geometry
+	read width height bpp colors <$tmp/geometry
+	if [ -z "$colors" ]
+	then colors=0
+	fi
 else
 	E invalid geometry
 fi
@@ -224,7 +227,8 @@ printf %s "$mime" |iconv -t us-ascii >"$tmp/mime"
 		dd count=$description_length bs=1 <"$tmp/description" 2>/dev/null
 		printbinint $width
 		printbinint $height
-		printf '\0\0\0\0\0\0\0\0' # bpp, colors (are 0)
+		printbinint $bpp
+		printbinint $colors
 		printbinint $(wc -c <"$tmp/binary")
 		cat <"$tmp/binary"
 	} |escape_binary
