@@ -169,8 +169,8 @@ fi
 
 if echo $geometry |grep -sqEx '[1-9][0-9]*x[1-9][0-9]*x[1-9][0-9]*(/(0|[1-9][0-9]*))?|0x0x0(/0)?'
 then
-	echo $geometry |tr x/ '  ' >$tmp/geometry
-	read width height bpp colors <$tmp/geometry
+	echo $geometry |tr x/ '  ' >"$tmp/geometry"
+	read width height bpp colors <"$tmp/geometry"
 	if [ -z "$colors" ]
 	then colors=0
 	fi
