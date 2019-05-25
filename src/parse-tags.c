@@ -223,7 +223,7 @@ static void decode_base64(uint8_t *line, size_t n) {
 		if (b64idx == 64 && b64pos < 2) err_base64();
 		if (b64pos == 2 && b64idx == 64) {
 			b64term = true;
-			b64pos = 0;
+			b64idx = 0;
 			b64rawlen = 1;
 		}
 		if (b64pos == 3) {
