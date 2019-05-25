@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2019-03-08" "1.5.0-unreleased" "opuscomment 1.5マニュアル"
+.TH "OPUSCOMMENT" "1" "2019-05-25" "1.5.4" "opuscomment 1.5マニュアル"
 
 .SH 名前
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
@@ -12,7 +12,10 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 \fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-DepQRUv\fR ] \fB\fIsrcfile\fB\fR
 
 
-\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
+\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-0e\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
+
+
+\fBopuscomment\fR [ \fB-h\fR ]
 
 .SH "説明"
 .PP
@@ -36,7 +39,7 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 使い方を表示して終了する
 .TP
 \fB-C \fIcodec\fB\fR
-編集対象のコーデックを指定する
+編集対象のコーデックを指定する。対応しているコーデックはOpus・Vorbis・FLAC・Speex・VP8・Theora・Daala・PCM・UVSである。
 .TP
 \fB-i \fIidx\fB\fR
 多重化されたOggストリーム中の編集対象のストリームを、対象コーデック以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している
@@ -46,6 +49,9 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 .TP
 \fB-e\fR
 バックスラッシュ、改行、復帰、ヌルにそれぞれ\\\\, \\n, \\r, \\0のエスケープを使用する(\fBvorbiscomment\fR(1)互換)
+.TP
+\fB-0\fR
+編集入出力に'\\0'区切りを使う
 .TP
 \fB-t \fINAME=VALUE\fB\fR
 引数をタグとして追加する
@@ -132,6 +138,15 @@ Ogg Opusには出力ゲインというヘッダ項目があり、それを変更
 opuscomment -g -5.0 loud.opus
 # 出力ゲインが変更されたことをopusinfo(1)のPlayback gainという項目で確認できる
 opusinfo loud.opus
+.fi
+.PP
+\fB-d\fRオプションを使うことで、レコードの上書きをする編集の手間を少し省くことができる。
+
+.nf
+# -dを使ったタイトル変更法1
+opuscomment -d TITLE -t TITLE="New Title" hoge.opus
+# -dを使ったタイトル変更法2
+echo TITLE=New Title |opuscomment -d TITLE hoge.opus
 .fi
 .SS "OGG VORBISからの移行"
 .PP
@@ -238,9 +253,11 @@ opuscomment -e old.opus |sed '/^COMMENT=/d' |opuscomment -we re-encoded.opus
 .fi
 .SS "NULの扱い"
 .PP
-\fBopuscomment\fRは文字「NUL」が入力された場合は一切エラーとする。もしOpus内のタグがNULを含んでいた場合、出力モードで文字が途切れるだろう。これはvorbis commentがあくまでUTF-8テキストを格納するものなのでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。しかし必要ならば\fB-R\fRか\fB-e\fRいずれかのオプションを指定することで回避できる。
+\fBopuscomment\fRは\fB-0\fRが指定されていない時に文字「NUL」が入力された場合は一切エラーとする。
+.PP
+もしOpus内のタグがNULを含んでいた場合、出力モードで文字が途切れるだろう。これはvorbis commentがあくまでUTF-8テキストを格納するものなのでバイナリファイルが入力された時にテキストファイルが壊れてしまうという動作を意図的に発現させているためである。しかし必要ならば\fB-R\fRか\fB-e\fRいずれかのオプションを指定することで回避できる。
 .SS "出力ゲインとR128_TRACK_GAIN、R128_ALBUM_GAINの編集"
 .PP
-Opus仕様を定めた\fIRFC 7845\fRによれば、出力ゲインを編集した場合、併せて\fIR128_TRACK_GAIN\fR、\fIR128_ALBUM_GAIN\fRの更新ないし削除をしなければならない(MUST)、とある。しかし、\fBopuscomment\fRはこの仕様に基く処理を実装しない。\fBopuscomment\fRの利用者はこの仕様を念頭に置いてゲイン調整の編集をスクリプトに組み込む必要がある。
+Opus仕様を定めた\fIRFC 7845\fRによれば、出力ゲインを編集した場合、併せて\fIR128_TRACK_GAIN\fR、\fIR128_ALBUM_GAIN\fRの更新ないし削除をしなければならない(MUST)、とある。しかし、\fBopuscomment\fRはこの仕様に基く処理を実装しない。\fBopuscomment\fRの利用者はこの仕様を念頭に置いてゲイン調整の編集をアプリケーションに組み込む必要がある。
 .SH "関連項目"
 \fBopusenc\fR(1), \fBopusinfo\fR(1), \fBopuschgain\fR(1), \fBvorbiscomment\fR(1), \fBmetaflac\fR(1), \fBop_set_gain_offset\fR(3)

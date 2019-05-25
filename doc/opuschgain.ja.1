@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCHGAIN" "1" "2019-03-08" "1.4.8" "opuscomment 1.4マニュアル"
+.TH "OPUSCHGAIN" "1" "2019-05-25" "1.5.4" "opuscomment 1.5マニュアル"
 
 .SH 名前
 opuschgain \- Ogg Opusファイルの出力ゲインとR128ゲインタグを更新
@@ -22,9 +22,6 @@ opuschgainは、Ogg Opusファイルの出力ゲインの編集をする。も�
 \fB-s \fIscale\fB\fR
 出力ゲインをPCMサンプルの倍率で指定する。1で等倍。0.5で半分(コマンド内でdBに変換)
 .TP
-\fB-0\fR
-出力ゲインを0にする
-.TP
 \fB-r\fR
 出力ゲインの指定を内部の設定に対する相対値とする
 .TP
@@ -33,6 +30,9 @@ opuschgainは、Ogg Opusファイルの出力ゲインの編集をする。も�
 .TP
 \fB-Q\fR
 出力ゲイン値にQ7.8形式を使う
+.TP
+\fB-0\fR
+出力ゲインを0にする
 .TP
 \fB-i \fIidx\fB\fR
 多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している
