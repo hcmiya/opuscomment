@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2019-03-08" "1.4.8" "opuscomment 1.4 Manual"
+.TH "OPUSCOMMENT" "1" "2019-05-25" "1.5.4" "User Manual"
 
 .SH NAME
 opuscomment \- Ogg Edit Opus file output gain and tag
@@ -12,7 +12,9 @@ opuscomment \- Ogg Edit Opus file output gain and tag
 
 \fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-DepQRUv\fR ] \fB\fIsrcfile\fB\fR
 
-\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
+\fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-0e\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
+
+\fBopuscomment\fR [ \fB-h\fR ]
 
 .SH DESCRIPTION
 .PP
@@ -37,7 +39,7 @@ Tag writing mode
 Display usage and exit
 .TP
 \fB-C \fIcodec\fB\fR
-Specify the codec to be edited
+Specifies the codec to be edited. Supported codecs are Opus, Vorbis, FLAC, Speex, VP8, Theora, Daala, PCM, UVS.
 .TP
 \fB-i \fIidx\fB\fR
 Specifies the stream to be edited in the multiplexed Ogg stream in the order of one starting point except for the target codec. It is assumed that the moving image file has a plurality of audio streams by dubbing or sub audio
@@ -47,6 +49,9 @@ Use UTF-8 for tag input / output. If this option is not present, translation wit
 .TP
 \fB-e\fR
 Use \\\\, \\n, \\r, \\0 escape for backslash, newline, carriage return, and null respectively (compatible with \fBvorbiscomment\fR(1))
+.TP
+\fB-0\fR
+Use '\\ 0' delimiter for edit input / output
 .TP
 \fB-t \fINAME=VALUE\fB\fR
 Add an argument as a tag
@@ -132,10 +137,19 @@ opuscomment -w some.opus <tags.txt
 In Ogg Opus, there is a header item called output gain, and by changing it, the function that the volume can be freely changed even after encoding is attached as a codec standard. \fBopuscomment\fR corresponds to editing of its output gain.
 
 .nf
-# Reduce the sound level of -5.0 dB for Opus files with large volume
+# Make louder Opus files smaller by -5.0 dB
 opuscomment -g -5.0 loud.opus
-# You can check that the output gain has been changed with the item "Playback gain" of opusinfo(1)
+# You can confirm that the output gain has been changed by the item of Playback gain in opusinfo (1)
 opusinfo loud.opus
+.fi
+.PP
+\fB-d\fR option by using, you can save some editing effort to overwrite records
+
+.nf
+# Title change method 1 using -d
+opuscomment -d TITLE -t TITLE="New Title" hoge.opus
+# Title change method 2 using -d
+echo TITLE=New Title |opuscomment -d TITLE hoge.opus
 .fi
 
 .SS OGG VORBIS TRANSITION
@@ -246,11 +260,15 @@ opuscomment -e old.opus |sed '/^COMMENT=/d' |opuscomment -we re-encoded.opus
 
 .SS Handling of NUL
 .PP
-If \fBopuscomment\fR is entered with the character "NUL", it is assumed to be an error at all. If the tag in Opus contained NUL, the character would be cut off in output mode. This is because vorbis comment stores UTF-8 text only, so it intentionally manifests the behavior that the text file will be broken when a binary file is entered. However, it can be avoided by specifying either \fB-R\fR or \fB-e\fR if necessary.
+If \fB-0\fR is not specified, \fBopuscomment\fR generates an error if the character "NUL" is input.
+.PP
+If the tag in Opus contains NUL, the characters will break in output mode. This is because the vorbis comment is intended to store UTF-8 text as it is intended to express an action that a text file is broken when a binary file is input. However, if necessary, it can be avoided by specifying either \fB-R\fR or \fB-e\fR.
+
 
 .SS Edit output gain and R128_TRACK_GAIN, R128_ALBUM_GAIN
 .PP
-According to \fIRFC 7845\fR specifying the Opus specification, it is MUST update or delete \fIR128_TRACK_GAIN\fR, \fIR128_ALBUM_GAIN\fR when editing the output gain. However, \fBopuscomment\fR does not implement processing based on this specification. Users of \fBopuscomment\fR need to incorporate gain adjustment editing into scripts with this specification in mind.
+According to the Opus specification \fIRFCC 7845\fR, if the output gain is edited, \fIR128_TRACK_GAIN\fR and \fIR128_ALBUM_GAIN\fR MUST be updated or deleted. However, \fBopuscomment\fR does not implement processing based on this specification. Users of \fBopuscomment\fR should incorporate gain adjustment editing into their application with this specification in mind.
+
 .SH SEE ALSO
 \fBopusenc\fR(1), \fBopusinfo\fR(1), \fBopuschgain\fR(1), \fBvorbiscomment\fR(1), \fBmetaflac\fR(1), \fBop_set_gain_offset\fR(3)
 
