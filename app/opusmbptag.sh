@@ -55,18 +55,17 @@ _heredoc
 ## select implementations for your environment in install time.
 
 ## create_temp (gnu/bsd)
-#create_temp() {
+#create_temp() (
 #	mktemp -d
-#}
+#)
 ###
 
 ## create_temp (posix)
-create_temp() {
+create_temp() (
 	tmp_="${TMPDIR:-/tmp}/$progname.$$.$(ps -A |cksum)"
 	mkdir -m 0700 -- "$tmp_"
 	printf '%s\n' "$tmp_"
-	unset tmp_
-}
+)
 ###
 
 ## escape_binary (gnu)
@@ -171,9 +170,7 @@ if echo $geometry |grep -sqEx '[1-9][0-9]*x[1-9][0-9]*x[1-9][0-9]*(/(0|[1-9][0-9
 then
 	echo $geometry |tr x/ '  ' >"$tmp/geometry"
 	read width height bpp colors <"$tmp/geometry"
-	if [ -z "$colors" ]
-	then colors=0
-	fi
+	colors=${colors:-0}
 else
 	E invalid geometry
 fi
