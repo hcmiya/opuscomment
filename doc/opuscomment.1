@@ -102,7 +102,11 @@ Output value of output gain to standard error output
 \fB-q\fR
 It has no effect. It exists so as not to cause an error even if it is specified. (compatible with \fBvorbiscomment\fR(1))
 
-.SH ENVIRONMENT VARIABLE
+.SH EXIT STATUS
+.PP
+0 if the Opus file was successfully edited, 1 if there was an error in the option or editing tag input grammar, 2 if the Opus file format was wrong, 2 system incorrect errors such as file I / O If it does, it returns 3.
+
+.SH ENVIRONMENT VARIABLES
 .TP
 \fBLANG\fR
 It is affected by the conversion between tag internal format UTF-8 and the locale character encoding scheme
@@ -112,10 +116,6 @@ Affected by the format of floating point numbers used for output gain editing
 .TP
 \fBLC_MESSAGES, NLSPATH\fR
 It involves processing message catalogs
-
-.SH EXIT STATUS
-.PP
-0 if the Opus file was successfully edited, 1 if there was an error in the option or editing tag input grammar, 2 if the Opus file format was wrong, 2 system incorrect errors such as file I / O If it does, it returns 3.
 
 .SH EXAMPLE
 .SS BASIC
