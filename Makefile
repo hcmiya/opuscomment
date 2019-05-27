@@ -4,7 +4,7 @@ all:
 clean:
 	$(MAKE) -C src clean
 
-updoc: doc/man/ja/man1/opuscomment.1;
+updoc-ja: doc/man/ja/man1/opuscomment.1;
 
-doc/man/ja/man1/opuscomment.1: doc/docbook/opuscomment.ja.sgml
+doc/man/ja/man1/opuscomment.1: doc/mansrc/opuscomment.ja.sgml
 	tests/tr.sh
