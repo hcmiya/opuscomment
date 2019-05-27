@@ -16,6 +16,9 @@ opuschgain \- Ogg Opusファイルの出力ゲインとR128ゲインタグを更
 opuschgainは、Ogg Opusファイルの出力ゲインの編集をする。もし\fIsrcfile\fRが\fIR128_TRACK_GAIN\fR・\fIR128_ALBUM_GAIN\fRタグを持つ場合、それを併せて更新する。この2つのタグの情報については\fIRFC 7845 §5.2.1.\fRを参照。
 .SH "オプション"
 .TP
+\fB-0\fR
+出力ゲインを0にする
+.TP
 \fB-g \fIgain\fB\fR
 出力ゲインをdBで指定する
 .TP
@@ -30,9 +33,6 @@ opuschgainは、Ogg Opusファイルの出力ゲインの編集をする。も�
 .TP
 \fB-Q\fR
 出力ゲイン値にQ7.8形式を使う
-.TP
-\fB-0\fR
-出力ゲインを0にする
 .TP
 \fB-i \fIidx\fB\fR
 多重化されたOggストリーム中の編集対象のOpusストリームを、Opus以外のものを除いた1起点の順番で指定する。動画ファイルが吹き替えや副音声などで複数の音声ストリームを持つという状況を想定している
