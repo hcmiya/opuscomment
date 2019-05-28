@@ -27,11 +27,11 @@ $ %2$s = codec name, e.g. Opus, Theora, ...
     -i idx\n\
           5p3c1fy %2$s 1nd3x f0r 3d171n6 1n mul71pl3x3d 066 57r34m\n\
           (1-0r161n, w17h0u7 n0n-%2$s 57r34m)\n\
-    -R    455um3 3d171n6 10 70 b3 3nc0d3d 1n u7f-8\n\
+    -R    455um3 746 10 70 b3 3nc0d3d 1n u7f-8\n\
     -e    u53 35c4p3 53qu3nc3; \\\\, \\n, \\r 4nd \\0\n\
-    -0    Use '\\0' separation for editing IO\n\
+    -0    u53 '\\0' 53p4r4710n f0r 746 10\n\
     -t NAME=VALUE\n\
-          4dd 7h3 4r6um3n7 45 3d171n6 173m\n\
+          4dd 7h3 4r6um3n7 45 4 746\n\
     -c tagfile\n\
           1n l157 m0d3, wr173 7465 70 "tagfile".\n\
           1n 4pp3nd/wr173 m0d3, r34d 7465 fr0m "tagfile"\n\
@@ -41,8 +41,11 @@ $ %2$s = codec name, e.g. Opus, Theora, ...
     -p    5upr355 3d171n6 f0r m374d474_bl0ck_p1c7ur3\n\
     -U    c0nv3r7 f13ld n4m3 570r3d 1n "srcfile" 70 upp3rc453\n\
     -V    v3r1fy 7465 570r3d 1n "srcfile"\n\
-    -T    3rr0r wh3n 3d171n6 1npu7 15 n07 73rm1n473d by l1n3 f33d\n\
-    -D    d3f3r 3d171n6 10; 1mpl135 '-V', '-T'\n\
+    -T    r37urn 3rr0r wh3n 746 1npu7 15 n07 73rm1n473d by l1n3 f33d\n\
+    -D    1n l157 m0d3, d3f3r 746 0u7pu7 un71l c0mm3n7 p4ck37 15 bu1l7.\n\
+          1mpl135 -v.\n\
+          1n 4pp3n7/wr173 m0d3, r37urn 3rr0r wh3n 746 1npu7 15 3mp7y.\n\
+          1mpl135 -7\n\
 `
 
 $ opus specific options

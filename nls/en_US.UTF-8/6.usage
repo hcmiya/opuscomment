@@ -27,11 +27,11 @@ Options:\n\
     -i idx\n\
           Specify %2$s index for editing in multiplexed Ogg stream\n\
           (1-origin, without non-%2$s stream)\n\
-    -R    Assume editing IO to be encoded in UTF-8\n\
+    -R    Assume tag IO to be encoded in UTF-8\n\
     -e    Use escape sequence; \\\\, \\n, \\r and \\0\n\
-    -0    Use '\\0' separation for editing IO\n\
+    -0    Use '\\0' separation for tag IO\n\
     -t NAME=VALUE\n\
-          add the argument as editing item\n\
+          add the argument as a tag\n\
     -c tagfile\n\
           In list mode, write tags to tagfile.\n\
           In append/write mode, read tags from tagfile\n\
@@ -40,9 +40,12 @@ Options:\n\
           When VALUE is omitted, All of NAME is removed. Implies -U\n\
     -p    Supress editing for METADATA_BLOCK_PICTURE\n\
     -U    Convert field name stored in srcfile to uppercase\n\
-    -V    Verify Tags stored in srcfile\n\
-    -T    Error when editing input is not terminated by line feed\n\
-    -D    Defer editing IO; implies -V, -T\n\
+    -V    Verify tags stored in srcfile\n\
+    -T    Return error when tag input is not terminated by line feed\n\
+    -D    In list mode, defer tag output until comment packet is built.\n\
+          Implies -V.\n\
+          In appent/write mode, return error when tag input is empty.\n\
+          Implies -T\n\
 `
 
 $ opus specific options
