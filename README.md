@@ -1,82 +1,68 @@
 # opuscomment
 
-The formal README is written in [Japanese](./README.ja.md).
+[English](./README.en.md)
 
-## Overview
+## 概要
 
-<dfn>opuscomment</dfn> is an editing utility for Ogg Opus with an interface compatible with [vorbiscomment](https://github.com/xiph/vorbis-tools). The first feature is that you can edit the output gain which is one of Opus's important functions. It also aims to always escape tags that span multiple lines safely and to facilitate incorporation into other software.
+<dfn>opuscomment</dfn>は[vorbiscomment](https://github.com/xiph/vorbis-tools)と互換のインターフェイスを持つOgg Opus用の編集ユーティリティです。Opusの重要な機能の一つである出力ゲインの編集が出来ることを第一の特徴としています。また、複数行にまたがるタグを常に安全にエスケープすること、他のソフトへの組み込みを容易にすることも目標としています。
 
-## Feature
+## 特徴
 
-### Compatible with editing output gain
+### 出力ゲインの編集に対応
 
-In Ogg Opus, there is an item called output gain in the header, and the function that the volume can be changed freely even after encoding is standard as standard. Opuscomment is one of the few tools as of 2017 corresponding to arbitrary rewriting.
+Ogg Opusはヘッダに出力ゲイン(output gain)という項目があり、エンコード後にも自在に音量を変更できるという機能が標準で備わっています。opuscommentはその任意書換に対応した2017年現在では数少ないツールです。
 
-For example, because the sound of the created sound effect is too loud, you want to make it smaller, for example, you need to adjust the volume standard at the movie site. At that time, other codecs will need to be re-encoded. Or you will need to write a program to maintain and apply volume management data in a manner incompatible with each service. In Opus, you only have to rewrite the 2 bytes of the header.
+例えば作った効果音の音が大き過ぎたので小さくしたい、例えば動画サイトで音量基準を合わせる必要がある、そんな時、他のコーデックなら再エンコードが必要になるでしょう。あるいはサービス毎に互換性の無い方法で音量管理用のデータを維持し、適用させるというプログラムを書く必要があるでしょう。Opusならばヘッダの2バイトを書き換えるだけで良いのです。
 
-### Edit style compatible with vorbiscomment
+### vorbiscommentと互換性のある編集様式
 
-Forms compatible with vorbiscomment · Escaping and options make it easy to make the transition from Ogg Vorbis to the audio file itself and applications dealing with it. For example, to port the same tag from Vorbis to Opus, you can easily do with the following command.
-
+vorbiscommentと互換した書式・エスケープとオプションを備えることにより、Ogg Vorbisからの移行を音声ファイルそのものとそれを扱うアプリケーションに対しても容易にします。例えば、VorbisからOpusへ同じタグを移植するには以下のコマンドで容易に出来ます。
 
     vorbiscomment -lRe music.oga |opuscomment -wRe music.opus
 
-In addition, the basic option of opuscomment is almost the same as that of vorbiscomment, so existing scripts for Vorbis will be able to deal with Opus by rewriting the command name.
+また、opuscommentの基本的なオプションはvorbiscommentのそれとほぼ同じであり、既存のVorbisに対するスクリプトはコマンド名を書き換えるだけでOpusに対応できるようになるでしょう。
 
-### Suppression of memory usage
+### メモリ使用量の抑制
 
-opuscomment never reserves memory to match its length for editing tags. Moreover, it does not have a packet which needs to take out it in memory. Therefore, it can be relatively strongly and safely incorporated into other applications against broken files and malicious editing.
+opuscommentはタグの編集にメモリをその長さに合わせて確保するということはありません。また、それを取り出す必要のあるパケットをメモリに持つということもありません。そのため壊れたファイルや悪意のある編集に対して比較的強く、安全に他のアプリケーションに組み込むことが出来ます。
 
-### Safe handling of tags
+### タグの安全な取扱い
 
-opuscomment will always escape it if the content of the tag contains a line break. Contents are broken by line breaks, and the next line will not be falsely recognized as the start of the item. Escape is intuitively understandable way of continuing tabs at the beginning of a line after line breaks and a familiar way for programmers using the same "\ n" as vorbiscomment.
+opuscommentはタグの内容が改行を含む場合、常にそれをエスケープします。改行によって内容が分断されたり、またそれによって次の行が項目の開始と誤認識されることは起こりません。エスケープは改行の後に行頭でタブを続ける直感的に理解しやすい方法と、vorbiscommentと同じ“\n”を使ったプログラマにとって親しみのある方法の2種類です。
 
-Secondly, even if the filter of the previous stage accepting editing input accidentally terminated and the contents were interrupted, we prepared an option that can reduce the possibility of Opus file losing tags. For details, see the description of `-V`,` -T`, `-D` and [hcmiya/opuscomment#6](https://github.com/hcmiya/opuscomment/issues/6).
+2つ目に、編集入力を受け入れる前段のフィルタが不慮に終了し内容が中断してしまった場合でも、それでOpusファイルがタグを失う可能性を軽減することが出来るオプションを用意しました。詳しくは`-V`、`-T`、`-D`及び[hcmiya/opuscomment#6](https://github.com/hcmiya/opuscomment/issues/6)の説明をご覧下さい。
 
-## Compiling and operation requirements
+## コンパイル・動作要件
 
 * C99
-* API corresponding to POSIX.1-2008 or POSIX.1-2001 XSI extension (SUSv3)
+* POSIX.1-2008またはPOSIX.1-2001 XSI拡張(SUSv3)に対応したAPI
 * libogg
 
-In addition, libopus and libopusfile are not necessary. Since we are not using the configure script, please check before compilation to comply with the above requirements and that there is a corresponding header file (install Debian if `libogg-dev` is installed). See also Makefile comment.
+尚、libopus、libopusfileは必要ありません。configureスクリプトを使用していないので、上記要件を満たすことや対応するヘッダファイルが存在すること(Debianならば`libogg-dev`をインストール)をコンパイル前にご確認下さい。Makefileのコメントも参照下さい。
 
-## Installation
+## インストール
 
-    $ make
+    $ ./build.sh release
 
-If you do, binary will be output as `opuscomment` in `src/`, so copy it to the desired location.
+をすると`src/`に`opuscomment`という名前でバイナリが出力されますのでそれを任意の場所にコピーします。
 
-### Message Catalog
+### メッセージカタログ
 
-opuscomment implements localization using X/Open NLS. Since we have a catalog source in `nls/`, please convert it to a catalog file using `gencat(1)` for the required locale and save it in a suitable directory.
+opuscommentはX/Open NLSを使った地域化を実装しています。`nls/`にカタログのソースを用意していますので、必要なロケールに対して`gencat(1)`を利用してカタログファイルに変換した後に適当なディレクトリに保存して下さい。
 
-Although it is appropriate, the system standard message catalog location is different for each system, and some systems may not have a standard catalog location in the first place. Therefore, it is recommended that you install the catalog in the data directory for the application and start opuscomment via the shell script that decided NLSPATH there. `%N` of `NLSPATH` will be replaced with `opuscomment`.
+build.shでのコンパイル時に環境変数`DEFAULT_NLS_PATH`を設定すると、`NLSPATH`のデフォルト値を指定することができます。例えば`/home/user/.local/lib/opuscomment/nls/%L`のように。
 
-    # An example of post-compile installation method when using NLS catalog
-    PREFIX=/usr/local
-    mkdir -p $PREFIX/libexec/opuscomment $PREFIX/lib/opuscomment/nls $PREFIX/bin
-    cp opuscomment $PREFIX/libexec/opuscomment/
-    for lang in ja_JP.UTF-8 ja_JP.eucJP
-    do env LANG=$lang gencat $PREFIX/lib/opuscomment/nls/$lang.cat nls/$lang/*
-    done
-    cat <<heredoc >$PREFIX/bin/opuscomment
-    #!/bin/sh
-    if [ -z "\$NLSPATH" ]
-    then NLSPATH=$PREFIX/lib/opuscomment/nls/%L.cat
-    fi
-    exec env NLSPATH="\$NLSPATH" $PREFIX/libexec/opuscomment/opuscomment "\$@"
-    heredoc
-    chmod +x $PREFIX/bin/opuscomment
+`NLSPATH`の`%N`は`opuscomment`に置換されます。
 
-### Alias for binary
+### バイナリの別名
 
-`opuscomment` has the function of changing the codec to be edited with the binary name. The corresponding codecs are as shown in the table below. It is a good idea to link to opuscomment when installing.
+`opuscomment`はバイナリの名前で編集する対象のコーデックを変更する機能があります。対応コーデックは以下の表の通りです。インストールの際はopuscommentにリンクを張ると良いでしょう。
 
-| argv[0] | codec |
+| argv[0] | コーデック |
 |--|--|
-| (all but next) | Opus |
+| (下記以外の全て) | Opus |
 | vorbiscomment | Vorbis |
+| flaccomment | FLAC |
 | speexcomment | Speex |
 | vp8comment | VP8 |
 | theoracomment | Theora |
@@ -84,17 +70,14 @@ Although it is appropriate, the system standard message catalog location is diff
 | oggpcmcomment | PCM |
 | ogguvscomment | UVS |
 
-Either of the above can be edited only when included in Ogg.
+編集ができるのは、FLACはネイティブフォーマット、それ以外はOggに含まれている場合のみです。
 
-## License
+## ライセンス
 
 ### opuscomment
 
-MIT license
+MITライセンス
 
 ### libogg
 
-[libogg](https://www.xiph.org/ogg/) is the work of [Xiph.Org Foundation](https://www.xiph.org/). Please refer to LICENSE.libogg for the license.
-
-## ENGLISH TRANSLATION
-[Google translator](https://translate.google.ru)
+[libogg](https://www.xiph.org/ogg/)は[Xiph.Org Foundation](https://www.xiph.org/)の著作物です。ライセンスはLICENSE.liboggを参照下さい。
