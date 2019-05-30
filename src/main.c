@@ -63,7 +63,7 @@ static void usage(void) {
 "    -T    Return error when tag input is not terminated by line feed\n"
 "    -D    In list mode, defer tag output until comment packet is built.\n"
 "          Implies -V.\n"
-"          In appent/write mode, return error when tag input is empty.\n"
+"          In append/write mode, return error when tag input is empty.\n"
 "          Implies -T\n"
 	), program_name, default_codec->name);
 	if (!default_codec->prog) {
