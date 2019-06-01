@@ -18,6 +18,26 @@ The formal README is written in [Japanese](./README.ja.md).
 
 Then you will get the binary `opuscomment` at `src/`. You can put the binary any place.
 
+## Quick Example
+
+```sh
+# list tags
+opuscomment foo.opus
+```
+
+```sh
+# write tags
+opuscomment -w foo.opus <<EOL
+TITLE=The Song
+ARTIST=John Doe
+EOL
+```
+
+```sh
+# import tags from Vorbis
+vorbiscomment -Re foo.ogg |opuscomment -wRe foo.opus
+```
+
 ## Supported codecs
 
 * Ogg family: Opus, Vorbis, Speex, VP8, Theora, Daala, PCM, UVS.
