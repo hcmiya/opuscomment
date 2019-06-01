@@ -11,7 +11,7 @@ static bool test_tag_field_keepcase(uint8_t *line, size_t n, bool *on_field) {
 	size_t i;
 	bool valid = true;
 	for (i = 0; i < n && line[i] != 0x3d; i++) {
-		if (!(line[i] >= 0x20 && line[i] <= 0x7e)) {
+		if (!(line[i] >= 0x20 && line[i] <= 0x7d)) {
 			valid = false;
 		}
 	}
@@ -30,7 +30,7 @@ bool test_tag_field(uint8_t *line, size_t n, bool upcase, bool *on_field, bool *
 	size_t i;
 	bool valid = true;
 	for (i = 0; i < n && line[i] != 0x3d; i++) {
-		if (!(line[i] >= 0x20 && line[i] <= 0x7e)) {
+		if (!(line[i] >= 0x20 && line[i] <= 0x7d)) {
 			valid = false;
 		}
 		if (line[i] >= 0x61 && line[i] <= 0x7a) {

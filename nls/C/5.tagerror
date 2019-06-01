@@ -6,7 +6,7 @@ $set 5
 $ the record doesn't contain '='
 1 no field separator
 
-$ field name has out of 0x20-0x7e
+$ field name has out of 0x20-0x7d
 2 invalid field name
 
 $ the record begins by '='
