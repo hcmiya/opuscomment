@@ -5,9 +5,9 @@
 <!entity vcref "<citerefentry><refentrytitle>vorbiscomment<manvolnum>1</citerefentry>">
 <!entity tagfile "<replaceable>tagfile</>">
 <!entity srcfile "<replaceable>srcfile</>">
-<!entity ocrev "2019-05-25">
+<!entity ocrev "2019-06-02">
 <!entity ocver.Mm  "1.5">
-<!entity ocver.Mmp "&ocver.Mm;.4">
+<!entity ocver.Mmp "&ocver.Mm;.8">
 <!entity manfoot.rev "<refentryinfo><date/&ocrev;/</>">
 <!entity manfoot.ver "<refmiscinfo>&ocver.Mmp;</>">
 
@@ -64,7 +64,7 @@ opuscomment
 <arg>-l</>
 <arg>-C <replaceable/codec/</arg>
 <arg>-i <replaceable/idx/</>
-<arg>-DepQRUv</>
+<arg>-0DepQRUv~</>
 <arg choice=req>&srcfile;</>
 </cmdsynopsis>
 
@@ -126,6 +126,10 @@ opuscomment
 <varlistentry>
 <term><option>-R</>
 <listitem><para>タグ入出力にUTF-8を使う。このオプションがない場合はロケールによる文字符号化との変換が行われる(&vcref;互換)
+
+<varlistentry>
+<term><option>-~</>
+<listitem><para>タグ出力時、改行のエスケープにタブ文字ではなく「~」を使用する。タグ入力時はこのオプションにかかわらずどちらも改行のエスケープとして受け付ける。
 
 <varlistentry>
 <term><option>-e</>
@@ -281,7 +285,7 @@ ARTIST=荒川智則</></>
 
 <variablelist>
 <varlistentry><term>1. &occmd;が定義する方法
-<listitem><para>改行の次にタブが続いた場合、改行後の行は先頭のタブを除き前の行の値の続きとして扱う
+<listitem><para>改行の次にタブかチルダが続いた場合、改行後の行は先頭のその文字を除き前の行の値の続きとして扱う
 <varlistentry><term>2. <option/-e/を用いた時のvorbiscommentとの互換のある方法
 <listitem><para>バックスラッシュを使ったエスケープシーケンスで改行を表す
 </variablelist>

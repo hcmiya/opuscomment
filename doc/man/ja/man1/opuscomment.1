@@ -3,13 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2019-05-25" "1.5.4" "opuscomment 1.5マニュアル"
+.TH "OPUSCOMMENT" "1" "2019-06-02" "1.5.8" "opuscomment 1.5マニュアル"
 
 .SH 名前
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 .SH 書式
 
-\fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-DepQRUv\fR ] \fB\fIsrcfile\fB\fR
+\fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-0DepQRUv~\fR ] \fB\fIsrcfile\fB\fR
 
 
 \fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-0e\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
@@ -46,6 +46,9 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 .TP
 \fB-R\fR
 タグ入出力にUTF-8を使う。このオプションがない場合はロケールによる文字符号化との変換が行われる(\fBvorbiscomment\fR(1)互換)
+.TP
+\fB-~\fR
+タグ出力時、改行のエスケープにタブ文字ではなく「~」を使用する。タグ入力時はこのオプションにかかわらずどちらも改行のエスケープとして受け付ける。
 .TP
 \fB-e\fR
 バックスラッシュ、改行、復帰、ヌルにそれぞれ\\\\, \\n, \\r, \\0のエスケープを使用する(\fBvorbiscomment\fR(1)互換)
@@ -183,7 +186,7 @@ ARTIST=荒川智則
 但し、\fIVALUE\fRはそれ自体に改行を含む可能性があり、\fBopuscomment\fRは2つの方法で改行をエスケープする。
 .TP
 \fB1. opuscommentが定義する方法\fR
-改行の次にタブが続いた場合、改行後の行は先頭のタブを除き前の行の値の続きとして扱う
+改行の次にタブかチルダが続いた場合、改行後の行は先頭のその文字を除き前の行の値の続きとして扱う
 .TP
 \fB2. -eを用いた時のvorbiscommentとの互換のある方法\fR
 バックスラッシュを使ったエスケープシーケンスで改行を表す
