@@ -32,7 +32,7 @@ static void usage(void) {
 	
 	fprintf(stderr, catgets(catd, 6, 4,
 "Synopsys:\n"
-"    %1$s [-l] [-C codec] [-i idx] [-DepQRUv] srcfile\n"
+"    %1$s [-l] [-C codec] [-i idx] [-0DepQRUv~] srcfile\n"
 "    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-0e] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DQprRUv] srcfile [output]\n"
 "    %1$s [-h]\n"
 "\n"
@@ -47,6 +47,7 @@ static void usage(void) {
 "          Specify %2$s index for editing in multiplexed Ogg stream\n"
 "          (1-origin, without non-%2$s stream)\n"
 "    -R    Assume tag IO to be encoded in UTF-8\n"
+"    -~    Use '~', not <tab> for escaping line feed"
 "    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
 "    -0    Use '\\0' separation for tag IO\n"
 "    -t NAME=VALUE\n"
@@ -101,7 +102,7 @@ static void parse_args(int argc, char **argv) {
 	int gainfmt;
 	double gv;
 	
-	while ((c = getopt(argc, argv, "01ac:C:d:Deg:hi:lpqQrRs:t:TUvVw")) != -1) {
+	while ((c = getopt(argc, argv, "01ac:C:d:Deg:hi:lpqQrRs:t:TUvVw~")) != -1) {
 		switch (c) {
 		case 'l':
 			O.edit = EDIT_LIST;
@@ -156,6 +157,10 @@ static void parse_args(int argc, char **argv) {
 			
 		case 'R':
 			O.tag_raw = true;
+			break;
+			
+		case '~':
+			O.tag_escape_tilde = true;
 			break;
 			
 		case 'e':

@@ -33,6 +33,7 @@ GLOBAL struct {
 		TAG_ESCAPE_BACKSLASH,
 		TAG_ESCAPE_NUL,
 	} tag_escape;
+	bool tag_escape_tilde;
 	bool tag_raw;
 	bool tag_toupper;
 	char *tag_filename;

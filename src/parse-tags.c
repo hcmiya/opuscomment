@@ -347,7 +347,7 @@ static void line_oc(uint8_t *line, size_t n, bool lf) {
 	}
 	
 	if (afterlf) {
-		if (*line == 0x9) {
+		if (*line == 0x9 || *line == 0x7e) {
 			*line = 0x0a;
 			if (lf) n--;
 			append_buffer(line, n);

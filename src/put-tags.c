@@ -38,7 +38,7 @@ static uint8_t *esc_oc(uint8_t *src, uint8_t *dest, size_t len) {
 	uint8_t *end = src + len;
 	while(src < end) {
 		*dest++ = *src++;
-		if (src[-1] == 0xa) *dest++ = 0x9;
+		if (src[-1] == 0xa) *dest++ = O.tag_escape_tilde ? 0x7e : 0x9;
 	}
 	return dest;
 }
