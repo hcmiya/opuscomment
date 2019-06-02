@@ -3,14 +3,14 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2019-05-25" "1.5.4" "User Manual"
+.TH "OPUSCOMMENT" "1" "2019-06-02" "1.5.8" "User Manual"
 
 .SH NAME
 opuscomment \- Ogg Edit Opus file output gain and tag
 
 .SH SYNOPSIS
 
-\fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-DepQRUv\fR ] \fB\fIsrcfile\fB\fR
+\fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-0DepQRUv~\fR ] \fB\fIsrcfile\fB\fR
 
 \fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-0e\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
 
@@ -46,6 +46,9 @@ Specifies the stream to be edited in the multiplexed Ogg stream in the order of 
 .TP
 \fB-R\fR
 Use UTF-8 for tag input / output. If this option is not present, translation with character encoding by locale is performed (compatible with \fBvorbiscomment\fR(1))
+.TP
+\fB-~\fR
+Use "~" instead of tab characters to escape newlines when outputting tags. During tag input, both are accepted as line feed escape regardless of this option.
 .TP
 \fB-e\fR
 Use \\\\, \\n, \\r, \\0 escape for backslash, newline, carriage return, and null respectively (compatible with \fBvorbiscomment\fR(1))
@@ -189,7 +192,7 @@ ARTIST=Arakawa Tomonori
 However, \fIVALUE\fR itself may contain line breaks, \fBopuscomment\fR escape line breaks in two ways.
 .TP
 \fB1. opuscomment how to define\fR
-If a tab follows the newline, the line after the newline is handled as a continuation of the value of the previous line except for the first tab
+If a newline is followed by a tab or tilde, the line after the newline is treated as the continuation of the previous line except for the first character
 .TP
 \fB2. A method compatible with vorbiscomment when using -e\fR
 Represent line breaks with escape sequence using backslash
