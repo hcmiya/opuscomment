@@ -102,6 +102,7 @@ GLOBAL bool leave_header_packets;
 
 GLOBAL FILE *stream_input, *built_stream, *tag_output;
 GLOBAL bool tag_output_to_file;
+GLOBAL bool input_is_regular_file;
 
 GLOBAL pthread_t parser_thread;
 

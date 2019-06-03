@@ -244,5 +244,11 @@ void read_flac(void) {
 		store_tags_flac(rst, est);
 	}
 	write_buffer("\x81\0\0", 4, built_stream); // 「最後のヘッダ」標識を立てたパディングで〆
-	put_left(-ftell(stream_input)); // "seeked_len(0) - rew" でfseek()するので
+	
+	opst = PAGE_SOUND;
+	while (readlen = fread(gbuf, 1, gbuflen, stream_input)) {
+		size_t writelen = fwrite(gbuf, 1, readlen, built_stream);
+		if (writelen != readlen) oserror();
+	}
+	if (ferror(stream_input)) oserror();
 }

@@ -36,8 +36,7 @@ struct edit_st {
 void parse_opt_tag(int, char const*);
 void pticonv_close(void);
 void read_page(ogg_sync_state*);
-noreturn void read_flac(void);
-noreturn void put_left(long rew);
+void read_flac(void);
 void move_file(void);
 iconv_t iconv_new(char const *to, char const *from);
 void open_output_file(void);

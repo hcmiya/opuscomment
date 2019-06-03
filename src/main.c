@@ -14,6 +14,9 @@
 #include <signal.h>
 #include <errno.h>
 #include <limits.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 
 #define GLOBAL_MAIN
 #include "opuscomment.h"
@@ -390,9 +393,17 @@ int main(int argc, char **argv) {
 	}
 	
 	O.in = argv[optind];
-	stream_input = fopen(O.in, "r");
-	if (!stream_input) {
-		fileerror(O.in);
+	if (strcmp(O.in, "-")) {
+		stream_input = fopen(O.in, "r");
+		if (!stream_input) {
+			fileerror(O.in);
+		}
+		struct stat sb;
+		fstat(fileno(stream_input), &sb);
+		input_is_regular_file = S_ISREG(sb.st_mode);
+	}
+	else {
+		stream_input = stdin;
 	}
 	
 	open_output_file();

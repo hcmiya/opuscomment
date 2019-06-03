@@ -13,6 +13,10 @@
 
 #include "opuscomment.h"
 
+bool parse_comment(ogg_page *og);
+static bool parse_comment_term(ogg_page *og, bool packet_break_in_page);
+bool parse_page_sound(ogg_page *og);
+
 static long seeked_len;
 static char *outtmp;
 static bool remove_tmp;
@@ -22,7 +26,7 @@ void move_file(void) {
 	if (fclose(built_stream) == EOF) {
 		fileerror(O.out ? O.out : outtmp);
 	}
-	if (O.out) {
+	if (O.out || !input_is_regular_file) {
 	}
 	else {
 		int fd = fileno(stream_input);
@@ -39,7 +43,7 @@ void move_file(void) {
 	}
 }
 
-noreturn void put_left(long rew) {
+static noreturn void put_left(long rew) {
 	clearerr(stream_input);
 	if (fseek(stream_input, seeked_len - rew, SEEK_SET)) {
 		oserror();
@@ -58,6 +62,19 @@ noreturn void put_left(long rew) {
 	}
 	move_file();
 	exit(0);
+}
+
+static void put_non_opus_stream() {
+	rewind(non_opus_stream);
+	uint8_t buf[STACK_BUF_LEN];
+	size_t readlen;
+	while (readlen = fread(buf, 1, STACK_BUF_LEN, non_opus_stream)) {
+		if (fwrite(buf, 1, readlen, built_stream) != readlen) {
+			oserror();
+		}
+	}
+	fclose(non_opus_stream);
+	non_opus_stream = NULL;
 }
 
 void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page) {
@@ -136,17 +153,19 @@ void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool p
 	ogg_page_checksum_set(&og);
 	write_page(&og, built_stream);
 	
-	// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
-	// 空のページを生成して開始ページ番号を合わせる
-	og.header_len = 27;
-	og.header[5] = 0;
-	set_granulepos(&og, -1);
-	og.header[26] = 0;
-	og.body_len = 0;
-	while (idx < opus_idx - packet_break_in_page) {
-		set_pageno(&og, idx++);
-		ogg_page_checksum_set(&og);
-		write_page(&og, built_stream);
+	if (input_is_regular_file) {
+		// 出力するタグ部分のページ番号が入力の音声開始部分のページ番号に満たない場合、
+		// 空のページを生成して開始ページ番号を合わせる
+		og.header_len = 27;
+		og.header[5] = 0;
+		set_granulepos(&og, -1);
+		og.header[26] = 0;
+		og.body_len = 0;
+		while (idx < opus_idx - packet_break_in_page) {
+			set_pageno(&og, idx++);
+			ogg_page_checksum_set(&og);
+			write_page(&og, built_stream);
+		}
 	}
 	
 	if (packet_break_in_page) {
@@ -168,18 +187,9 @@ void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool p
 		write_page(np, built_stream);
 	}
 	
-	{
-		rewind(non_opus_stream);
-		size_t readlen;
-		while (readlen = fread(pagebuf, 1, pagebuflen, non_opus_stream)) {
-			if (fwrite(pagebuf, 1, readlen, built_stream) != readlen) {
-				oserror();
-			}
-		}
-		fclose(non_opus_stream);
-		non_opus_stream = NULL;
-	}
-	if (idx == opus_idx) {
+	put_non_opus_stream();
+
+	if (input_is_regular_file && idx == opus_idx) {
 		put_left(0);
 		/* NOTREACHED */
 	}
@@ -228,24 +238,29 @@ void open_output_file(void) {
 		remove_tmp = false;
 	}
 	else {
-		char const *tmpl = "opuscomment.XXXXXX";
-		outtmp = calloc(strlen(O.in) + strlen(tmpl) + 1, 1);
-		char *p = strrchr(O.in, '/');
-		if (p) {
-			p++;
-			strncpy(outtmp, O.in, p - O.in);
-			strcpy(outtmp + (p - O.in), tmpl);
+		if (input_is_regular_file) {
+			char const *tmpl = "opuscomment.XXXXXX";
+			outtmp = calloc(strlen(O.in) + strlen(tmpl) + 1, 1);
+			char *p = strrchr(O.in, '/');
+			if (p) {
+				p++;
+				strncpy(outtmp, O.in, p - O.in);
+				strcpy(outtmp + (p - O.in), tmpl);
+			}
+			else {
+				strcpy(outtmp, tmpl);
+			}
+			int fd = mkstemp(outtmp);
+			if (fd == -1) {
+				oserror();
+			}
+			remove_tmp = true;
+			atexit(cleanup);
+			built_stream = fdopen(fd, "w+");
 		}
 		else {
-			strcpy(outtmp, tmpl);
+			built_stream = stdout;
 		}
-		int fd = mkstemp(outtmp);
-		if (fd == -1) {
-			oserror();
-		}
-		remove_tmp = true;
-		atexit(cleanup);
-		built_stream = fdopen(fd, "w+");
 	}
 	non_opus_stream = tmpfile();
 	
@@ -346,8 +361,6 @@ static bool copy_tag_packet(ogg_page *og, bool *packet_break_in_page) {
 	return packet_term;
 }
 
-bool parse_comment(ogg_page *og);
-
 static pthread_t retriever_thread;
 bool parse_info_border(ogg_page *og) {
 	// ここにはページ番号1で来ているはず
@@ -358,23 +371,31 @@ bool parse_info_border(ogg_page *og) {
 	
 	if (/*O.gain_fix && */O.edit == EDIT_NONE) {
 		// 出力ゲイン編集のみの場合
-		if (O.out) {
-			// 出力指定が別にある場合残りをコピー
-			put_left(og->header_len + og->body_len);
+		if (input_is_regular_file) {
+			if (O.out) {
+				// 出力指定が別にある場合残りをコピー
+				put_left(og->header_len + og->body_len);
+			}
+			else {
+				// 上書きするなら最初のページのみを直接書き換えようとする
+				uint8_t b[header_packet_len];
+				FILE *stream_overwrite = freopen(NULL, "r+", stream_input);
+				if (!stream_overwrite
+					|| fseek(built_stream, built_header_pos, SEEK_SET)
+					|| fseek(stream_overwrite, header_packet_pos, SEEK_SET)
+					|| header_packet_len != fread(b, 1, header_packet_len, built_stream)
+					|| header_packet_len != fwrite(b, 1, header_packet_len, stream_overwrite)
+				) {
+					oserror();
+				}
+				exit(0);
+			}
 		}
 		else {
-			// 上書きするなら最初のページのみを直接書き換えようとする
-			uint8_t b[header_packet_len];
-			FILE *stream_overwrite = freopen(NULL, "r+", stream_input);
-			if (!stream_overwrite
-				|| fseek(built_stream, built_header_pos, SEEK_SET)
-				|| fseek(stream_overwrite, header_packet_pos, SEEK_SET)
-				|| header_packet_len != fread(b, 1, header_packet_len, built_stream)
-				|| header_packet_len != fwrite(b, 1, header_packet_len, stream_overwrite)
-			) {
-				oserror();
-			}
-			exit(0);
+			// 入力がパイプの時
+			put_non_opus_stream();
+			opst = PAGE_SOUND;
+			return parse_page_sound(og);
 		}
 		/* NOTREACHED */
 	}
@@ -390,9 +411,6 @@ bool parse_info_border(ogg_page *og) {
 	opst = PAGE_COMMENT;
 	return parse_comment(og);
 }
-
-static bool parse_comment_term(ogg_page *og, bool packet_break_in_page);
-bool parse_page_sound(ogg_page *og);
 
 bool parse_comment(ogg_page *og) {
 	if (ogg_page_eos(og) || opus_idx > 1 && !ogg_page_continued(og)) {
@@ -439,8 +457,13 @@ bool parse_page_sound(ogg_page *og) {
 	ogg_page_checksum_set(og);
 	write_page(og, built_stream);
 	if (ogg_page_eos(og)) {
-		put_left(0);
-		/* NOTREACHED */
+		if (input_is_regular_file) {
+			put_left(0);
+			/* NOTREACHED */
+		}
+		else {
+			opus_idx_diff = 0;
+		}
 	}
 	return true;
 }

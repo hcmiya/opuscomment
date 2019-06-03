@@ -15,6 +15,7 @@
 #include "opuscomment.h"
 
 static bool from_file;
+static FILE *edit_input;
 static void readerror(void) {
 	if (from_file) {
 		fileerror(O.tag_filename);
@@ -66,7 +67,7 @@ static void toutf8(int fdu8) {
 	iconv_t cd = iconv_new("UTF-8", O.tag_raw ? "UTF-8" : nl_langinfo(CODESET));
 	size_t readlen, remain, total;
 	remain = 0; total = 0;
-	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, stdin)) != 0) {
+	while ((readlen = fread(&lbuf[remain], 1, buflen - remain, edit_input)) != 0) {
 		total += readlen;
 		if (total > TAG_LENGTH_LIMIT__INPUT) {
 			mainerror(err_main_long_input);
@@ -96,7 +97,7 @@ static void toutf8(int fdu8) {
 			if (iconvret != (size_t)-1 || ie == EINVAL) break;
 		}
 	}
-	if (fclose(stdin) == EOF) {
+	if (fclose(edit_input) == EOF) {
 		readerror();
 	}
 	if (remain) {
@@ -539,10 +540,13 @@ void *parse_tags(void* nouse_) {
 	}
 	if (O.tag_filename && strcmp(O.tag_filename, "-") != 0) {
 		from_file = true;
-		FILE *tmp = freopen(O.tag_filename, "r", stdin);
-		if (!tmp) {
+		edit_input = fopen(O.tag_filename, "r");
+		if (!edit_input) {
 			fileerror(O.tag_filename);
 		}
+	}
+	else {
+		edit_input = stdin;
 	}
 	
 	if (do_read) {
@@ -558,7 +562,6 @@ void *parse_tags(void* nouse_) {
 		toutf8(pfd[1]);
 		pthread_join(split_thread, NULL);
 	}
-	fclose(stdin);
 	
 	struct edit_st *rtn = calloc(1, sizeof(*rtn));
 	rtn->str = strstore;
