@@ -27,8 +27,7 @@ static size_t rtfill(void *buf, size_t left, size_t buflen, FILE *fp) {
 }
 
 static bool test_mbp(uint8_t *buf, size_t len) {
-	// "METADATA_BLOCK_PICTURE=" in ASCII
-	uint8_t const *mbp = "\x4d\x45\x54\x41\x44\x41\x54\x41\x5f\x42\x4c\x4f\x43\x4b\x5f\x50\x49\x43\x54\x55\x52\x45\x3d";
+	uint8_t const *mbp = MBPeq;
 	size_t const mbplen = 23;
 	if (len < mbplen) {
 		return false;
