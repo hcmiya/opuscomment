@@ -3,13 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "OPUSCOMMENT" "1" "2019-06-02" "1.5.8" "opuscomment 1.5マニュアル"
+.TH "OPUSCOMMENT" "1" "2019-06-17" "1.5.10" "opuscomment 1.5マニュアル"
 
 .SH 名前
 opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 .SH 書式
 
-\fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-0DepQRUv~\fR ] \fB\fIsrcfile\fB\fR
+\fBopuscomment\fR [ \fB-l\fR ] [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-0DepQRUvV~\fR ] \fB\fIsrcfile\fB\fR
 
 
 \fBopuscomment\fR { \fB-a\fR | \fB-w\fR } [ \fB-C \fIcodec\fB\fR ] [ \fB-i \fIidx\fB\fR ] [ \fB-g \fIgain\fB\fR | \fB-s \fIscale\fB\fR ] [ \fB-0e\fR ] [ \fB-c \fItagfile\fB\fR ] [ \fB-t \fINAME=VALUE\fB\fR\fI ...\fR ] [ \fB-d \fINAME[=VALUE]\fB\fR\fI ...\fR ] [ \fB-1DeQprRUv\fR ] \fB\fIsrcfile\fB\fR [ \fB\fIoutput\fB\fR ]
@@ -54,7 +54,7 @@ opuscomment \- Ogg Opusファイルの出力ゲインとタグを編集する
 バックスラッシュ、改行、復帰、ヌルにそれぞれ\\\\, \\n, \\r, \\0のエスケープを使用する(\fBvorbiscomment\fR(1)互換)
 .TP
 \fB-0\fR
-編集入出力に'\\0'区切りを使う
+タグ入出力に'\\0'区切りを使う
 .TP
 \fB-t \fINAME=VALUE\fB\fR
 引数をタグとして追加する
@@ -79,10 +79,10 @@ Opusファイル内のタグの項目名に小文字が含まれていた場合�
 vorbis commentは一定の書式が定められているが、Opusの内部構造としては任意のバイナリ列を保存することが出来る。このオプションが無い場合は、内部に保存されたレコードがUTF-8として妥当であればvorbis commentの形式を満たさなくてもそれを尊重してそのまま出力しようとする。しかしこの動作は\fBopuscomment\fRをはじめ他のフィルタとの連携に支障を来す可能性が高い。そのためそこでのエラーを防ぐ・あるいはエラー検出をさせるために信頼できないOpusファイルに対して編集を行う際に\fB-V\fRを使うと便利である。\fB-D\fRも参照のこと。
 .TP
 \fB-T\fR
-編集入力が改行で終わっていない場合エラーにする
+タグ入力が改行で終わっていない場合エラーにする
 .TP
 \fB-D\fR
-出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また\fB-V\fRを暗黙的に指定する。書き込みモード時、空の編集入力をエラーとする。また\fB-T\fRを暗黙的に指定する
+出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また\fB-V\fRを暗黙的に指定する。書き込みモード時、空のタグ入力をエラーとする。また\fB-T\fRを暗黙的に指定する
 .TP
 \fB-g \fIgain\fB\fR
 出力ゲインをdBで指定する
@@ -142,8 +142,9 @@ opuscomment -g -5.0 loud.opus
 # 出力ゲインが変更されたことをopusinfo(1)のPlayback gainという項目で確認できる
 opusinfo loud.opus
 .fi
+.SS "タグの上書き"
 .PP
-\fB-d\fRオプションを使うことで、レコードの上書きをする編集の手間を少し省くことができる。
+とあるタグ(例えば、TITLE)を直接上書き更新する方法は存在しない。しかし\fB-d\fRオプションとタグの追記を組み合わせることで、上書きの編集に代えることができる。
 
 .nf
 # -dを使ったタイトル変更法1

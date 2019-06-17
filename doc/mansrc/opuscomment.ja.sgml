@@ -5,9 +5,9 @@
 <!entity vcref "<citerefentry><refentrytitle>vorbiscomment<manvolnum>1</citerefentry>">
 <!entity tagfile "<replaceable>tagfile</>">
 <!entity srcfile "<replaceable>srcfile</>">
-<!entity ocrev "2019-06-02">
+<!entity ocrev "2019-06-17">
 <!entity ocver.Mm  "1.5">
-<!entity ocver.Mmp "&ocver.Mm;.8">
+<!entity ocver.Mmp "&ocver.Mm;.10">
 <!entity manfoot.rev "<refentryinfo><date/&ocrev;/</>">
 <!entity manfoot.ver "<refmiscinfo>&ocver.Mmp;</>">
 
@@ -64,7 +64,7 @@ opuscomment
 <arg>-l</>
 <arg>-C <replaceable/codec/</arg>
 <arg>-i <replaceable/idx/</>
-<arg>-0DepQRUv~</>
+<arg>-0DepQRUvV~</>
 <arg choice=req>&srcfile;</>
 </cmdsynopsis>
 
@@ -137,7 +137,7 @@ opuscomment
 
 <varlistentry>
 <term><option>-0</>
-<listitem><para>編集入出力に'\0'区切りを使う
+<listitem><para>タグ入出力に'\0'区切りを使う
 
 <varlistentry>
 <term><option>-t <replaceable/NAME=VALUE/</>
@@ -167,11 +167,11 @@ opuscomment
 
 <varlistentry>
 <term><option>-T</>
-<listitem><para>編集入力が改行で終わっていない場合エラーにする
+<listitem><para>タグ入力が改行で終わっていない場合エラーにする
 
 <varlistentry>
 <term><option>-D</>
-<listitem><para>出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また<option/-V/を暗黙的に指定する。書き込みモード時、空の編集入力をエラーとする。また<option/-T/を暗黙的に指定する
+<listitem><para>出力モード時、Opusファイル内のタグを全て読み終わるまで出力しない。また<option/-V/を暗黙的に指定する。書き込みモード時、空のタグ入力をエラーとする。また<option/-T/を暗黙的に指定する
 
 &gainopts;
 
@@ -239,7 +239,10 @@ opuscomment -g -5.0 loud.opus
 # 出力ゲインが変更されたことをopusinfo(1)のPlayback gainという項目で確認できる
 opusinfo loud.opus</>
 
-<para><option/-d/オプションを使うことで、レコードの上書きをする編集の手間を少し省くことができる。
+</example>
+
+<example><title/タグの上書き/
+<para>とあるタグ(例えば、TITLE)を直接上書き更新する方法は存在しない。しかし<option/-d/オプションとタグの追記を組み合わせることで、上書きの編集に代えることができる。
 
 <screen>
 # -dを使ったタイトル変更法1
