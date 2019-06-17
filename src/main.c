@@ -50,7 +50,7 @@ static void usage(void) {
 "          Specify %2$s index for editing in multiplexed Ogg stream\n"
 "          (1-origin, without non-%2$s stream)\n"
 "    -R    Assume tag IO to be encoded in UTF-8\n"
-"    -~    Use '~', not <tab> for escaping line feed"
+"    -~    Use '~', not <tab> for escaping line feed\n"
 "    -e    Use escape sequence; \\\\, \\n, \\r and \\0\n"
 "    -0    Use '\\0' separation for tag IO\n"
 "    -t NAME=VALUE\n"
