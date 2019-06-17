@@ -27,10 +27,10 @@ LIST(  9, many_args,
 LIST( 10, output_limit,
 	"tag length exceeded the limit of storing (up to %u MiB)" )
 LIST( 11, long_input,
-	"too long editing input. Didn't you execute odd command?" )
+	"too long tag input. Didn't you execute odd command?" )
 LIST( 12, no_input,
-	"empty editing input" )
+	"empty tag input" )
 LIST( 13, no_term,
-	"editing input is not terminated by line feed" )
+	"tag input is not terminated by line feed" )
 LIST( 14, del_without_a,
 	"use -a with deleting tag" )

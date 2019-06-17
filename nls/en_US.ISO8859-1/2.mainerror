@@ -22,13 +22,13 @@ $ %1$u = TAG_LENGTH_LIMIT__OUTPUT >> 20
 10 tag length exceeded the limit of storing (up to %u MiB)
 
 $ 
-11 too long editing input. Didn't you execute odd command?
+11 too long tag input. Didn't you execute odd command?
 
 $ if -D and input is empty
-12 empty editing input
+12 empty tag input
 
 $ if -T and no '\n' by EOF
-13 editing input is not terminated by line feed
+13 tag input is not terminated by line feed
 
 $ -d is exclusive to -l|-w. -d implies -a when mode option is omitted
 14 use -a with deleting tag
