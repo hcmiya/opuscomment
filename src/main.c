@@ -35,7 +35,7 @@ static void usage(void) {
 	
 	fprintf(stderr, catgets(catd, 6, 4,
 "Synopsys:\n"
-"    %1$s [-l] [-C codec] [-i idx] [-0DepQRUv~] srcfile\n"
+"    %1$s [-l] [-C codec] [-i idx] [-0DepQRUvV~] srcfile\n"
 "    %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-0e] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DQprRUv] srcfile [output]\n"
 "    %1$s [-h]\n"
 "\n"

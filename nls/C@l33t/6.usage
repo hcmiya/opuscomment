@@ -13,7 +13,7 @@ $ %1$s = program name retrieved from argv[0]
 $ %2$s = codec name, e.g. Opus, Theora, ...
 4 `\
 5yn0p5y5:\n\
-    %1$s [-l] [-C codec] [-i idx] [-0DepQRUv~] srcfile\n\
+    %1$s [-l] [-C codec] [-i idx] [-0DepQRUvV~] srcfile\n\
     %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-0e] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DQprRUv] srcfile [output]\n\
     %1$s [-h]\n\
 \n\

@@ -13,7 +13,7 @@ $ %1$s = argv[0]から取得したプログラム名
 $ %2$s = コーデック名。Opus、Theora等
 4 `\
 使い方:\n\
-    %1$s [-l] [-C codec] [-i idx] [-0DepQRUv~] srcfile\n\
+    %1$s [-l] [-C codec] [-i idx] [-0DepQRUvV~] srcfile\n\
     %1$s {-a|-w} [-C codec] [-i idx] [-g gain|-s scale] [-0e] [-c tagfile] [-t NAME=VALUE ...] [-d NAME[=VALUE] ...] [-1DQprRUv] srcfile [output]\n\
     %1$s [-h]\n\
 \n\
