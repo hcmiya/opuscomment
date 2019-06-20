@@ -9,7 +9,7 @@
 SRCS=put-tags.c parse-tags.c read.c read-flac.c ocutil.c retrieve-tags.c select-codec.c
 CONFSRCS=endianness.c error.c main.c
 OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
-HEADERS=global.h ocutil.h limit.h error.h
+HEADERS=global.h limit.h error.h opuscomment.h
 ERRORDEFS=errordef/opus.tab errordef/main.tab
 DEFAULT_MACROS=-D_POSIX_C_SOURCE=200809L -DNLS
 #DEFAULT_MACROS=-D_XOPEN_SOURCE=600 -DNLS
