@@ -1,9 +1,30 @@
 #ifndef OPUSCOMMENT_H
 #define OPUSCOMMENT_H
 
-#include <ogg/ogg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <limits.h>
+#include <locale.h>
+#include <string.h>
+#include <strings.h>
+#include <langinfo.h>
+#include <math.h>
+#include <time.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <getopt.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <arpa/inet.h>
+#include <signal.h>
 #include <iconv.h>
+#include <ogg/ogg.h>
 
 #if __STDC_VERSION__ >= 201112L
 #include <stdnoreturn.h>

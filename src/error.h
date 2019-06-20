@@ -1,5 +1,3 @@
-#include <stdbool.h>
-
 void errorprefix(void);
 noreturn void mainerror(int, ...);
 noreturn void opuserror(int, ...);

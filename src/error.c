@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-
 #include "opuscomment.h"
 
 void errorprefix(void) {

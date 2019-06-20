@@ -1,9 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-
 #include "opuscomment.h"
 
 static bool test_tag_field_keepcase(uint8_t *line, size_t n, bool *on_field) {

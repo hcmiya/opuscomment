@@ -1,12 +1,3 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <pthread.h>
-
 #include "opuscomment.h"
 
 static void rtread(void *p, size_t len, FILE *fp) {

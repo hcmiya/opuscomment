@@ -6,11 +6,6 @@
 #define GLOBAL_VAL(X)
 #endif
 
-#include <stdio.h>
-#include <ogg/ogg.h>
-#include <stdbool.h>
-#include <stddef.h>
-
 GLOBAL struct {
 	enum {
 		EDIT_NONE,

@@ -1,20 +1,3 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <getopt.h>
-#include <math.h>
-#include <locale.h>
-#include <stdarg.h>
-#include <time.h>
-#include <signal.h>
-#include <errno.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-
 #define GLOBAL_MAIN
 #include "opuscomment.h"
 #include "version.h"

@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-
 uint16_t oi16(uint16_t i);
 uint32_t oi32(uint32_t i);
 uint64_t oi64(uint64_t i);
