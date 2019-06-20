@@ -15,6 +15,11 @@ DEFAULT_MACROS=-D_POSIX_C_SOURCE=200809L -DNLS
 #DEFAULT_MACROS=-D_XOPEN_SOURCE=600 -DNLS
 LIBS=-logg -lm -lpthread
 CC=c99
+PNAME=opuscomment
+PREFIX?=/usr/local
+DATAPREFIX=$(PREFIX)/share
+INSTALL=install
+LN=ln -fs
 
 all: opuscomment ;
 
@@ -41,3 +46,19 @@ main.c: $(HEADERS) version.h
 
 clean:
 	rm endianness.c opuscomment $(OBJS) 2>/dev/null || :
+
+install: $(PNAME)
+	$(INSTALL) -d $(PREFIX)/bin
+	$(INSTALL) -m 0755 $(PNAME) $(PREFIX)/bin/
+	$(INSTALL) -d $(DATAPREFIX)/scripts/dash/$(PNAME)
+	$(INSTALL) -m 0755 ../app/*.sh $(DATAPREFIX)/scripts/dash/$(PNAME)
+	$(LN) $(DATAPREFIX)/scripts/dash/$(PNAME)/opuschgain.sh $(PREFIX)/bin/opuschgain
+	$(LN) $(DATAPREFIX)/scripts/dash/$(PNAME)/opusmbptag.sh $(PREFIX)/bin/opusmbptag
+	$(INSTALL) -d $(DATAPREFIX)
+	$(INSTALL) -d $(DATAPREFIX)/man/man1
+	$(INSTALL) -d $(DATAPREFIX)/man/ja/man1
+	$(INSTALL) -m 0644 ../doc/man/man1/*.1 $(DATAPREFIX)/man/man1
+	$(INSTALL) -m 0644 ../doc/man/ja/man1/*.1 $(DATAPREFIX)/man/ja/man1
+	$(INSTALL) -d $(DATAPREFIX)/doc/$(PNAME)
+	$(INSTALL) -m 0644 ../LICENSE ../LICENSE.libogg ../README.ja.md ../README.md ../doc/samples/sample_audiobook.opustags $(DATAPREFIX)/doc/$(PNAME)
+

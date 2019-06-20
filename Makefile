@@ -8,3 +8,6 @@ updoc-ja: doc/man/ja/man1/opuscomment.1;
 
 doc/man/ja/man1/opuscomment.1: doc/mansrc/opuscomment.ja.sgml
 	tests/tr.sh
+
+install:
+	$(MAKE) -C src -r install
