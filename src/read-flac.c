@@ -1,4 +1,3 @@
-#include <ogg/ogg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +9,6 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <langinfo.h>
-#include <iconv.h>
 
 #include "opuscomment.h"
 

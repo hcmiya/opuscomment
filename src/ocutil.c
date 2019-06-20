@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <ogg/ogg.h>
 #include <stdbool.h>
 
 #include "opuscomment.h"

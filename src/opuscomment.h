@@ -33,18 +33,27 @@ struct edit_st {
 	size_t num;
 };
 
+// parse-tags.c
 void parse_opt_tag(int, char const*);
 void pticonv_close(void);
-void read_page(ogg_sync_state*);
-void read_flac(void);
-void move_file(void);
-iconv_t iconv_new(char const *to, char const *from);
-void open_output_file(void);
-
-void *retrieve_tags(void*);
 void *parse_tags(void*);
+
+// put-tags.c
+iconv_t iconv_new(char const *to, char const *from);
+void *put_tags(void*);
 void tag_output_close(void);
 
+// read-flac.c
+void read_flac(void);
+
+// read.c
+void read_page(ogg_sync_state*);
+void move_file(void);
+void open_output_file(void);
 void store_tags(ogg_page *np, struct rettag_st *rst, struct edit_st *est, bool packet_break_in_page);
+
+// retrieve-tags.c
+void *retrieve_tags(void*);
+void rt_del_args(uint8_t *buf, size_t len, bool term);
 
 #endif

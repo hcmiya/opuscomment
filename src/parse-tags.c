@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <locale.h>
 #include <langinfo.h>
-#include <iconv.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <unistd.h>
@@ -570,8 +569,6 @@ void *parse_tags(void* nouse_) {
 	rtn->num = tagnum;
 	return rtn;
 }
-
-void rt_del_args(uint8_t *buf, size_t len, bool term);
 
 static iconv_t optcd = (iconv_t)-1;
 void parse_opt_tag(int opt, char const *arg) {

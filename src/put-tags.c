@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <locale.h>
 #include <langinfo.h>
-#include <iconv.h>
 #include <errno.h>
 
 #include "opuscomment.h"

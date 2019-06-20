@@ -1,4 +1,3 @@
-#include <ogg/ogg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,8 +7,6 @@
 #include <math.h>
 #include <locale.h>
 #include <stdarg.h>
-#include <iconv.h>
-#include <langinfo.h>
 #include <time.h>
 #include <signal.h>
 #include <errno.h>

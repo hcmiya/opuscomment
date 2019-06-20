@@ -221,8 +221,6 @@ static bool rtcopy_list(FILE *packet_input, void *listfd_) {
 	return copy;
 }
 
-void *put_tags(void*);
-void flac_next_is_audio(void);
 void *retrieve_tags(void *packet_input_) {
 	// parse_header_border() からスレッド化された
 	FILE *packet_input = packet_input_;
