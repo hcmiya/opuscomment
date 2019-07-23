@@ -3,7 +3,6 @@
 
 #include <ogg/ogg.h>
 #include <stdbool.h>
-#include <iconv.h>
 
 #if __STDC_VERSION__ >= 201112L
 #include <stdnoreturn.h>
@@ -21,6 +20,7 @@
 #include "ocutil.h"
 #include "limit.h"
 #include "error.h"
+#include "iconv-impl.h"
 
 struct rettag_st {
 	FILE *tag, *padding;
