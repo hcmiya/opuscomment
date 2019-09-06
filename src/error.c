@@ -35,7 +35,7 @@ noreturn void opuserror(int e, ...) {
 #include "errordef/opus.tab"
 #undef LIST
 	};
-	if (msg[e].report_page) {
+	if (msg[e].report_page && codec->type != CODEC_FLAC) {
 		fprintf(stderr, catgets(catd, 1, 4, "%s format error: page %u: "), codec->name, opus_idx);
 	}
 	else {
