@@ -39,7 +39,7 @@ $ %2$s = コーデック名。Opus、Theora等
           書き込み・追記モード時、tagfileからタグを読み出す\n\
     -d NAME[=VALUE]\n\
           引数に一致するsrcfile内のタグを削除する。VALUEが省略された場合、\n\
-          NAMEが一致する全てのタグが削除される。-Uを暗黙的に指定する\n\
+          NAMEが一致する全てのタグが削除される。-a、-Uを暗黙的に指定する\n\
     -p    METADATA_BLOCK_PICTUREの出力または削除をしない\n\
     -U    srcfile内のタグの項目名を大文字に変換する\n\
     -V    srcfile内のタグに対して書式の正当性を検証する\n\

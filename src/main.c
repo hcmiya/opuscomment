@@ -57,7 +57,7 @@ static void usage(void) {
 "          In append/write mode, read tags from tagfile.\n"
 "    -d NAME[=VALUE]\n"
 "          Delete tags matched with the argument from srcfile.\n"
-"          When VALUE is omitted, All of NAME is removed. Implies -U\n"
+"          When VALUE is omitted, All of NAME is removed. Implies -a, -U\n"
 "    -p    Supress editing for METADATA_BLOCK_PICTURE\n"
 "    -U    Convert field name stored in srcfile to uppercase\n"
 "    -V    Verify tags stored in srcfile\n"

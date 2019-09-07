@@ -38,7 +38,7 @@ $ %2$s = codec name, e.g. Opus, Theora, ...
           1n 4pp3nd/wr173 m0d3, r34d 7465 fr0m "tagfile"\n\
     -d NAME[=VALUE]\n\
           d3l373 7465 m47ch3d w17h 7h3 4r6um3n7 fr0m "srcfile".\n\
-          wh3n "VALUE" 15 0m1773d, 4ll 0f "NAME" 15 r3m0v3d. 1mpl135 '-U'\n\
+          wh3n "VALUE" 15 0m1773d, 4ll 0f "NAME" 15 r3m0v3d. 1mpl135 '-a', '-U'\n\
     -p    5upr355 3d171n6 f0r m374d474_bl0ck_p1c7ur3\n\
     -U    c0nv3r7 f13ld n4m3 570r3d 1n "srcfile" 70 upp3rc453\n\
     -V    v3r1fy 7465 570r3d 1n "srcfile"\n\
