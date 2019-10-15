@@ -6,6 +6,7 @@
 #define GLOBAL_VAL(X)
 #endif
 
+#include <stdint.h>
 #include <stdio.h>
 #include <ogg/ogg.h>
 #include <stdbool.h>
