@@ -19,7 +19,7 @@ CC=c99
 all: opuscomment ;
 
 opuscomment: $(OBJS)
-	$(CC) -o opuscomment $(DEFAULT_MACROS) $(CFLAGS) $(LDFLAGS) $(LIBS) $(OBJS)
+	$(CC)  $(CFLAGS) $(DEFAULT_MACROS) $(LDFLAGS) $(OBJS)  $(LIBS) -o opuscomment
 
 .SUFFIXES:
 .SUFFIXES: .c .o
