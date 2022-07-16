@@ -6,32 +6,31 @@
 # NLSに対応していない、あるいは必要がない場合は、CFLAGSに-UNLSを追加することで無効に出来ます。
 # `DEFAULT_NLS_PATH`を文字列でdefineをすると、NLSPATHが無い時に最初にcatopen(3)をする場所を指定することができます。
 
+CC=c99
+CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
+LDFLAGS=-logg -lm -lpthread
 SRCS=put-tags.c parse-tags.c read.c read-flac.c ocutil.c retrieve-tags.c select-codec.c
 CONFSRCS=endianness.c error.c main.c
-OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
 HEADERS=global.h ocutil.h limit.h error.h iconv-impl.h
 ERRORDEFS=errordef/opus.tab errordef/main.tab
-DEFAULT_MACROS=-D_POSIX_C_SOURCE=200809L -DNLS
-#DEFAULT_MACROS=-D_XOPEN_SOURCE=600 -DNLS
-LIBS=-logg -lm -lpthread
-CC=c99
+OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
 
-all: opuscomment ;
+all: opuscomment
 
 opuscomment: $(OBJS)
-	$(CC)  $(CFLAGS) $(DEFAULT_MACROS) $(LDFLAGS) $(OBJS)  $(LIBS) -o opuscomment
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 .SUFFIXES:
 .SUFFIXES: .c .o
 
 .c.o:
-	$(CC) $(DEFAULT_MACROS) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 $(SRCS): $(HEADERS)
 	@touch $@
 
 endianness.c: endianness-check.sh
-	./endianness-check.sh >endianness.c
+	./$< > $@
 
 error.c: $(ERRORDEFS) $(HEADERS)
 	@touch $@

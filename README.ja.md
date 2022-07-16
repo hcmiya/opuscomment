@@ -1,3 +1,9 @@
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/hcmiya/opuscomment)
+![GitHub Release Date](https://img.shields.io/github/release-date/hcmiya/opuscomment)
+![GitHub repo size](https://img.shields.io/github/repo-size/hcmiya/opuscomment)
+![GitHub all releases](https://img.shields.io/github/downloads/hcmiya/opuscomment/total)
+![GitHub](https://img.shields.io/github/license/hcmiya/opuscomment)
+
 # opuscomment
 
 ## 概要
