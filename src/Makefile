@@ -10,14 +10,20 @@ CC=c99
 CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
 LDFLAGS=-logg -lm -lpthread
 SRCS=put-tags.c parse-tags.c read.c read-flac.c ocutil.c retrieve-tags.c select-codec.c
+SRCP=opuspic2tag.c picture.c
 CONFSRCS=endianness.c error.c main.c
 HEADERS=global.h ocutil.h limit.h error.h iconv-impl.h
 ERRORDEFS=errordef/opus.tab errordef/main.tab
 OBJS=$(SRCS:.c=.o) $(CONFSRCS:.c=.o)
+OBJP=$(SRCP:.c=.o)
+RM = rm -f
 
-all: opuscomment
+all: opuscomment opuspic2tag
 
 opuscomment: $(OBJS)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+opuspic2tag: $(OBJP)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 .SUFFIXES:
@@ -39,4 +45,4 @@ main.c: $(HEADERS) version.h
 	@touch $@
 
 clean:
-	rm endianness.c opuscomment $(OBJS) 2>/dev/null || :
+	$(RM) endianness.c opuscomment opuspic2tag $(OBJS) $(OBJP) 2>/dev/null || :
