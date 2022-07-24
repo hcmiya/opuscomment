@@ -14,7 +14,7 @@ noreturn void mainerror(int e, ...) {
 	errorprefix();
 	char const *msg[] = {
 #define LIST(I, E, S) S,
-#include "errordef/main.tab"
+#include "errordef/opuscomment.tab"
 #undef LIST
 	};
 	vfprintf(stderr, catgets(catd, 2, e, msg[e]), ap);

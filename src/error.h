@@ -16,7 +16,7 @@ enum err_opus_ {
 
 enum err_main_ {
 #define LIST(I, E, S) err_main_##E = I,
-#include "errordef/main.tab"
+#include "errordef/opuscomment.tab"
 #undef LIST
 };
 
