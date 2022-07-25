@@ -111,6 +111,7 @@ int main(int argc, char **argv)
         }
         fwrite(picture_meta, 1, picture_meta_len, out);
         free(picture_meta);
+        fwrite("\n", 1, 1, out);
     }
     if(out)
         fclose(out);
