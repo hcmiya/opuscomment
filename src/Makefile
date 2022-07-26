@@ -7,7 +7,7 @@
 # `DEFAULT_NLS_PATH`を文字列でdefineをすると、NLSPATHが無い時に最初にcatopen(3)をする場所を指定することができます。
 
 CC=c99
-CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS
+CFLAGS=-D_POSIX_C_SOURCE=200809L -DNLS -g
 LDFLAGS=-logg -lm -lpthread
 SRCS=put-tags.c parse-tags.c read.c read-flac.c ocutil.c retrieve-tags.c select-codec.c
 SRCP=opuspic2tag.c picture.c

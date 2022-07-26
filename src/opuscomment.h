@@ -23,14 +23,14 @@
 #include "iconv-impl.h"
 
 struct rettag_st {
-	FILE *tag, *padding;
-	long tagbegin;
-	size_t num, del;
-	bool upcase, part_of_comment;
+    FILE *tag, *padding;
+    long tagbegin;
+    size_t num, del;
+    bool upcase, part_of_comment;
 };
 struct edit_st {
-	FILE *str, *len, *pict;
-	size_t num;
+    FILE *str, *len, *pict;
+    size_t num;
 };
 
 // parse-tags.c
