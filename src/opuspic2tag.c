@@ -8,7 +8,8 @@
 #include "picture.h"
 #include "version.h"
 
-struct option options[] = {
+struct option options[] =
+{
     {"help", no_argument, 0, 'h'},
     {"desc", required_argument, 0, 'd'},
     {"type", required_argument, 0, 't'},
@@ -31,22 +32,23 @@ int main(int argc, char **argv)
     int c;
     while((c = getopt_long(argc, argv, "hd:t:o:", options, NULL)) != -1)
     {
-        switch(c){
-            case 'h':
-                print_help = 1;
-                break;
-            case 'd':
-                picture_desc = optarg;
-                break;
-            case 't':
-                picture_type = atoi(optarg);
-                picture_type = (picture_type > 20) ? 3 : picture_type;
-                break;
-            case 'o':
-                path_out = optarg;
-                break;
-            default:
-                return EXIT_FAILURE;
+        switch(c)
+        {
+        case 'h':
+            print_help = 1;
+            break;
+        case 'd':
+            picture_desc = optarg;
+            break;
+        case 't':
+            picture_type = atoi(optarg);
+            picture_type = (picture_type > 20) ? 3 : picture_type;
+            break;
+        case 'o':
+            path_out = optarg;
+            break;
+        default:
+            return EXIT_FAILURE;
         }
     }
     if(print_help)
@@ -90,7 +92,9 @@ int main(int argc, char **argv)
             perror("fopen");
             return EXIT_FAILURE;
         }
-    } else {
+    }
+    else
+    {
         out = stdout;
     }
     if(picture_data != NULL)
@@ -103,7 +107,9 @@ int main(int argc, char **argv)
         {
             fprintf(stderr,"Bad picture size: %d\n", picture_meta_len);
             free(picture_meta);
-        } else {
+        }
+        else
+        {
             strcpy(picture_meta, picture_tag);
             strcat(picture_meta, "=");
             strcat(picture_meta, picture_data);

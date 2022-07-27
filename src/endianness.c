@@ -34,9 +34,9 @@ uint32_t oi32(uint32_t i)
         return i;
     else if (et == 1)
         return (i << 24
-               | (i & (255ULL << 8)) << 8
-               | (i & (255ULL << 16)) >> 8
-               | i >> 24);
+                | (i & (255ULL << 8)) << 8
+                | (i & (255ULL << 16)) >> 8
+                | i >> 24);
     else
     {
         uint8_t *val = (uint8_t *)&i;
@@ -55,13 +55,13 @@ uint64_t oi64(uint64_t i)
         return i;
     else if (et == 1)
         return (i << 56
-               | (i & (255ULL << 8)) << 40
-               | (i & (255ULL << 16)) >> 24
-               | (i & (255ULL << 24)) >> 8
-               | (i & (255ULL << 32)) >> 8
-               | (i & (255ULL << 40)) >> 24
-               | (i & (255ULL << 48)) >> 40
-               | i >> 56);
+                | (i & (255ULL << 8)) << 40
+                | (i & (255ULL << 16)) >> 24
+                | (i & (255ULL << 24)) >> 8
+                | (i & (255ULL << 32)) >> 8
+                | (i & (255ULL << 40)) >> 24
+                | (i & (255ULL << 48)) >> 40
+                | i >> 56);
     else
     {
         uint8_t *val = (uint8_t *)&i;

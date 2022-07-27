@@ -9,11 +9,12 @@ extern "C" {
 
 // opus-tools 0.1.10: picture.h
 
-typedef enum{
-  PIC_FORMAT_JPEG,
-  PIC_FORMAT_PNG,
-  PIC_FORMAT_GIF
-}opustags_picture_format;
+typedef enum
+{
+    PIC_FORMAT_JPEG,
+    PIC_FORMAT_PNG,
+    PIC_FORMAT_GIF
+} opustags_picture_format;
 
 #define IMAX(a,b) ((a) > (b) ? (a) : (b))
 #define BASE64_LENGTH(len) (((len)+2)/3*4)
@@ -29,23 +30,23 @@ int opustags_is_png(const unsigned char *buf, size_t length);
 int opustags_is_gif(const unsigned char *buf, size_t length);
 
 void opustags_params_extract_png(const unsigned char *data, size_t data_length,
-                        ogg_uint32_t *width, ogg_uint32_t *height,
-                        ogg_uint32_t *depth, ogg_uint32_t *colors,
-                        int *has_palette);
+                                 ogg_uint32_t *width, ogg_uint32_t *height,
+                                 ogg_uint32_t *depth, ogg_uint32_t *colors,
+                                 int *has_palette);
 void opustags_params_extract_gif(const unsigned char *data, size_t data_length,
-                        ogg_uint32_t *width, ogg_uint32_t *height,
-                        ogg_uint32_t *depth, ogg_uint32_t *colors,
-                        int *has_palette);
+                                 ogg_uint32_t *width, ogg_uint32_t *height,
+                                 ogg_uint32_t *depth, ogg_uint32_t *colors,
+                                 int *has_palette);
 void opustags_params_extract_jpeg(const unsigned char *data, size_t data_length,
-                         ogg_uint32_t *width, ogg_uint32_t *height,
-                         ogg_uint32_t *depth, ogg_uint32_t *colors,
-                         int *has_palette);
+                                  ogg_uint32_t *width, ogg_uint32_t *height,
+                                  ogg_uint32_t *depth, ogg_uint32_t *colors,
+                                  int *has_palette);
 
 char *opustags_picture_specification_parse(const char *spec,
-                                  const char **error_message,
-                                  const char *desc,
-                                  unsigned long picture_type,
-                                  int *seen_file_icons);
+        const char **error_message,
+        const char *desc,
+        unsigned long picture_type,
+        int *seen_file_icons);
 
 #define READ_U32_BE(buf) \
     (((buf)[0]<<24)|((buf)[1]<<16)|((buf)[2]<<8)|((buf)[3]&0xff))

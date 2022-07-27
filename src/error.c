@@ -4,15 +4,18 @@
 
 #include "opuscomment.h"
 
-void errorprefix(void) {
+void errorprefix(void)
+{
     fprintf(stderr, catgets(catd, 1, 3, "%s: "), program_name);
 }
 
-noreturn void mainerror(int e, ...) {
+noreturn void mainerror(int e, ...)
+{
     va_list ap;
     va_start(ap, e);
     errorprefix();
-    char const *msg[] = {
+    char const *msg[] =
+    {
 #define LIST(I, E, S) S,
 #include "errordef/opuscomment.tab"
 #undef LIST
@@ -22,23 +25,28 @@ noreturn void mainerror(int e, ...) {
     exit(1);
 }
 
-noreturn void opuserror(int e, ...) {
+noreturn void opuserror(int e, ...)
+{
     va_list ap;
     va_start(ap, e);
     errorprefix();
 
-    struct {
+    struct
+    {
         bool report_page;
         char const *default_message;
-    } msg[] = {
+    } msg[] =
+    {
 #define LIST(I, B, E, S) {B, S},
 #include "errordef/opus.tab"
 #undef LIST
     };
-    if (msg[e].report_page && codec->type != CODEC_FLAC) {
+    if (msg[e].report_page && codec->type != CODEC_FLAC)
+    {
         fprintf(stderr, catgets(catd, 1, 4, "%s format error: page %u: "), codec->name, opus_idx);
     }
-    else {
+    else
+    {
         fprintf(stderr, catgets(catd, 1, 8, "%s format error: "), codec->name);
     }
     vfprintf(stderr, catgets(catd, 3, e, msg[e].default_message), ap);
@@ -46,12 +54,14 @@ noreturn void opuserror(int e, ...) {
     exit(2);
 }
 
-noreturn void oserror(void) {
+noreturn void oserror(void)
+{
     perror(program_name);
     exit(3);
 }
 
-noreturn void oserror_fmt(char const *e, ...) {
+noreturn void oserror_fmt(char const *e, ...)
+{
     va_list ap;
     va_start(ap, e);
     errorprefix();
@@ -60,14 +70,16 @@ noreturn void oserror_fmt(char const *e, ...) {
     exit(3);
 }
 
-noreturn void fileerror(char const *file) {
+noreturn void fileerror(char const *file)
+{
     errorprefix();
     fprintf(stderr, catgets(catd, 1, 5, "%s: "), file);
     perror(NULL);
     exit(3);
 }
 
-noreturn void opterror(int c, char const *e, ...) {
+noreturn void opterror(int c, char const *e, ...)
+{
     va_list ap;
     va_start(ap, e);
     errorprefix();
@@ -78,6 +90,7 @@ noreturn void opterror(int c, char const *e, ...) {
 }
 
 
-noreturn void exceed_output_limit(void) {
+noreturn void exceed_output_limit(void)
+{
     mainerror(err_main_output_limit, TAG_LENGTH_LIMIT__OUTPUT >> 20);
 }

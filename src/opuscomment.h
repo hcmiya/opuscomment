@@ -22,13 +22,15 @@
 #include "error.h"
 #include "iconv-impl.h"
 
-struct rettag_st {
+struct rettag_st
+{
     FILE *tag, *padding;
     long tagbegin;
     size_t num, del;
     bool upcase, part_of_comment;
 };
-struct edit_st {
+struct edit_st
+{
     FILE *str, *len, *pict;
     size_t num;
 };
