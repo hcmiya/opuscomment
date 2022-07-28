@@ -1,14 +1,10 @@
 #include <stdint.h>
 int endian_test()
 {
-    uint32_t sample = {0x01020304};
+    int out[3] = {0, -1, 1}; // {terrible, little, big} endian
+    uint32_t sample = {0x02000001};
     uint8_t *test = (uint8_t *)&sample;
-    if (test[0] == 4)
-        return -1;
-    else if (test[0] == 1)
-        return 1;
-    else
-        return 0;
+    return out[test[0]];
 }
 
 uint16_t oi16(uint16_t i)
@@ -20,10 +16,12 @@ uint16_t oi16(uint16_t i)
         return (i << 8 | i >> 8);
     else
     {
-        uint8_t *val = (uint8_t *)&i;
+        uint16_t sample = {0x0100};
         uint8_t out[2];
-        out[0] = val[0];
-        out[1] = val[1];
+        uint8_t *ind = (uint8_t *)&sample;
+        uint8_t *val = (uint8_t *)&i;
+        for (int j = 0; j < 2; j++)
+            out[ind[j]] = val[j];
         return *(uint16_t*)out;
     }
 }
@@ -39,12 +37,12 @@ uint32_t oi32(uint32_t i)
                 | i >> 24);
     else
     {
-        uint8_t *val = (uint8_t *)&i;
+        uint32_t sample = {0x03020100};
         uint8_t out[4];
-        out[0] = val[0];
-        out[1] = val[1];
-        out[2] = val[2];
-        out[3] = val[3];
+        uint8_t *ind = (uint8_t *)&sample;
+        uint8_t *val = (uint8_t *)&i;
+        for (int j = 0; j < 4; j++)
+            out[ind[j]] = val[j];
         return *(uint32_t*)out;
     }
 }
@@ -64,16 +62,12 @@ uint64_t oi64(uint64_t i)
                 | i >> 56);
     else
     {
-        uint8_t *val = (uint8_t *)&i;
+        uint64_t sample = {0x0706050403020100};
         uint8_t out[8];
-        out[0] = val[0];
-        out[1] = val[1];
-        out[2] = val[2];
-        out[3] = val[3];
-        out[4] = val[4];
-        out[5] = val[5];
-        out[6] = val[6];
-        out[7] = val[7];
+        uint8_t *ind = (uint8_t *)&sample;
+        uint8_t *val = (uint8_t *)&i;
+        for (int j = 0; j < 8; j++)
+            out[ind[j]] = val[j];
         return *(uint64_t*)out;
     }
 }
