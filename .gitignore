@@ -1,5 +1,4 @@
 opuscomment
 tests/
-endianness.c
 *.o
 nls/*/opuscomment.cat
